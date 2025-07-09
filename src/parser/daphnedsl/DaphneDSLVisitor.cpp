@@ -892,7 +892,7 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
                                           "called 'handleMapOpCall' for function " + func + " instead of 'map'");
 
-    if (ctx->expr().size() != 2 && ctx->expr().size() != 4) {
+    if (ctx->expr().size() < 2 || ctx->expr().size() > 4) {
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
                                           "built-in function 'map' expects 2-4 argument(s), but got " +
                                               std::to_string(ctx->expr().size()));

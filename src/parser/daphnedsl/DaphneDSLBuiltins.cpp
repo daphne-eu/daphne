@@ -1309,7 +1309,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         // Default values, if not given
         mlir::Value axis = builder.create<ConstantOp>(loc, int64_t(-1));
         mlir::Value udfReturnsMatrix = builder.create<ConstantOp>(loc, false);
-        ;
 
         if (numArgs >= 3) { // axis is given
             int64_t axisInt =

@@ -571,11 +571,19 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::RecodeOp::inferShape() {
 std::vector<std::pair<ssize_t, ssize_t>> daphne::MapOp::inferShape() {
     mlir::Type opTy = getArg().getType();
     auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
+
+    // For element-wise mapOp, the result matrix has the same
+    // dimension as the input matrix
     ssize_t resNumRows = inpMatrixTy.getNumRows();
     ssize_t resNumCols = inpMatrixTy.getNumCols();
 
     int64_t axis = CompilerUtils::constantOrThrow<int64_t>(getAxis(), "map axis must be a constant.");
 
+    // For row- and column-wise mapOp, the result matrix does not
+    // have the same dimensions as the input matrix.
+    // During a row-wise mapOp the number of rows stays the same
+    // as the input matrix, and during a column-wise mapOp the
+    // number of columns stays the same.
     if (axis == 0)
         resNumCols = -1;
     else if (axis == 1)
