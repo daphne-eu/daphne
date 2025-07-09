@@ -369,16 +369,18 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                 // mapped on
                 mlir::Type opTy = mapOp.getArg().getType();
                 auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
-                int64_t axis =
-                    CompilerUtils::constantOrThrow<int64_t>(mapOp.getAxis(), "map axis must be a constant.");
+                int64_t axis = CompilerUtils::constantOrThrow<int64_t>(mapOp.getAxis(), "map axis must be a constant.");
                 func::FuncOp specializedFunc;
                 // Set function input type based on given axis
                 if (axis == 0) { // row-wise map
-                    specializedFunc = createOrReuseSpecialization(inpMatrixTy.withShape(1, -1), {}, calledFunction, mapOp.getLoc());
+                    specializedFunc =
+                        createOrReuseSpecialization(inpMatrixTy.withShape(1, -1), {}, calledFunction, mapOp.getLoc());
                 } else if (axis == 1) { // column-wise map
-                    specializedFunc = createOrReuseSpecialization(inpMatrixTy.withShape(-1, 1), {}, calledFunction, mapOp.getLoc());
+                    specializedFunc =
+                        createOrReuseSpecialization(inpMatrixTy.withShape(-1, 1), {}, calledFunction, mapOp.getLoc());
                 } else { // element-wise
-                    specializedFunc = createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction, mapOp.getLoc());
+                    specializedFunc =
+                        createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction, mapOp.getLoc());
                 }
                 mapOp.setFuncAttr(specializedFunc.getSymNameAttr());
 
@@ -392,12 +394,11 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                             std::to_string(specializedFunc.getFunctionType().getNumResults()) + "values instead.");
                 }
 
-                // Set mapOp result matrix type as the input matrix type and
-                // fix it if needed.
+                // Get current mapOp result matrix type and fix it if needed.
                 // If we fixed something we rerun inference of the whole
                 // function.
-                daphne::MatrixType resMatrixTy = inpMatrixTy;
-                mlir::Type funcResTy = specializedFunc.getFunctionType().getResult(0); // either mlir::Type or daphne::MatrixType
+                daphne::MatrixType resMatrixTy = mapOp.getType().dyn_cast<daphne::MatrixType>();
+                mlir::Type funcResTy = specializedFunc.getFunctionType().getResult(0);
                 bool madeChanges = false;
 
                 // For row- and column-wise mapOp, the result matrix does not
@@ -408,26 +409,39 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                 // If the specialized function returns a scalar, the other
                 // dimension is one, and if the specialized function returns
                 // a matrix, the other dimension is unknown.
-                if (axis == 0 || axis == 1) {
-                    // Case 1: Matrix -> Scalar
-                    ssize_t changedDim = 1;
-                    if (dyn_cast_or_null<daphne::MatrixType>(funcResTy)) {
-                        // Case 2: Matrix -> Matrix
-                        // changedDim = -1;
-                        if (axis == 0)
-                            resMatrixTy = resMatrixTy.withShape(inpMatrixTy.getNumRows(), -1);
-                        else if (axis == 1)
-                            resMatrixTy = resMatrixTy.withShape(-1, inpMatrixTy.getNumCols());
-                        // Set function result type to the matrix's element
-                        // type for further processing
-                        funcResTy = dyn_cast<daphne::MatrixType>(funcResTy).getElementType();
-                    }
-                    // if (axis == 0)
-                    //     resMatrixTy = resMatrixTy.withShape(inpMatrixTy.getNumRows(), changedDim);
-                    // else if (axis == 1)
-                    //     resMatrixTy = resMatrixTy.withShape(changedDim, inpMatrixTy.getNumCols());
+                // if (axis == 0 || axis == 1) {
+                //     // Case 1: Matrix -> Scalar
+                //     ssize_t changedDim = 1;
+                //     if (dyn_cast_or_null<daphne::MatrixType>(funcResTy)) {
+                //         // Case 2: Matrix -> Matrix
+                //         changedDim = -1;
+                //         // if (axis == 0)
+                //         //     resMatrixTy = resMatrixTy.withShape(inpMatrixTy.getNumRows(), -1);
+                //         // else if (axis == 1)
+                //         //     resMatrixTy = resMatrixTy.withShape(-1, inpMatrixTy.getNumCols());
+                //         // Set function result type to the matrix's element
+                //         // type for further processing
+                //         funcResTy = dyn_cast<daphne::MatrixType>(funcResTy).getElementType();
+                //     }
+                //     if (axis == 0)
+                //         resMatrixTy = resMatrixTy.withShape(inpMatrixTy.getNumRows(), changedDim);
+                //     else if (axis == 1)
+                //         resMatrixTy = resMatrixTy.withShape(changedDim, inpMatrixTy.getNumCols());
+                //     madeChanges = true;
+                // }
+
+                if (dyn_cast_or_null<daphne::MatrixType>(funcResTy)) { // Matrix -> Matrix
+                    // Shape is still unknown
+                    // Set function result type to the matrix's element
+                    // type for further processing
+                    funcResTy = dyn_cast<daphne::MatrixType>(funcResTy).getElementType();
+                } else { // Matrix -> Scalar
+                    // Shape is now known
+                    if (axis == 0)
+                        resMatrixTy = resMatrixTy.withShape(inpMatrixTy.getNumRows(), 1);
+                    else if (axis == 1)
+                        resMatrixTy = resMatrixTy.withShape(1, inpMatrixTy.getNumCols());
                     madeChanges = true;
-                    // TODO(#520): Doesn't work yet
                 }
 
                 // The matrix that results from the mapOp has the same

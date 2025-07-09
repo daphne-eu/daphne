@@ -3187,6 +3187,10 @@
                 {
                     "type": "const int64_t",
                     "name": "axis"
+                },
+                {
+                    "type": "const bool",
+                    "name": "udfReturnsMatrix"
                 }
             ]
         },

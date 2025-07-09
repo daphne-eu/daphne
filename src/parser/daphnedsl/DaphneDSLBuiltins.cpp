@@ -1299,29 +1299,33 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     // ****************************************************************************
 
     if (func == "map") {
-        checkNumArgsBetween(loc, func, numArgs, 2, 3);
+        checkNumArgsBetween(loc, func, numArgs, 2, 4);
 
         mlir::Value source = args[0];
 
         auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>();
         mlir::Attribute attr = co.getValue();
 
-        switch (numArgs) {
-            case 2: { // axis is not given, so it defaults to -1
-                mlir::Value minusOne = builder.create<ConstantOp>(loc, int64_t(-1));
-                return static_cast<mlir::Value>(
-                    builder.create<MapOp>(loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), minusOne));
-            }
-            case 3: { // axis is given
-                int64_t axis =
-                    CompilerUtils::constantOrThrow<int64_t>(args[2], "third argument of map must be a constant");
-                if (axis == 0 || axis == 1)
-                    return static_cast<mlir::Value>(
-                        builder.create<MapOp>(loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), args[2]));
-                else
-                    throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
-            }
+        // Default values, if not given
+        mlir::Value axis = builder.create<ConstantOp>(loc, int64_t(-1));
+        mlir::Value udfReturnsMatrix = builder.create<ConstantOp>(loc, false);
+        ;
+
+        if (numArgs >= 3) { // axis is given
+            int64_t axisInt =
+                CompilerUtils::constantOrThrow<int64_t>(args[2], "third argument of map must be a constant");
+            if (axisInt == 0 || axisInt == 1)
+                axis = args[2];
+            else
+                throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
         }
+
+        if (numArgs == 4) { // udfReturnsMatrix is given
+            udfReturnsMatrix = args[3];
+        }
+
+        return static_cast<mlir::Value>(builder.create<MapOp>(
+            loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), axis, udfReturnsMatrix));
     }
 
     // ****************************************************************************

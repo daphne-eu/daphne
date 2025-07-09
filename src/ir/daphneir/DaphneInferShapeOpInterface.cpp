@@ -568,6 +568,22 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::RecodeOp::inferShape() {
     return {{resNumRows, resNumCols}, {dictNumRows, dictNumCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::MapOp::inferShape() {
+    mlir::Type opTy = getArg().getType();
+    auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
+    ssize_t resNumRows = inpMatrixTy.getNumRows();
+    ssize_t resNumCols = inpMatrixTy.getNumCols();
+
+    int64_t axis = CompilerUtils::constantOrThrow<int64_t>(getAxis(), "map axis must be a constant.");
+
+    if (axis == 0)
+        resNumCols = -1;
+    else if (axis == 1)
+        resNumRows = -1;
+
+    return {{resNumRows, resNumCols}};
+}
+
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************

@@ -1,6 +1,6 @@
 DenseMatrix(2x1, double)
 4.1
 4.3
-DenseMatrix(2x1, int64_t)
+DenseMatrix(2x1, double)
 5
 13

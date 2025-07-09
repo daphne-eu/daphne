@@ -1,11 +1,11 @@
 def sumOfFirstAndLast(row) {
-  return as.scalar(row[0, 0]) + as.scalar(row[0, ncol(row) - 1]);
+  return as.scalar<f64>(row[0, 0]) + as.scalar<f64>(row[0, ncol(row) - 1]);
 }
 
 // double
 X = reshape([1.1, 0.0, 3.0, 5.5, -2.2, -1.2], 2, 3);
-print(map(X, sumOfFirstAndLast, 0));
+print(map(X, sumOfFirstAndLast, 0, false));
 
 // int64_t
 X = reshape([1, 2, 3, 4, 5, 6, 7, 8], 2, 4);
-print(map(X, sumOfFirstAndLast, 0));
+print(map(X, sumOfFirstAndLast, 0, false));

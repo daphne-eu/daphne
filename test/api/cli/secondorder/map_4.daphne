@@ -1,11 +1,11 @@
 def topThree(col) {
-  return col[:3, 0];
+  return order(col[:3, 0], 0, true, false);
 }
 
 // double
-X = reshape([1.1, 0.3, 5.5, -2.2, 1.1, 0.3, 5.5, -2.2, 1.1, 0.3, 5.5, -2.2, 1.1, 0.3, 5.5, -2.2], 4, 4);
-print(map(X, topThree, 1));
+X = reshape([1.1, 1.1, 1.1, 1.1, 0.3, 0.3, 0.3, 0.3, -2.2, -2.2, -2.2, -2.2, 5.5, 5.5, 5.5, 5.5], 4, 4);
+print(map(X, topThree, 1, true));
 
 // int64_t
-X = reshape([1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4], 5, 4);
-print(map(X, topThree, 1));
+X = reshape([4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0], 5, 4);
+print(map(X, topThree, 1, true));
