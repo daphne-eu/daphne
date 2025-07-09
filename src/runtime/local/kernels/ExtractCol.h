@@ -160,8 +160,10 @@ template <typename VTSel> struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
 
             if (VTcolIdx < 0 || static_cast<size_t>(VTcolIdx) >= numColsArg) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << VTvaluesSel[c] << "' passed to ExtractCol: out of bounds "
-                          "for frame with column boundaries '[0, " << numColsArg << ")'";
+                errMsg << "invalid argument '" << VTvaluesSel[c]
+                       << "' passed to ExtractCol: out of bounds "
+                          "for frame with column boundaries '[0, "
+                       << numColsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
             colIdxs[c] = static_cast<size_t>(VTcolIdx);

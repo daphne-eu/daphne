@@ -105,10 +105,10 @@ template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, DenseMa
         size_t rowUpperExcl_Pos = static_cast<size_t>(rowUpperExcl);
         if constexpr (std::is_signed<VTSel>::value) {
             if (rowLowerIncl < 0)
-                rowLowerIncl_Pos = 
+                rowLowerIncl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowLowerIncl));
             if (rowUpperExcl < 0)
-                rowUpperExcl_Pos = 
+                rowUpperExcl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowUpperExcl));
             if (rowLowerIncl < 0 && rowUpperExcl == 0)
                 rowUpperExcl_Pos = rowLowerIncl_Pos + 1;
@@ -161,10 +161,10 @@ template <typename VT, typename VTSel> struct InsertRow<Matrix<VT>, Matrix<VT>, 
         size_t rowUpperExcl_Pos = static_cast<size_t>(rowUpperExcl);
         if constexpr (std::is_signed<VTSel>::value) {
             if (rowLowerIncl < 0)
-                rowLowerIncl_Pos = 
+                rowLowerIncl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowLowerIncl));
             if (rowUpperExcl < 0)
-                rowUpperExcl_Pos = 
+                rowUpperExcl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowUpperExcl));
             if (rowLowerIncl < 0 && rowUpperExcl == 0)
                 rowUpperExcl_Pos = rowLowerIncl_Pos + 1;

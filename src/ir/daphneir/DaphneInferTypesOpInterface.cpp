@@ -530,18 +530,21 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
             if (loInPos < 0 || loInPos >= srcNumCols)
                 throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                                   "SliceColOp type inference: lowerIncl must be in [0, "
-                                                  "numCols), but is " + std::to_string(loIn.second) + 
-                                                  " with " + std::to_string(srcNumCols) + " cols");
+                                                  "numCols), but is " +
+                                                      std::to_string(loIn.second) + " with " +
+                                                      std::to_string(srcNumCols) + " cols");
             if (upExPos < 0 || upExPos > srcNumCols)
                 throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                                   "SliceColOp type inference: upperExcl must be in [0, "
-                                                  "numCols], but is " + std::to_string(upEx.second) +
-                                                  " with " + std::to_string(srcNumCols) + " cols");
+                                                  "numCols], but is " +
+                                                      std::to_string(upEx.second) + " with " +
+                                                      std::to_string(srcNumCols) + " cols");
             if (loInPos > upExPos)
                 throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                                   "SliceColOp type inference: lowerIncl must not be greater "
-                                                  "than upperExcl (found " + std::to_string(loInPos) +
-                                                  " and " + std::to_string(upExPos) + ")");
+                                                  "than upperExcl (found " +
+                                                      std::to_string(loInPos) + " and " + std::to_string(upExPos) +
+                                                      ")");
 
             for (ssize_t pos = loInPos; pos < upExPos; pos++)
                 resColTys.push_back(srcColTys[pos]);

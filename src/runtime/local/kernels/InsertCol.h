@@ -106,10 +106,10 @@ template <typename VTArg, typename VTSel> struct InsertCol<DenseMatrix<VTArg>, D
         size_t colUpperExcl_Pos = static_cast<size_t>(colUpperExcl);
         if constexpr (std::is_signed<VTSel>::value) {
             if (colLowerIncl < 0)
-                colLowerIncl_Pos = 
+                colLowerIncl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colLowerIncl));
             if (colUpperExcl < 0)
-                colUpperExcl_Pos = 
+                colUpperExcl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colUpperExcl));
             if (colLowerIncl < 0 && colUpperExcl == 0)
                 colUpperExcl_Pos = colLowerIncl_Pos + 1;
@@ -155,10 +155,10 @@ template <typename VTArg, typename VTSel> struct InsertCol<Matrix<VTArg>, Matrix
         size_t colUpperExcl_Pos = static_cast<size_t>(colUpperExcl);
         if constexpr (std::is_signed<VTSel>::value) {
             if (colLowerIncl < 0)
-                colLowerIncl_Pos = 
+                colLowerIncl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colLowerIncl));
             if (colUpperExcl < 0)
-                colUpperExcl_Pos = 
+                colUpperExcl_Pos =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colUpperExcl));
             if (colLowerIncl < 0 && colUpperExcl == 0)
                 colUpperExcl_Pos = colLowerIncl_Pos + 1;

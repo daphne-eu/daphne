@@ -72,7 +72,7 @@ template <typename VTSel> void validateArgsSliceRow(VTSel lowerIncl, VTSel upper
 // ----------------------------------------------------------------------------
 
 template <typename VTArg, typename VTSel> struct SliceRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, VTSel> {
-    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg, VTSel lowerIncl, VTSel upperExcl, 
+    static void apply(DenseMatrix<VTArg> *&res, const DenseMatrix<VTArg> *arg, VTSel lowerIncl, VTSel upperExcl,
                       DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
         if (lowerIncl < 0) {
