@@ -760,8 +760,11 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, mlir::ValueRange(resVals).getTypes(), forOperands, from, to, step, mlir::Value());
     // Moving the operations in the block created above
     // into the actual body of the ParForOp.
+    
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
     targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
+    //parforOp.getRegion().push_back(&bodyBlock);
+    //auto &targetBlock = parforOp.getRegion().front();
     auto iv = targetBlock.addArgument(builder.getIndexType(), loc);
    
     for (mlir::Value v : forOperands)
