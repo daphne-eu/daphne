@@ -209,18 +209,14 @@ void incRefArgs(Operation &op, OpBuilder &b) {
  * @param b
  */
 void processBlock(OpBuilder builder, Block *b) {
-    // TODO : ask Phillip if this workaround is ok. 
-    // Alternatively, we could insert IncRefOp on top of the block, 
-    // so that after the extraction of the ParForOp body into the function the reference counter still remains correct.
-    
-    // If the block is part of a ParForOp,
-    // we don't decrease the reference counter to prevent data objects be garbage collected after the first iteration.
-    if(llvm::isa<daphne::ParForOp>(b->getParentOp())) {
-        return; 
+
+    // Protect parfor arg from getting garbage collected between iterations
+    auto parent = b->getParentOp();
+    if (!llvm::isa<daphne::ParForOp>(parent)) {
+        // Make sure that the reference counters of block arguments are decreased.
+        for (BlockArgument &arg : b->getArguments())
+            processValue(builder, arg);
     }
-    // Make sure that the reference counters of block arguments are decreased.
-    for (BlockArgument &arg : b->getArguments())
-        processValue(builder, arg);
 
     // Make sure the reference counters of op results are decreased, and
     // Increase the reference counters of operands where necessary.
