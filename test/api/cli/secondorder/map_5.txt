@@ -1,7 +1,15 @@
 DenseMatrix(2x4, double)
-1.1 0 3 0
-5.5 -2.2 -1.2 0
+1.1 0 3 1.1
+5.5 -2.2 -1.2 5.5
 DenseMatrix(3x5, int64_t)
-1 2 3 4 0
-5 6 7 8 0
-9 10 11 12 0
+1 2 3 4 1
+5 6 7 8 5
+9 10 11 12 9
+DenseMatrix(1x6, int64_t)
+1 2 3 4 5 1
+DenseMatrix(5x2, int64_t)
+1 1
+2 2
+3 3
+4 4
+5 5

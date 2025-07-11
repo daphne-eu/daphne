@@ -1308,7 +1308,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
 
         // Default values, if not given
         mlir::Value axis = builder.create<ConstantOp>(loc, int64_t(-1));
-        mlir::Value udfReturnsMatrix = builder.create<ConstantOp>(loc, false);
+        mlir::Value udfReturnsScalar = builder.create<ConstantOp>(loc, false);
 
         if (numArgs >= 3) { // axis is given
             int64_t axisInt =
@@ -1319,12 +1319,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
                 throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
         }
 
-        if (numArgs == 4) { // udfReturnsMatrix is given
-            udfReturnsMatrix = args[3];
+        if (numArgs == 4) { // udfReturnsScalar is given
+            udfReturnsScalar = args[3];
         }
 
         return static_cast<mlir::Value>(builder.create<MapOp>(
-            loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), axis, udfReturnsMatrix));
+            loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), axis, udfReturnsScalar));
     }
 
     // ****************************************************************************

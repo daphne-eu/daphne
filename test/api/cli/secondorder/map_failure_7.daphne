@@ -1,0 +1,8 @@
+// udfReturnsScalar doesn't match actual UDF result
+
+def appendFirst(row) {
+  return cbind(row, [row[0, 0]]);
+}
+
+X = reshape([1, 2, 3], 1, 3);
+print(map(X, sumOfFirstAndLast, 0, true));

@@ -1,13 +1,21 @@
-// Row-wise Matrix -> Matrix
+// Row-wise (Matrix -> Matrix)
 
-def appendZero(row) {
-  return cbind(row, [0]);
+def appendFirst(row) {
+  return cbind(row, row[0, 0]);
 }
 
 // double
 X = reshape([1.1, 0.0, 3.0, 5.5, -2.2, -1.2], 2, 3);
-print(map(X, appendZero, 0, true));
+print(map(X, appendFirst, 0));
 
 // int64_t
 X = reshape([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 3, 4);
-print(map(X, appendZero, 0, true));
+print(map(X, appendFirst, 0));
+
+// one row
+X = reshape([1, 2, 3, 4, 5], 1, 5);
+print(map(X, appendFirst, 0));
+
+// one column
+X = reshape([1, 2, 3, 4, 5], 5, 1);
+print(map(X, appendFirst, 0));

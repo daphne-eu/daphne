@@ -401,26 +401,29 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                 mlir::Type funcResTy = specializedFunc.getFunctionType().getResult(0);
                 bool madeChanges = false;
 
-                auto udfReturnsMatrix = CompilerUtils::constantOrThrow<bool>(
-                    mapOp.getUdfReturnsMatrix(), "map parameter udfReturnsMatrix must be a bool.");
+                auto udfReturnsScalar = CompilerUtils::constantOrThrow<bool>(
+                    mapOp.getUdfReturnsScalar(), "map parameter udfReturnsScalar must be a bool.");
 
                 // If the specialized function returns a scalar, the previously
                 // unknown dimension is set to one, and if the specialized function
                 // returns a matrix, this dimension is still unknown.
-                if (dyn_cast_or_null<daphne::MatrixType>(funcResTy) && udfReturnsMatrix) { // Matrix -> Matrix
-                    // Set function result type to the matrix's element
-                    // type for further processing
-                    funcResTy = dyn_cast<daphne::MatrixType>(funcResTy).getElementType();
-                } else if (!dyn_cast_or_null<daphne::MatrixType>(funcResTy) && !udfReturnsMatrix) { // Matrix -> Scalar
-                    if (axis == 0)
-                        resMatrixTy = resMatrixTy.withShape(inpMatrixTy.getNumRows(), 1);
-                    else if (axis == 1)
-                        resMatrixTy = resMatrixTy.withShape(1, inpMatrixTy.getNumCols());
-                    madeChanges = true;
-                } else { // udfReturnsMatrix does not match funcResTy
-                    throw ErrorHandler::compilerError(
-                        mapOp.getOperation(), "SpecializeGenericFunctionsPass",
-                        "map parameter udfReturnsMatrix does not match the result of the provided function.");
+                if (axis == 0 || axis == 1) {
+                    if (dyn_cast_or_null<daphne::MatrixType>(funcResTy) && !udfReturnsScalar) { // Matrix -> Matrix
+                        // Set function result type to the matrix's element
+                        // type for further processing
+                        funcResTy = dyn_cast<daphne::MatrixType>(funcResTy).getElementType();
+                    } else if (!dyn_cast_or_null<daphne::MatrixType>(funcResTy) &&
+                               udfReturnsScalar) { // Matrix -> Scalar
+                        if (axis == 0)
+                            resMatrixTy = resMatrixTy.withShape(inpMatrixTy.getNumRows(), 1);
+                        else if (axis == 1)
+                            resMatrixTy = resMatrixTy.withShape(1, inpMatrixTy.getNumCols());
+                        madeChanges = true;
+                    } else { // udfReturnsScalar does not match funcResTy
+                        throw ErrorHandler::compilerError(
+                            mapOp.getOperation(), "SpecializeGenericFunctionsPass",
+                            "map parameter udfReturnsScalar does not match the result of the provided function.");
+                    }
                 }
 
                 // The matrix that results from the mapOp has the same

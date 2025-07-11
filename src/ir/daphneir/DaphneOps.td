@@ -1920,7 +1920,7 @@ def Daphne_DistributedPipelineOp : Daphne_Op<"distributedPipeline", [AttrSizedOp
 // ****************************************************************************
 def Daphne_MapOp : Daphne_Op<"map", [DeclareOpInterfaceMethods<InferShapeOpInterface>]> {
     let summary = "Applies a user defined function to elements of a matrix.";
-    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func, SI64:$axis, BoolScalar:$udfReturnsMatrix);
+    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func, SI64:$axis, BoolScalar:$udfReturnsScalar);
     let results = (outs MatrixOrU:$res);
 }
 

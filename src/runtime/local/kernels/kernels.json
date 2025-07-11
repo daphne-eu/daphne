@@ -3190,7 +3190,7 @@
                 },
                 {
                     "type": "const bool",
-                    "name": "udfReturnsMatrix"
+                    "name": "udfReturnsScalar"
                 }
             ]
         },

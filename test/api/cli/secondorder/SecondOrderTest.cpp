@@ -42,4 +42,4 @@ const std::string dirPath = "test/api/cli/secondorder/";
     }
 
 MAKE_TEST_CASE("map", 7)
-MAKE_FAILURE_TEST_CASE("map", 5)
+MAKE_FAILURE_TEST_CASE("map", 8)

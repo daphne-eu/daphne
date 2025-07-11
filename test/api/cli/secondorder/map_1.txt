@@ -10,3 +10,9 @@ DenseMatrix(1x4, int64_t)
 DenseMatrix(2x2, int64_t)
 3 0
 15 -6
+DenseMatrix(2x2, int64_t)
+3 0
+15 -6
+DenseMatrix(2x2, int64_t)
+3 0
+15 -6

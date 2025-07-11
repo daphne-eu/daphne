@@ -32,7 +32,7 @@ template <class DTRes, class DTArg> struct Map {
     // We could have a more specialized function pointer here i.e.
     // (DTRes::VT)(*func)(DTArg::VT). The problem is that this is currently not
     // supported by kernels.json.
-    static void apply(DTRes *&res, const DTArg *arg, void *func, const int64_t axis, const bool udfReturnsMatrix,
+    static void apply(DTRes *&res, const DTArg *arg, void *func, const int64_t axis, const bool udfReturnsScalar,
                       DCTX(ctx)) = delete;
 };
 
@@ -41,8 +41,8 @@ template <class DTRes, class DTArg> struct Map {
 // ****************************************************************************
 
 template <class DTRes, class DTArg>
-void map(DTRes *&res, const DTArg *arg, void *func, const int64_t axis, const bool udfReturnsMatrix, DCTX(ctx)) {
-    Map<DTRes, DTArg>::apply(res, arg, func, axis, udfReturnsMatrix, ctx);
+void map(DTRes *&res, const DTArg *arg, void *func, const int64_t axis, const bool udfReturnsScalar, DCTX(ctx)) {
+    Map<DTRes, DTArg>::apply(res, arg, func, axis, udfReturnsScalar, ctx);
 }
 
 // ****************************************************************************
@@ -55,7 +55,7 @@ void map(DTRes *&res, const DTArg *arg, void *func, const int64_t axis, const bo
 
 template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg, void *func, const int64_t axis,
-                      const bool udfReturnsMatrix, DCTX(ctx)) {
+                      const bool udfReturnsScalar, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -72,17 +72,21 @@ template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMa
 
         if (axis == 1) { // column-wise
             size_t resNumRows = 1;
-            // Extract each column, apply udf and set result row-wise
             for (size_t c = 0; c < numCols; c++) {
+                // Extract current column
                 DenseMatrix<VTArg> *currentCol =
                     DataObjectFactory::create<DenseMatrix<VTArg>>(arg, 0, numRows, c, c + 1);
-                if (udfReturnsMatrix) { // Matrix -> Matrix
+                if (!udfReturnsScalar) { // Default: Matrix -> Matrix
+                    // Apply UDF and check shape of resulting column
                     const DenseMatrix<VTRes> *resCol = udfMatMat(currentCol);
+                    if (resCol == nullptr || resCol->getNumCols() != 1)
+                        throw std::runtime_error("UDF return value should be a single column!");
                     // Set result matrix size in first iteration
                     if (c == 0) {
                         resNumRows = resCol->getNumRows();
                         res = DataObjectFactory::create<DenseMatrix<VTRes>>(resNumRows, numCols, false);
                     }
+                    // Set result row-wise
                     valuesRes = res->getValues();
                     const VTRes *valuesResCol = resCol->getValues();
                     for (size_t r = 0; r < resNumRows; r++) {
@@ -106,17 +110,21 @@ template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMa
             size_t resNumCols = 1;
             for (size_t r = 0; r < numRows; r++) {
                 if (axis == 0) {
-                    // Extract each row, apply udf and copy values to result
+                    // Extract current row
                     DenseMatrix<VTArg> *currentRow =
                         DataObjectFactory::create<DenseMatrix<VTArg>>(arg, r, r + 1, 0, numCols);
-                    if (udfReturnsMatrix) { // Matrix -> Matrix
+                    if (!udfReturnsScalar) { // Default: Matrix -> Matrix
+                        // Apply UDF and check shape of resulting row
                         const DenseMatrix<VTRes> *resRow = udfMatMat(currentRow);
+                        if (resRow == nullptr || resRow->getNumRows() != 1)
+                            throw std::runtime_error("UDF return value should be a single row!");
                         // Set result matrix size in first iteration
                         if (r == 0) {
                             resNumCols = resRow->getNumCols();
                             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, resNumCols, false);
                             valuesRes = res->getValues();
                         }
+                        // Set result by copying values
                         const VTRes *valuesResRow = resRow->getValues();
                         memcpy(valuesRes, valuesResRow, resNumCols * sizeof(VTRes));
                     } else { // Matrix -> Scalar
@@ -146,7 +154,7 @@ template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMa
 
 template <typename VTRes, typename VTArg> struct Map<Matrix<VTRes>, Matrix<VTArg>> {
     static void apply(Matrix<VTRes> *&res, const Matrix<VTArg> *arg, void *func, const int64_t axis,
-                      const bool udfReturnsMatrix, DCTX(ctx)) {
+                      const bool udfReturnsScalar, DCTX(ctx)) {
         // const size_t numRows = arg->getNumRows();
         // const size_t numCols = arg->getNumCols();
 

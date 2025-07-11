@@ -923,8 +923,8 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
         args.push_back(axis);
 
         if (ctx->expr().size() == 4) {
-            auto udfReturnsMatrix = utils.castBoolIf(valueOrErrorOnVisit(ctx->expr(3)));
-            args.push_back(udfReturnsMatrix);
+            auto udfReturnsScalar = utils.castBoolIf(valueOrErrorOnVisit(ctx->expr(3)));
+            args.push_back(udfReturnsScalar);
         }
     }
 
