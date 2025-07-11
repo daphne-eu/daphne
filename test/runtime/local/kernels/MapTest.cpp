@@ -109,7 +109,7 @@ std::enable_if_t<(sizeof...(VTResN) > 0)> checkMult3Map() {
 TEMPLATE_TEST_CASE("Map element-wise dense matrix", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkMult3Map<DenseMatrix, TestType, TYPES>();
-    // checkMult3Map<Matrix, TestType, TYPES>();
+    checkMult3Map<Matrix, TestType, TYPES>();
 }
 
 // DenseMatrix
@@ -184,7 +184,7 @@ std::enable_if_t<(sizeof...(VTResN) > 0)> checkSumOfFirstAndLastMap() {
 TEMPLATE_TEST_CASE("Map row-wise dense matrix (Matrix -> Scalar)", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkSumOfFirstAndLastMap<DenseMatrix, TestType, TYPES>();
-    // checkSumOfFirstAndLastMap<Matrix, TestType, TYPES>();
+    checkSumOfFirstAndLastMap<Matrix, TestType, TYPES>();
 }
 
 // DenseMatrix
@@ -207,7 +207,7 @@ template <typename VTArg, typename VTRes> Matrix<VTRes> *appendFirst(const Matri
     for (size_t c = 0; c < numCols; c++)
         valuesRes[c] = row->get(0, c);
     valuesRes[numCols] = row->get(0, 0);
-    return dynamix_cast<Matrix<VTRes> *>(res);
+    return dynamic_cast<Matrix<VTRes> *>(res);
 }
 
 template <template <typename VT> class DT, class VTArg, class VTRes> void checkAppendFirstMap() {
@@ -293,7 +293,7 @@ std::enable_if_t<(sizeof...(VTResN) > 0)> checkAppendFirstMap() {
 TEMPLATE_TEST_CASE("Map row-wise dense matrix (Matrix -> Matrix)", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkAppendFirstMap<DenseMatrix, TestType, TYPES>();
-    // checkAppendFirstMap<Matrix, TestType, TYPES>();
+    checkAppendFirstMap<Matrix, TestType, TYPES>();
 }
 
 // DenseMatrix
@@ -477,5 +477,5 @@ std::enable_if_t<(sizeof...(VTResN) > 0)> checkIsSumEvenMap() {
 TEMPLATE_TEST_CASE("Map column-wise dense matrix (Matrix -> Scalar)", TAG_KERNELS, TYPES) {
     // Test all combination of types in TYPES
     checkIsSumEvenMap<DenseMatrix, TestType, TYPES>();
-    // checkIsSumEvenMap<Matrix, TestType, TYPES>();
+    checkIsSumEvenMap<Matrix, TestType, TYPES>();
 }
