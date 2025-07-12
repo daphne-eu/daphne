@@ -7,6 +7,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/Attributes.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/PatternMatch.h"
@@ -14,7 +15,6 @@
 #include <mlir/Analysis/SliceAnalysis.h>
 #include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Transforms/RegionUtils.h>
-#include "mlir/IR/Attributes.h"
 
 using namespace mlir;
 
@@ -23,7 +23,7 @@ struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectio
     void runOnOperation() final {
         func::FuncOp func = getOperation();
         func->walk([&](daphne::ParForOp parForOp) { detectReduction(parForOp); });
-        //exit(-1);
+        exit(-1);
     }
 
     func::FuncOp buildCombinerFunction(Operation *ctxOp, Value resultVal, Operation *rootCombOp, ModuleOp module,
@@ -47,10 +47,10 @@ struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectio
             argTypes.push_back(v.getType());
 
         std::stringstream name;
-        
+
         static auto combIdx = 0;
         name << "parFor" << combIdx++ << "_combiner";
-        
+
         auto funcType = builder.getFunctionType(argTypes, {resultVal.getType()});
         auto combinerFunc = builder.create<func::FuncOp>(ctxOp->getLoc(), name.str(), funcType);
 
@@ -68,6 +68,7 @@ struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectio
 
         Value resultValMapped = mapping.lookup(resultVal);
         builder.create<func::ReturnOp>(ctxOp->getLoc(), resultValMapped);
+        combinerFunc.dump();
         return combinerFunc;
     }
 
@@ -81,7 +82,7 @@ struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectio
         Block &loopBlock = parForOp.getBodyStmt().getBlocks().front();
         auto args = loopBlock.getArguments();
         // exclude induction variable and context arguments, since those are per definition not loop-carried variables
-        auto maybeLoopCarried = args.drop_front(1).drop_back(1);
+        auto maybeLoopCarried = args.drop_front(1);
         llvm::errs() << "Analyzing ParForOp for reduction detection: \n";
         llvm::DenseMap<size_t, StringRef> mapping;
         OpBuilder builder(parForOp);
@@ -97,7 +98,7 @@ struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectio
             // which reduction should be applied
             SmallVector<Operation *> combinerOps;
             Operation *curOp = returnVal->getDefiningOp();
-            //TODO: Check if there is side-effects (memory access/global state) and throw compilation error 
+            // TODO: Check if there is side-effects (memory access/global state) and throw compilation error
             while (curOp) {
                 combinerOps.push_back(curOp);
                 if (llvm::any_of(curOp->getOperands(), [&](Value operand) { return operand == arg; }))
@@ -117,26 +118,27 @@ struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectio
             // idk, how to handle mutliple combiners: affine does it the same way (see LoopAnalysis.cpp)
             if (combinerOps.empty() || combinerOps.size() != 1)
                 continue;
-            
-            // DEBUG PRINT OUT 
+
+            // DEBUG PRINT OUT
             for (auto combinerOp : combinerOps) {
                 llvm::errs() << "Combiner operation: " << *combinerOp << "\n";
             }
             Operation *root = combinerOps.back();
-            // DEBUG PRINT 
+            // DEBUG PRINT
             if (llvm::isa<daphne::InsertRowOp>(root)) {
                 llvm::errs() << "Found reduction for argument " << idx << " in ParForOp: InsertRowOp\n";
             } else if (llvm::isa<daphne::MatMulOp>(root)) {
                 llvm::errs() << "Found reduction for argument " << idx << " in ParForOp: MatMulOP\n";
             }
 
-            auto combiner = buildCombinerFunction(parForOp, *returnVal, root, parForOp->getParentOfType<ModuleOp>(), idx, combinerOps);
-            // Add function name to the mapping with according result idx 
+            auto combiner = buildCombinerFunction(parForOp, *returnVal, root, parForOp->getParentOfType<ModuleOp>(),
+                                                  idx, combinerOps);
+            // Add function name to the mapping with according result idx
             mapping[idx] = combiner.getSymName();
-            
+
             llvm::errs() << "Built combiner function: " << combiner.getSymName();
         }
-        // Map to attrbiutes, TODO: there is probably better way to do this 
+        // Map to attrbiutes, TODO: there is probably better way to do this
         llvm::SmallVector<mlir::NamedAttribute, 4> attrs;
         for (const auto &kv : mapping) {
             std::string key = std::to_string(kv.first);
@@ -144,16 +146,19 @@ struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectio
             mlir::StringAttr value = builder.getStringAttr(kv.second);
             attrs.emplace_back(name, value);
         }
-        // Append result_idx:combiner_func_name mapping to the parfor 
+        // Append result_idx:combiner_func_name mapping to the parfor
         auto newDict = mlir::DictionaryAttr::get(builder.getContext(), attrs);
         parForOp.setCombinerMappingAttr(newDict);
-        // ANOTHER ONE DEBUG PRINT 
+        // ANOTHER ONE DEBUG PRINT
         parForOp->getParentOfType<ModuleOp>().dump();
     }
 
     bool isLoopCarried(BlockArgument arg, daphne::ReturnOp returnOp, Value *&returnVal) {
         SetVector<Operation *> slice;
         mlir::getForwardSlice(arg, &slice);
+        for(auto sl : slice) {
+            llvm::errs() << "Slice contains operation: " << *sl << "\n";
+        }
         for (auto op : returnOp.getOperands()) {
             if (Operation *defOp = op.getDefiningOp()) {
                 if (slice.contains(defOp)) {
