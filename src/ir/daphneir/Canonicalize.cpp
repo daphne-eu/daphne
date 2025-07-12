@@ -18,6 +18,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
+#include <util/DaphneLogger.h>
 
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
                                                                      mlir::PatternRewriter &rewriter) {
@@ -231,293 +232,115 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
     return mlir::failure();
 }
 
-mlir::daphne::FillOp pushDownFillIntoEwAdd(mlir::daphne::FillOp fillOp, mlir::daphne::EwAddOp op, mlir::Value scalar,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-    mlir::daphne::EwAddOp newAdd = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAdd, height, width);
+template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewriter &rewriter) {
+    mlir::Value arg = op.getArg();
+    mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
+    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    // This will check for the fill operation to push down the arithmetic inside
+    if (fill) {
+        auto fillValue = fill.getArg();
+        auto height = fill.getNumRows();
+        auto width = fill.getNumCols();
+        auto newOp =
+            rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue);
+        auto newCombinedOpAfterPushDown =
+            rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newOp, height, width);
+        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        return true;
+    }
+    // This will check for the rand operation to push down the arithmetic inside
+    // of it
+    if (rand) {
+        auto max = rand.getMax();
+        auto min = rand.getMin();
+        auto height = rand.getNumRows();
+        auto width = rand.getNumCols();
+        auto sparsity = rand.getSparsity();
+        auto seed = rand.getSeed();
+        auto newMax =
+            rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
+        auto newMin =
+            rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
+
+        auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
+            op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        return true;
+    }
+    return false;
+}
+template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewriter &rewriter) {
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
+    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
+    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
+    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
+    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+    // This will check for the fill operation to push down the arithmetic inside
+    // of it
+    if (lhsFill && rhsIsSca) {
+        auto fillValue = lhsFill.getArg();
+        auto height = lhsFill.getNumRows();
+        auto width = lhsFill.getNumCols();
+        auto newOp = rewriter.create<Operation>(op.getLoc(), fillValue, rhs);
+        auto newCombinedOpAfterPushDown =
+            rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newOp, height, width);
+        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        return true;
+    }
+    // This will check for the rand operation to push down the arithmetic inside
+    // of it
+    if (lhsRand && rhsIsSca) {
+        auto max = lhsRand.getMax();
+        auto min = lhsRand.getMin();
+        auto height = lhsRand.getNumRows();
+        auto width = lhsRand.getNumCols();
+        auto sparsity = lhsRand.getSparsity();
+        auto seed = lhsRand.getSeed();
+        auto newMax = rewriter.create<Operation>(op.getLoc(), max, rhs);
+        auto newMin = rewriter.create<Operation>(op.getLoc(), min, rhs);
+        auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
+            op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        return true;
+    }
+    // This will check for the seq operation to push down the arithmetic inside
+    // of it
+    if (lhsSeq && rhsIsSca) {
+        auto from = lhsSeq.getFrom();
+        auto to = lhsSeq.getTo();
+        auto inc = lhsSeq.getInc();
+
+        auto newFrom = rewriter.create<Operation>(op.getLoc(), from, rhs);
+        auto newTo = rewriter.create<Operation>(op.getLoc(), to, rhs);
+        // mlir::daphne::EwMulOp newInc = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), inc, scalar);
+        auto newCombinedOpAfterPushDown =
+            rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
+        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        return true;
+    }
+    return false;
 }
 
-mlir::daphne::FillOp pushDownFillIntoEwSub(mlir::daphne::FillOp fillOp, mlir::daphne::EwSubOp op, mlir::Value scalar,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-    mlir::daphne::EwSubOp newSub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSub, height, width);
-}
+template <class Operation> bool tryPushDown(Operation op, mlir::PatternRewriter &rewriter) {
+    if constexpr (std::is_same<Operation, mlir::daphne::EwAbsOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwExpOp>() || std::is_same<Operation, mlir::daphne::EwLnOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwSignOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwSqrtOp>()) {
+        return pushDownUnary(op, rewriter);
+    }
+    if constexpr (std::is_same<Operation, mlir::daphne::EwAddOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwSubOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwMulOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwDivOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwPowOp>() ||
+                  std::is_same<Operation, mlir::daphne::EwLogOp>() || std::is_same<Operation, mlir::daphne::EwModOp>()
 
-mlir::daphne::FillOp pushDownFillIntoEwMul(mlir::daphne::FillOp fillOp, mlir::daphne::EwMulOp op, mlir::Value scalar,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-    mlir::daphne::EwMulOp newMul = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMul, height, width);
-}
-
-mlir::daphne::FillOp pushDownFillIntoEwDiv(mlir::daphne::FillOp fillOp, mlir::daphne::EwDivOp op, mlir::Value scalar,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-    mlir::daphne::EwDivOp newDiv = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newDiv, height, width);
-}
-
-mlir::daphne::FillOp pushDownFillIntoEwPow(mlir::daphne::FillOp fillOp, mlir::daphne::EwPowOp op, mlir::Value scalar,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-    mlir::daphne::EwPowOp newPow = rewriter.create<mlir::daphne::EwPowOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newPow, height, width);
-}
-// AMLS_TODO: push down naming needs to be other way around
-mlir::daphne::FillOp pushDownFillIntoEwMod(mlir::daphne::FillOp fillOp, mlir::daphne::EwModOp op, mlir::Value scalar,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-    mlir::daphne::EwModOp newMod = rewriter.create<mlir::daphne::EwModOp>(op.getLoc(), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newMod, height, width);
-}
-
-mlir::daphne::FillOp pushDownFillIntoEwLog(mlir::daphne::FillOp fillOp, mlir::daphne::EwLogOp op, mlir::Value scalar,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-
-    mlir::daphne::EwLogOp newLog = rewriter.create<mlir::daphne::EwLogOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue, scalar);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newLog, height, width);
-}
-
-mlir::daphne::FillOp pushDownFillIntoEwAbs(mlir::daphne::FillOp fillOp, mlir::daphne::EwAbsOp op,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-
-    mlir::daphne::EwAbsOp newAbs = rewriter.create<mlir::daphne::EwAbsOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newAbs, height, width);
-}
-mlir::daphne::FillOp pushDownFillIntoEwSign(mlir::daphne::FillOp fillOp, mlir::daphne::EwSignOp op,
-                                            mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-
-    mlir::daphne::EwSignOp newSign = rewriter.create<mlir::daphne::EwSignOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSign, height, width);
-}
-mlir::daphne::FillOp pushDownFillIntoEwExp(mlir::daphne::FillOp fillOp, mlir::daphne::EwExpOp op,
-                                           mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-
-    mlir::daphne::EwExpOp newExp = rewriter.create<mlir::daphne::EwExpOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newExp, height, width);
-}
-mlir::daphne::FillOp pushDownFillIntoEwLn(mlir::daphne::FillOp fillOp, mlir::daphne::EwLnOp op,
-                                          mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-
-    mlir::daphne::EwLnOp newLn = rewriter.create<mlir::daphne::EwLnOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newLn, height, width);
-}
-mlir::daphne::FillOp pushDownFillIntoEwSqrt(mlir::daphne::FillOp fillOp, mlir::daphne::EwSqrtOp op,
-                                            mlir::PatternRewriter &rewriter) {
-    auto fillValue = fillOp.getArg();
-    auto height = fillOp.getNumRows();
-    auto width = fillOp.getNumCols();
-
-    mlir::daphne::EwSqrtOp newSqrt = rewriter.create<mlir::daphne::EwSqrtOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue);
-    return rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newSqrt, height, width);
-}
-
-mlir::daphne::RandMatrixOp pushDownRandomIntoEwAdd(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwAddOp op,
-                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwAddOp newMax = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), max, scalar);
-    mlir::daphne::EwAddOp newMin = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), min, scalar);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-mlir::daphne::RandMatrixOp pushDownRandomIntoEwSub(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwSubOp op,
-                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwSubOp newMax = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), max, scalar);
-    mlir::daphne::EwSubOp newMin = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), min, scalar);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-mlir::daphne::RandMatrixOp pushDownRandomIntoEwMul(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwMulOp op,
-                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwMulOp newMax = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), max, scalar);
-    mlir::daphne::EwMulOp newMin = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), min, scalar);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-mlir::daphne::RandMatrixOp pushDownRandomIntoEwDiv(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwDivOp op,
-                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwDivOp newMax = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), max, scalar);
-    mlir::daphne::EwDivOp newMin = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), min, scalar);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-mlir::daphne::RandMatrixOp pushDownRandomIntoEwPow(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwPowOp op,
-                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwPowOp newMax = rewriter.create<mlir::daphne::EwPowOp>(op.getLoc(), max, scalar);
-    mlir::daphne::EwPowOp newMin = rewriter.create<mlir::daphne::EwPowOp>(op.getLoc(), min, scalar);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-mlir::daphne::RandMatrixOp pushDownRandomIntoEwLog(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwLogOp op,
-                                                   mlir::Value scalar, mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwLogOp newMax = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), max, scalar);
-    mlir::daphne::EwLogOp newMin = rewriter.create<mlir::daphne::EwLogOp>(op.getLoc(), min, scalar);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-
-mlir::daphne::RandMatrixOp pushDownRandIntoEwExp(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwExpOp op,
-                                                 mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwExpOp newMax =
-        rewriter.create<mlir::daphne::EwExpOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
-    mlir::daphne::EwExpOp newMin =
-        rewriter.create<mlir::daphne::EwExpOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-
-mlir::daphne::RandMatrixOp pushDownRandIntoEwLn(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwLnOp op,
-                                                mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwLnOp newMax =
-        rewriter.create<mlir::daphne::EwLnOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
-    mlir::daphne::EwLnOp newMin =
-        rewriter.create<mlir::daphne::EwLnOp>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-
-mlir::daphne::RandMatrixOp pushDownRandIntoEwSqrt(mlir::daphne::RandMatrixOp randOp, mlir::daphne::EwSqrtOp op,
-                                                  mlir::PatternRewriter &rewriter) {
-    auto max = randOp.getMax();
-    auto min = randOp.getMin();
-    auto height = randOp.getNumRows();
-    auto width = randOp.getNumCols();
-    auto sparsity = randOp.getSparsity();
-    auto seed = randOp.getSeed();
-    mlir::daphne::EwSqrtOp newMax = rewriter.create<mlir::daphne::EwSqrtOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
-    mlir::daphne::EwSqrtOp newMin = rewriter.create<mlir::daphne::EwSqrtOp>(
-        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
-    return rewriter.create<mlir::daphne::RandMatrixOp>(op.getLoc(), op.getResult().getType(), width, height, newMin,
-                                                       newMax, sparsity, seed);
-}
-
-mlir::daphne::SeqOp pushDownSeqIntoEwAdd(mlir::daphne::SeqOp seqOp, mlir::daphne::EwAddOp op, mlir::Value scalar,
-                                         mlir::PatternRewriter &rewriter) {
-    auto from = seqOp.getFrom();
-    auto to = seqOp.getTo();
-    auto inc = seqOp.getInc();
-
-    mlir::daphne::EwAddOp newFrom = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), from, scalar);
-    mlir::daphne::EwAddOp newTo = rewriter.create<mlir::daphne::EwAddOp>(op.getLoc(), to, scalar);
-    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
-}
-
-mlir::daphne::SeqOp pushDownSeqIntoEwSub(mlir::daphne::SeqOp seqOp, mlir::daphne::EwSubOp op, mlir::Value scalar,
-                                         mlir::PatternRewriter &rewriter) {
-    auto from = seqOp.getFrom();
-    auto to = seqOp.getTo();
-    auto inc = seqOp.getInc();
-
-    mlir::daphne::EwSubOp newFrom = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), from, scalar);
-    mlir::daphne::EwSubOp newTo = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), to, scalar);
-    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
-}
-
-mlir::daphne::SeqOp pushDownSeqIntoEwMul(mlir::daphne::SeqOp seqOp, mlir::daphne::EwMulOp op, mlir::Value scalar,
-                                         mlir::PatternRewriter &rewriter) {
-    auto from = seqOp.getFrom();
-    auto to = seqOp.getTo();
-    auto inc = seqOp.getInc();
-
-    mlir::daphne::EwMulOp newFrom = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), from, scalar);
-    mlir::daphne::EwMulOp newTo = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), to, scalar);
-    mlir::daphne::EwMulOp newInc = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), inc, scalar);
-    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, newInc);
-}
-
-mlir::daphne::SeqOp pushDownSeqIntoEwDiv(mlir::daphne::SeqOp seqOp, mlir::daphne::EwDivOp op, mlir::Value scalar,
-                                         mlir::PatternRewriter &rewriter) {
-    auto from = seqOp.getFrom();
-    auto to = seqOp.getTo();
-    auto inc = seqOp.getInc();
-
-    mlir::daphne::EwDivOp newFrom = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), from, scalar);
-    mlir::daphne::EwDivOp newTo = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), to, scalar);
-    mlir::daphne::EwDivOp newInc = rewriter.create<mlir::daphne::EwDivOp>(op.getLoc(), inc, scalar);
-    return rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, newInc);
+    ) {
+        spdlog::warn("binary");
+        return pushDownBinary(op, rewriter);
+    }
+    return false;
 }
 
 /**
@@ -538,38 +361,8 @@ mlir::daphne::SeqOp pushDownSeqIntoEwDiv(mlir::daphne::SeqOp seqOp, mlir::daphne
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
-    if (lhsFill && rhsIsSca) {
-        mlir::daphne::FillOp newFill = pushDownFillIntoEwAdd(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    if (rhsFill && lhsIsSca) {
-        mlir::daphne::FillOp newFill = pushDownFillIntoEwAdd(rhsFill, op, lhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-
-    // This will check for the rand operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (lhsRand && rhsIsSca) {
-        auto newRand = pushDownRandomIntoEwAdd(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-
-    // This will check for the seq operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
-    if (lhsSeq && rhsIsSca) {
-        auto newSeq = pushDownSeqIntoEwAdd(lhsSeq, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newSeq});
+    if (tryPushDown<mlir::daphne::EwAddOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -631,31 +424,7 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
 
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-
-    if (lhsFill && rhsIsSca) {
-        auto newFill = pushDownFillIntoEwSub(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-
-    // This will check for the rand operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (lhsRand && rhsIsSca) {
-        auto newRand = pushDownRandomIntoEwSub(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-
-    // This will check for the seq operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
-    if (lhsSeq && rhsIsSca) {
-        auto newSeq = pushDownSeqIntoEwSub(lhsSeq, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newSeq});
+    if (tryPushDown<mlir::daphne::EwSubOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -685,32 +454,10 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
 mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
-    if (lhsFill && rhsIsSca) {
-        auto newFill = pushDownFillIntoEwMul(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
 
-    // This will check for the rand operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (lhsRand && rhsIsSca) {
-        auto newRand = pushDownRandomIntoEwMul(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-
-    // This will check for the seq operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
-    if (lhsSeq && rhsIsSca) {
-        auto newSeq = pushDownSeqIntoEwMul(lhsSeq, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newSeq});
+    if (tryPushDown<mlir::daphne::EwMulOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -737,32 +484,9 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
 mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
-    if (lhsFill && rhsIsSca) {
-        auto newFill = pushDownFillIntoEwDiv(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-
-    // This will check for the rand operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (lhsRand && rhsIsSca) {
-        auto newRand = pushDownRandomIntoEwDiv(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-
-    // This will check for the seq operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
-    if (lhsSeq && rhsIsSca) {
-        auto newSeq = pushDownSeqIntoEwDiv(lhsSeq, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newSeq});
+    if (tryPushDown<mlir::daphne::EwDivOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -783,26 +507,8 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwLogOp::canonicalize(mlir::daphne::EwLogOp op, PatternRewriter &rewriter) {
-    mlir::Value lhs = op.getLhs();
-    mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    // Since the rhs is the base, the FillOp can only appear legally in lhs
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-    if (lhsFill && rhsIsSca) {
-        auto newFill = pushDownFillIntoEwLog(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
 
-    // This will check for the rand operation to push down the arithmetic inside
-    // of it
-    // Since the rhs is the base, the RandOp can only appear legally in lhs
-    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (lhsRand && rhsIsSca) {
-        auto newRand = pushDownRandomIntoEwLog(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
+    if (tryPushDown<mlir::daphne::EwLogOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -811,15 +517,7 @@ mlir::LogicalResult mlir::daphne::EwLogOp::canonicalize(mlir::daphne::EwLogOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwModOp::canonicalize(mlir::daphne::EwModOp op, PatternRewriter &rewriter) {
-    mlir::Value lhs = op.getLhs();
-    mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-    if (lhsFill && rhsIsSca) {
-        auto newFill = pushDownFillIntoEwMod(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
+    if (tryPushDown<mlir::daphne::EwModOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -829,20 +527,8 @@ mlir::LogicalResult mlir::daphne::EwModOp::canonicalize(mlir::daphne::EwModOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwAbsOp::canonicalize(mlir::daphne::EwAbsOp op, PatternRewriter &rewriter) {
-    mlir::Value arg = op.getArg();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
-    if (fill) {
-        auto newFill = pushDownFillIntoEwAbs(fill, op, rewriter);
-        rewriter.replaceOp(op, {newFill});
+    if (tryPushDown<mlir::daphne::EwAbsOp>(op, rewriter)) {
         return mlir::success();
-    }
-
-    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (rand) {
-        // AMLS_TODO: make sure both operands to rand are positive already. Or
-        // ignore this case
     }
     return mlir::failure();
 }
@@ -851,13 +537,7 @@ mlir::LogicalResult mlir::daphne::EwAbsOp::canonicalize(mlir::daphne::EwAbsOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwSignOp::canonicalize(mlir::daphne::EwSignOp op, PatternRewriter &rewriter) {
-    mlir::Value arg = op.getArg();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
-    if (fill) {
-        auto newFill = pushDownFillIntoEwSign(fill, op, rewriter);
-        rewriter.replaceOp(op, {newFill});
+    if (tryPushDown<mlir::daphne::EwSignOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -867,19 +547,7 @@ mlir::LogicalResult mlir::daphne::EwSignOp::canonicalize(mlir::daphne::EwSignOp 
  *
  */
 mlir::LogicalResult mlir::daphne::EwExpOp::canonicalize(mlir::daphne::EwExpOp op, PatternRewriter &rewriter) {
-    mlir::Value arg = op.getArg();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
-    if (fill) {
-        auto newFill = pushDownFillIntoEwExp(fill, op, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (rand) {
-        auto newRand = pushDownRandIntoEwExp(rand, op, rewriter);
-        rewriter.replaceOp(op, {newRand});
+    if (tryPushDown<mlir::daphne::EwExpOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -889,19 +557,7 @@ mlir::LogicalResult mlir::daphne::EwExpOp::canonicalize(mlir::daphne::EwExpOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwLnOp::canonicalize(mlir::daphne::EwLnOp op, PatternRewriter &rewriter) {
-    mlir::Value arg = op.getArg();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
-    if (fill) {
-        auto newFill = pushDownFillIntoEwLn(fill, op, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (rand) {
-        auto newRand = pushDownRandIntoEwLn(rand, op, rewriter);
-        rewriter.replaceOp(op, {newRand});
+    if (tryPushDown<mlir::daphne::EwLnOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -911,19 +567,7 @@ mlir::LogicalResult mlir::daphne::EwLnOp::canonicalize(mlir::daphne::EwLnOp op, 
  *
  */
 mlir::LogicalResult mlir::daphne::EwSqrtOp::canonicalize(mlir::daphne::EwSqrtOp op, PatternRewriter &rewriter) {
-    mlir::Value arg = op.getArg();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
-    if (fill) {
-        auto newFill = pushDownFillIntoEwSqrt(fill, op, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (rand) {
-        auto newRand = pushDownRandIntoEwSqrt(rand, op, rewriter);
-        rewriter.replaceOp(op, {newRand});
+    if (tryPushDown<mlir::daphne::EwSqrtOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -933,36 +577,7 @@ mlir::LogicalResult mlir::daphne::EwSqrtOp::canonicalize(mlir::daphne::EwSqrtOp 
  *
  */
 mlir::LogicalResult mlir::daphne::EwPowOp::canonicalize(mlir::daphne::EwPowOp op, PatternRewriter &rewriter) {
-    mlir::Value lhs = op.getLhs();
-    mlir::Value rhs = op.getRhs();
-    // This will check for the fill operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
-    mlir::daphne::FillOp rhsFill = rhs.getDefiningOp<mlir::daphne::FillOp>();
-    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
-    const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
-    if (lhsFill && rhsIsSca) {
-        auto newFill = pushDownFillIntoEwPow(lhsFill, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    if (rhsFill && lhsIsSca) {
-        auto newFill = pushDownFillIntoEwPow(rhsFill, op, lhs, rewriter);
-        rewriter.replaceOp(op, {newFill});
-        return mlir::success();
-    }
-    // This will check for the rand operation to push down the arithmetic inside
-    // of it
-    mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    mlir::daphne::RandMatrixOp rhsRand = rhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
-    if (lhsRand && rhsIsSca) {
-        auto newRand = pushDownRandomIntoEwPow(lhsRand, op, rhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
-        return mlir::success();
-    }
-    if (rhsRand && lhsIsSca) {
-        auto newRand = pushDownRandomIntoEwPow(rhsRand, op, lhs, rewriter);
-        rewriter.replaceOp(op, {newRand});
+    if (tryPushDown<mlir::daphne::EwPowOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
