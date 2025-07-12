@@ -21,9 +21,9 @@ using namespace mlir;
 namespace {
 struct ParForReductionDetectionPass : public PassWrapper<ParForReductionDetectionPass, OperationPass<func::FuncOp>> {
     void runOnOperation() final {
-        func::FuncOp func = getOperation();
-        func->walk([&](daphne::ParForOp parForOp) { detectReduction(parForOp); });
-        exit(-1);
+        //func::FuncOp func = getOperation();
+        //func->walk([&](daphne::ParForOp parForOp) { detectReduction(parForOp); });
+        //exit(-1);
     }
 
     func::FuncOp buildCombinerFunction(Operation *ctxOp, Value resultVal, Operation *rootCombOp, ModuleOp module,

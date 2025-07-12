@@ -37,6 +37,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include <mlir/Analysis/SliceAnalysis.h>
 
 #include <iostream>
 #include <memory>
@@ -510,6 +511,9 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
         auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
 
+        std::vector<int64_t> indexLoopCarried = {};
+        determinateIndexesOfLoopCarriedVariables(op, opBodyArgs.drop_front(1).drop_back(1), indexLoopCarried);
+
         // (ptr<ptr<i8>>, ptr<ptr<i8>>, i64, ptr<i1>) -> (void)
         auto funcType =
             LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()), {/*output=*/ptrPtrI1Ty,
@@ -520,18 +524,11 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // move first block
         mlir::Block &funcBlock = *llvmFuncOp.addEntryBlock();
         funcBlock.getOperations().splice(funcBlock.end(), op.getBodyStmt().front().getOperations());
-        
-        // Detach from old region and inline conditional blocks if present 
+
+        // Detach from old region and inline conditional blocks if present
         op.getBodyStmt().getBlocks().remove(&op.getBodyStmt().front());
         auto &blocks = op.getBodyStmt().getBlocks();
-        llvmFuncOp.getBody().getBlocks().splice(
-            llvmFuncOp.getBody().end(),
-            blocks,
-            blocks.begin(),
-            blocks.end()
-        );
-        
-        module.dump();
+        llvmFuncOp.getBody().getBlocks().splice(llvmFuncOp.getBody().end(), blocks, blocks.begin(), blocks.end());
 
         rewriter.setInsertionPointToStart(&funcBlock);
         auto locFunc = llvmFuncOp.getLoc();
@@ -540,6 +537,11 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto funcInArg = llvmFuncOp.getArgument(1);
         auto ivArg = llvmFuncOp.getArgument(2);
         auto dctxArg = llvmFuncOp.getArgument(3);
+
+        auto returnOp = llvm::dyn_cast<daphne::ReturnOp>(llvmFuncOp.getBody().back().getTerminator());
+
+        if (!returnOp || !llvm::isa<daphne::ReturnOp>(returnOp))
+            llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
 
         // handle loop induction variable
         opBodyArgs[0].replaceAllUsesWith(ivArg);
@@ -550,6 +552,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // handle other arguments
         auto args = op.getArgs();
         unsigned index = 0;
+       
         for (auto [i, blockArg] : llvm::enumerate(opBodyArgs)) {
             // number of arguments must be exactly the same as number of operands stored in args
             if (index >= args.size())
@@ -581,20 +584,32 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             }
             blockArg.replaceAllUsesWith(loaded);
 
+            // loop carried variable handling
+            auto it = std::find(indexLoopCarried.begin(), indexLoopCarried.end(), i);
+            if (it != indexLoopCarried.end()) {
+                // Position inside indexLoopCarried
+                size_t resIdx = std::distance(indexLoopCarried.begin(), it);
+
+                // determinate combiner operation
+                auto resultOp = returnOp->getOperand(resIdx);
+                resultOp.getDefiningOp()->dump();
+                auto addrIdx = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(resIdx));
+                auto gep = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, funcOutArg, ArrayRef<Value>({addrIdx}));
+
+                resultOp.replaceAllUsesWith(gep);
+
+            }
             ++index;
         }
-
+        module.dump();
+        exit(-1);
         // ********************************************************************
-        // Store results in output array as CallKernelOp prescribes.
+        // Write results in output array as CallKernelOp prescribes.
         // ********************************************************************
-        auto returnOp = llvmFuncOp.getBody().back().getTerminator();
-
-        if (!returnOp || !llvm::isa<daphne::ReturnOp>(returnOp))
-            llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
 
         rewriter.setInsertionPoint(returnOp);
         auto numRes = returnOp->getNumOperands();
-        for (auto i = 0u; i < numRes; ++i) {
+        for (auto i = 0u; i < 0; ++i) {
             auto retVal = returnOp->getOperand(i);
             auto loc = returnOp->getLoc();
             auto addrIdx = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i));
@@ -603,7 +618,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             auto llvmTy = typeConverter->convertType(retVal.getType());
             Value retValConverted = typeConverter->materializeTargetConversion(rewriter, loc, llvmTy, retVal);
 
-            rewriter.create<LLVM::StoreOp>(loc, retValConverted, gep);
+            // rewriter.create<LLVM::StoreOp>(loc, retValConverted, gep);
         }
         // Replace the old ReturnOp with operands by a new ReturnOp without
         // operands.
@@ -661,16 +676,27 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto kIdVal = rewriter.getI32IntegerAttr(KernelDispatchMapping::instance().registerKernel(funcName, op));
         auto kId = rewriter.create<mlir::arith::ConstantOp>(loc, kIdVal);
 
+        auto loopCarriedTy = daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI64Type());
+        auto loopCarriedArr =
+            rewriter.create<daphne::CreateVariadicPackOp>(loc, loopCarriedTy, indexLoopCarried.size());
+        for (auto [i, loopCarrIdx] : llvm::enumerate(indexLoopCarried)) {
+            auto attrK = rewriter.getI64IntegerAttr(i);
+            auto idxConst =
+                rewriter.create<LLVM::ConstantOp>(loc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(loopCarrIdx));
+            rewriter.create<daphne::StoreVariadicPackOp>(loc, loopCarriedArr, idxConst, attrK);
+        }
+
         std::vector<Value> kernelOperands{
-            adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, kId, adaptor.getCtx()};
-        
+            adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, loopCarriedArr, kId,
+            adaptor.getCtx()};
+
         auto resultTypes = op->getResultTypes();
         if (numRes > 0) {
             callee << "_parfor__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0], false) << "_variadic__size_t";
-            callee << "__int64_t__int64_t__int64_t__void__void";
+            callee << "__int64_t__int64_t__int64_t__void__void__int64_t";
         } else { // no results, so we need to add null ptr as output and 0 as number of results values as kernel
                  // operands
-            callee << "_parfor__void_variadic__size_t__int64_t__int64_t__int64_t__void__void";
+            callee << "_parfor__void_variadic__size_t__int64_t__int64_t__int64_t__void__void__int64_t";
             kernelOperands.insert(kernelOperands.begin(), rewriter.create<LLVM::NullOp>(loc, ptrPtrI1Ty));
             kernelOperands.insert(kernelOperands.begin() + 1,
                                   rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(0)));
@@ -680,8 +706,69 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         if (numRes > 0)
             kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
-        module.dump();
+
         return success();
+    }
+
+    Operation *getCombineOperation(Value returnVal, BlockArgument arg) const {
+        Operation *curOp = returnVal.getDefiningOp();
+        while (curOp) {
+            if (llvm::any_of(curOp->getOperands(), [&](Value operand) { return operand == arg; }))
+                return curOp;
+            bool foundNext = false;
+            for (Value operand : curOp->getOperands()) {
+                if (auto defOp = operand.getDefiningOp()) {
+                    curOp = defOp;
+                    foundNext = true;
+                    break;
+                }
+            }
+            if (!foundNext)
+                break;
+        }
+        return curOp;
+    }
+
+    void determinateIndexesOfLoopCarriedVariables(daphne::ParForOp op, mlir::Block::BlockArgListType args,
+                                                  std::vector<int64_t> &indexLoopCarried) const {
+        auto returnOp = llvm::dyn_cast<daphne::ReturnOp>(op.getBodyStmt().back().getTerminator());
+        if (!returnOp || returnOp.getNumOperands() == 0) {
+            return; // No operands to analyze, i.e. there is no reduction to conduct after parellel computation
+        }
+        for (auto [idx, arg] : llvm::enumerate(args)) {
+            Value *returnVal = nullptr;
+            if (isLoopCarried(arg, returnOp, returnVal)) {
+                if (returnVal != nullptr) {
+                    llvm::errs() << "Found loop-carried variable at index " << idx << "\n";
+                    indexLoopCarried.push_back(idx);
+                }
+            } else {
+                llvm::errs() << "Argument at index " << idx << " is not loop-carried.\n";
+            }
+        }
+    }
+
+    /**
+     * @brief Checks if the given block argument is loop-carried by checking if
+     * it is used in the return operation of the parfor body region.
+     *
+     * @param arg The block argument to check.
+     * @param returnOp The return operation of the parfor body region.
+     * @param returnVal A reference to store the value if it is loop-carried.
+     * @return true if the argument is loop-carried, false otherwise.
+     */
+    bool isLoopCarried(BlockArgument arg, daphne::ReturnOp returnOp, Value *&returnVal) const {
+        SetVector<Operation *> slice;
+        mlir::getForwardSlice(arg, &slice);
+        for (auto op : returnOp.getOperands()) {
+            if (Operation *defOp = op.getDefiningOp()) {
+                if (slice.contains(defOp)) {
+                    returnVal = &op;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 };
 

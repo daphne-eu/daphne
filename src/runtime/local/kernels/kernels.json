@@ -3611,6 +3611,10 @@
                 {
                     "type" : "void *",
                     "name": "func"
+                },
+                {
+                    "type" : "int64_t *",
+                    "name" : "lpIdxs"
                 }
             ]
         },
