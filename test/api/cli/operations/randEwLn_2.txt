@@ -1,4 +1,0 @@
-fillIntermediate = fill(-3,3,3);
-result = abs(fillIntermediate);
-
-print(result);

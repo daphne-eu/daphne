@@ -1,4 +1,0 @@
-b = rand(2,2,0,3,1.0,-1) ^ 2;
-print(max(b,9));
-print(min(b,0));
-

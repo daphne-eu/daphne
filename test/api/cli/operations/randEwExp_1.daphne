@@ -1,4 +1,0 @@
-randIntermediate = rand(2,2,2,3,1.0,7);
-result = exp(randIntermediate);
-
-print(result);
