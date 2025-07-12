@@ -15,6 +15,7 @@
  */
 
 #include "ir/daphneir/Daphne.h"
+#include "ir/daphneir/DaphnePushDownTraits.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
@@ -236,8 +237,12 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
     mlir::Value arg = op.getArg();
     mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
     mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
+
+    const bool supportsPushDown = op->template hasTrait<mlir::OpTrait::PushDown>();
+    const bool supportsPushDownLinear = op->template hasTrait<mlir::OpTrait::PushDownLinear>();
+
     // This will check for the fill operation to push down the arithmetic inside
-    if (fill) {
+    if (fill && supportsPushDown) {
         auto fillValue = fill.getArg();
         auto height = fill.getNumRows();
         auto width = fill.getNumCols();
@@ -250,7 +255,7 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
     }
     // This will check for the rand operation to push down the arithmetic inside
     // of it
-    if (rand) {
+    if (rand && supportsPushDownLinear) {
         auto max = rand.getMax();
         auto min = rand.getMin();
         auto height = rand.getNumRows();
@@ -276,9 +281,14 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
     mlir::daphne::RandMatrixOp lhsRand = lhs.getDefiningOp<mlir::daphne::RandMatrixOp>();
     mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
+
+    const bool supportsPushDown = op->template hasTrait<mlir::OpTrait::PushDown>();
+    const bool supportsPushDownLinear = op->template hasTrait<mlir::OpTrait::PushDownLinear>();
+    const bool supportsPushDownWithIntervalUpdate = op->template hasTrait<mlir::OpTrait::PushDownWithIntervalUpdate>();
+
     // This will check for the fill operation to push down the arithmetic inside
     // of it
-    if (lhsFill && rhsIsSca) {
+    if (lhsFill && rhsIsSca && supportsPushDown) {
         auto fillValue = lhsFill.getArg();
         auto height = lhsFill.getNumRows();
         auto width = lhsFill.getNumCols();
@@ -290,7 +300,7 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
     }
     // This will check for the rand operation to push down the arithmetic inside
     // of it
-    if (lhsRand && rhsIsSca) {
+    if (lhsRand && rhsIsSca && supportsPushDown) {
         auto max = lhsRand.getMax();
         auto min = lhsRand.getMin();
         auto height = lhsRand.getNumRows();
@@ -304,20 +314,30 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
         rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
         return true;
     }
+
     // This will check for the seq operation to push down the arithmetic inside
     // of it
-    if (lhsSeq && rhsIsSca) {
+    if (lhsSeq && rhsIsSca && supportsPushDownLinear) {
         auto from = lhsSeq.getFrom();
         auto to = lhsSeq.getTo();
         auto inc = lhsSeq.getInc();
 
         auto newFrom = rewriter.create<Operation>(op.getLoc(), from, rhs);
         auto newTo = rewriter.create<Operation>(op.getLoc(), to, rhs);
-        // mlir::daphne::EwMulOp newInc = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), inc, scalar);
-        auto newCombinedOpAfterPushDown =
-            rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
-        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
-        return true;
+
+        if (supportsPushDownWithIntervalUpdate) {
+            mlir::daphne::EwMulOp newInc = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), inc, rhs);
+            auto newCombinedOpAfterPushDown =
+                rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, newInc);
+            rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+            return true;
+        } else {
+
+            auto newCombinedOpAfterPushDown =
+                rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
+            rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+            return true;
+        }
     }
     return false;
 }
