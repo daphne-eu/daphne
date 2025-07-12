@@ -255,22 +255,59 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
     }
     // This will check for the rand operation to push down the arithmetic inside
     // of it
-    if (rand && supportsPushDownLinear) {
+    if (rand && supportsPushDown) {
         auto max = rand.getMax();
         auto min = rand.getMin();
         auto height = rand.getNumRows();
         auto width = rand.getNumCols();
         auto sparsity = rand.getSparsity();
         auto seed = rand.getSeed();
-        auto newMax =
-            rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
-        auto newMin =
-            rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
 
-        auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-            op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
-        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
-        return true;
+        if (supportsPushDownLinear) {
+            auto newMax =
+                rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
+            auto newMin =
+                rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
+
+            auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
+                op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+            rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+            return true;
+        }
+        // Handle the special case of RandMatrixOp and EwAbsOp which only works
+        // if the max and min are both positive (Abs is no-op) or both are
+        // negative (swap them)
+        if constexpr (std::is_same<Operation, mlir::daphne::EwAbsOp>()) {
+            auto maxValueInt = CompilerUtils::isConstant<int>(max);
+            auto minValueInt = CompilerUtils::isConstant<int>(min);
+            auto maxValueDouble = CompilerUtils::isConstant<double>(max);
+            auto minValueDouble = CompilerUtils::isConstant<double>(min);
+
+            // will be int or double. Whichever it isn't will default to 0
+            // so they can simply be added together here
+
+            auto maxValue = maxValueDouble.second + maxValueInt.second;
+            auto minValue = minValueDouble.second + minValueInt.second;
+            if (minValue >= 0 && maxValue > minValue) {
+                // simply remove Abs function
+
+                auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
+                    op.getLoc(), op.getResult().getType(), width, height, min, max, sparsity, seed);
+                rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+                return true;
+            }
+            if (minValue <= 0 && maxValue > minValue) {
+                // swap max and min
+                auto newMax =
+                    rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
+                auto newMin =
+                    rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
+                auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
+                    op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+                rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -300,7 +337,7 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
     }
     // This will check for the rand operation to push down the arithmetic inside
     // of it
-    if (lhsRand && rhsIsSca && supportsPushDown) {
+    if (lhsRand && rhsIsSca && supportsPushDown && supportsPushDownLinear) {
         auto max = lhsRand.getMax();
         auto min = lhsRand.getMin();
         auto height = lhsRand.getNumRows();
@@ -317,7 +354,7 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
 
     // This will check for the seq operation to push down the arithmetic inside
     // of it
-    if (lhsSeq && rhsIsSca && supportsPushDownLinear) {
+    if (lhsSeq && rhsIsSca && supportsPushDown && supportsPushDownLinear) {
         auto from = lhsSeq.getFrom();
         auto to = lhsSeq.getTo();
         auto inc = lhsSeq.getInc();
@@ -357,7 +394,6 @@ template <class Operation> bool tryPushDown(Operation op, mlir::PatternRewriter 
                   std::is_same<Operation, mlir::daphne::EwLogOp>() || std::is_same<Operation, mlir::daphne::EwModOp>()
 
     ) {
-        spdlog::warn("binary");
         return pushDownBinary(op, rewriter);
     }
     return false;
@@ -381,7 +417,6 @@ template <class Operation> bool tryPushDown(Operation op, mlir::PatternRewriter 
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     if (tryPushDown<mlir::daphne::EwAddOp>(op, rewriter)) {
         return mlir::success();
     }
