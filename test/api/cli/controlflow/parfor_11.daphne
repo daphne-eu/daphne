@@ -1,14 +1,5 @@
-X = rand(5, 5, 0.0, 1.0, 1, -1); 
-Y = X; 
-print(X);
-
-X[1, ] = X[1, ] * 2;
-X[2, ] = X[2, ] * 2;
-print(X);
-
-print(Y);
+X = rand(5, 5, 0, 1, 1, -1); 
 parfor(i in 1:2) {
-    Y[i, ] = Y[i, ] * 2;
-    print(Y == X);
+    X[i, ] = X[i, ] * 2;
 }
-print(Y == X);
+print(X);

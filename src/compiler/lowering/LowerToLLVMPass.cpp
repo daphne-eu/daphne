@@ -590,19 +590,15 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                 // Position inside indexLoopCarried
                 size_t resIdx = std::distance(indexLoopCarried.begin(), it);
 
-                // determinate combiner operation
+                //TODO: determinate combiner operation (kernel) and rewire kernel to be in-place operation  
                 auto resultOp = returnOp->getOperand(resIdx);
-                resultOp.getDefiningOp()->dump();
                 auto addrIdx = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(resIdx));
                 auto gep = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, funcOutArg, ArrayRef<Value>({addrIdx}));
 
                 resultOp.replaceAllUsesWith(gep);
-
             }
             ++index;
         }
-        module.dump();
-        exit(-1);
         // ********************************************************************
         // Write results in output array as CallKernelOp prescribes.
         // ********************************************************************
