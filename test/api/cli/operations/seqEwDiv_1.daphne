@@ -1,3 +1,0 @@
-result = seq(1,5,2) / 2;
-
-print(result);

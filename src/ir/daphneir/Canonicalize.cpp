@@ -17,6 +17,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/DaphnePushDownTraits.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/Builders.h"
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
 #include <util/DaphneLogger.h>
@@ -329,7 +330,8 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
         auto fillValue = lhsFill.getArg();
         auto height = lhsFill.getNumRows();
         auto width = lhsFill.getNumCols();
-        auto newOp = rewriter.create<Operation>(op.getLoc(), fillValue, rhs);
+        auto newOp = rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()),
+                                                fillValue, rhs);
         auto newCombinedOpAfterPushDown =
             rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newOp, height, width);
         rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
@@ -363,13 +365,14 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
         auto newTo = rewriter.create<Operation>(op.getLoc(), to, rhs);
 
         if (supportsPushDownWithIntervalUpdate) {
-            mlir::daphne::EwMulOp newInc = rewriter.create<mlir::daphne::EwMulOp>(op.getLoc(), inc, rhs);
+            auto newInc = rewriter.create<Operation>(op.getLoc(), rhs, inc);
+
             auto newCombinedOpAfterPushDown =
                 rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, newInc);
             rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
             return true;
-        } else {
 
+        } else {
             auto newCombinedOpAfterPushDown =
                 rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
             rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
@@ -379,6 +382,29 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
     return false;
 }
 
+/**
+ * @brief PushDown optimizations will try to optimize aways intermediate results
+ * when function results are used with arithmetic operations.
+ * An example is `fill(2,2,3) + 3` which will evaluate to
+ * 3,3
+ * 3,3
+ *
+ * and the applies +3 to each element of the intermediate individually leading to
+ *
+ * 6,6
+ * 6,6
+ *
+ * Instead we can push the math inside the function and have it evaluate first:
+ *
+ * fill(2,2,3 + 3) -> fill(2,2,6)
+ *
+ * which directly fills the matrix
+ *
+ * 6,6
+ * 6,6
+ *
+ * and skips the intermediate.
+ */
 template <class Operation> bool tryPushDown(Operation op, mlir::PatternRewriter &rewriter) {
     if constexpr (std::is_same<Operation, mlir::daphne::EwAbsOp>() ||
                   std::is_same<Operation, mlir::daphne::EwExpOp>() || std::is_same<Operation, mlir::daphne::EwLnOp>() ||
