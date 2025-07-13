@@ -37,6 +37,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include <mlir/Analysis/SliceAnalysis.h>
 
 #include <iostream>
@@ -529,7 +530,8 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         op.getBodyStmt().getBlocks().remove(&op.getBodyStmt().front());
         auto &blocks = op.getBodyStmt().getBlocks();
         llvmFuncOp.getBody().getBlocks().splice(llvmFuncOp.getBody().end(), blocks, blocks.begin(), blocks.end());
-
+        llvmFuncOp->setAttr("parfor_inplace_rewrite_needed", rewriter.getUnitAttr());
+        
         rewriter.setInsertionPointToStart(&funcBlock);
         auto locFunc = llvmFuncOp.getLoc();
 
@@ -587,7 +589,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             ++index;
         }
         // ********************************************************************
-        // Write results in output array as CallKernelOp prescribes.
+        // Write results in output array as CallKernelOp prescribes.          *
         // ********************************************************************
 
         rewriter.setInsertionPoint(returnOp);
@@ -607,10 +609,11 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // operands.
         rewriter.replaceOpWithNewOp<daphne::ReturnOp>(returnOp);
 
-        // *****************************************************************************
-        // Create a ptr<ptr<i1>> array containg all outer scope operands of parfor op
-        // which is passed to the function created above as funcInArg and funcOutArg.
-        // *****************************************************************************
+        // *******************************************************************************
+        // * Create a ptr<ptr<i1>> array containg all outer scope operands of parfor op. *
+        // * which is passed to the function created above as funcInArg and funcOutArg.  *
+        // *******************************************************************************
+        
         // TODO: alloca must probably be added on top of function (see comment about Alloca on top of the current file )
         // TODO: alternative - the same logic can be probably achieved by store variadic pack,
         // but this will also affect the dereference logic above.
@@ -752,6 +755,41 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             }
         }
         return false;
+    }
+};
+
+
+class ParForOpInPlaceRewrite : public OpRewritePattern<LLVM::LLVMFuncOp> {
+  public:
+    using OpRewritePattern::OpRewritePattern;
+
+    LogicalResult matchAndRewrite(LLVM::LLVMFuncOp op, PatternRewriter &rewriter) const override {
+        // apply the pattern only on parfor loop body functions 
+        // which are already in completely in llvm dialect
+        if (!op.getName().startswith("parfor_body_") || !isBodyInLLVM(op))
+            return failure();
+        
+        // trace back all values loaded into the output array 
+
+
+        // we are done, so we remove the attribute to make the func legal 
+        op->removeAttr("parfor_inplace_rewrite_needed");
+        return success();
+    }
+
+    bool isBodyInLLVM(LLVM::LLVMFuncOp funcOp) const {
+        bool containsDaphneOps = false;
+        
+        funcOp.walk([&](mlir::Operation *tra) {
+            auto *dialect = tra->getDialect();
+            if (!llvm::isa<mlir::LLVM::LLVMDialect>(dialect)) {
+                containsDaphneOps = true;
+                return mlir::WalkResult::interrupt();
+            }
+            return mlir::WalkResult::advance();
+        });
+
+        return containsDaphneOps; 
     }
 };
 
@@ -1171,6 +1209,7 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
+    RewritePatternSet postConversionPatterns(&getContext());
 
     LowerToLLVMOptions llvmOptions(&getContext());
     // llvmOptions.useBarePtrCallConv = true;
@@ -1212,6 +1251,13 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
 
     target.addLegalOp<ModuleOp>();
+    // par for lowering rely partially on fully conversion to llvm 
+    // to be able to rewrite CallOps for Kernel to perform in-place updates 
+   target.addDynamicallyLegalOp<LLVM::LLVMFuncOp>([](LLVM::LLVMFuncOp func) {
+        // Legal if rewritten already
+        return !func->hasAttr("parfor_inplace_rewrite_needed");
+    });
+
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
     patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(typeConverter, &getContext());
@@ -1219,7 +1265,9 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     patterns.insert<ConstantOpLowering, ReturnOpLowering, StoreVariadicPackOpLowering, GenericCallOpLowering,
                     MapOpLowering>(&getContext());
 
+    patterns.insert<ParForOpInPlaceRewrite>(&getContext());
     patterns.insert<ParForOpLowering>(typeConverter, &getContext());
+    
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.
     if (failed(applyFullConversion(module, target, std::move(patterns))))
