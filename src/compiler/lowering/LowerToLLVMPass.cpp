@@ -584,19 +584,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             }
             blockArg.replaceAllUsesWith(loaded);
 
-            // loop carried variable handling
-            auto it = std::find(indexLoopCarried.begin(), indexLoopCarried.end(), i);
-            if (it != indexLoopCarried.end()) {
-                // Position inside indexLoopCarried
-                size_t resIdx = std::distance(indexLoopCarried.begin(), it);
-
-                //TODO: determinate combiner operation (kernel) and rewire kernel to be in-place operation  
-                auto resultOp = returnOp->getOperand(resIdx);
-                auto addrIdx = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(resIdx));
-                auto gep = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, funcOutArg, ArrayRef<Value>({addrIdx}));
-
-                resultOp.replaceAllUsesWith(gep);
-            }
             ++index;
         }
         // ********************************************************************
@@ -605,16 +592,16 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
 
         rewriter.setInsertionPoint(returnOp);
         auto numRes = returnOp->getNumOperands();
-        for (auto i = 0u; i < 0; ++i) {
+        for (auto i = 0u; i < numRes; ++i) {
             auto retVal = returnOp->getOperand(i);
             auto loc = returnOp->getLoc();
+
             auto addrIdx = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i));
             auto gep = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, funcOutArg, ArrayRef<Value>({addrIdx}));
-
             auto llvmTy = typeConverter->convertType(retVal.getType());
             Value retValConverted = typeConverter->materializeTargetConversion(rewriter, loc, llvmTy, retVal);
 
-            // rewriter.create<LLVM::StoreOp>(loc, retValConverted, gep);
+            rewriter.create<LLVM::StoreOp>(loc, retValConverted, gep);
         }
         // Replace the old ReturnOp with operands by a new ReturnOp without
         // operands.
