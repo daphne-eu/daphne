@@ -1,0 +1,7 @@
+
+//Test for the simplification rewrite :  (X%*%Y)[7,3] → X[7,]%*%Y[,3]
+m1 = rand(10, 8, 10.0, 20.0, 1.0, 1);
+m2 = rand(8, 5, 10.0, 20.0, 1.0, 1);
+m3 = (m1 @ m2)[7, 3];
+print(m3);
+

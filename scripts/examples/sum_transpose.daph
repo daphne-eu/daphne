@@ -1,0 +1,7 @@
+
+// Test for simplification rewrite sum(t(x)) -> sum(X)
+
+// (row ,col ,min ,max ,sparsity (%), seed)
+m1 = rand(4, 3, 100.0, 300.0, 1.0, 4);
+sum_m1 = sum(transpose(m1));
+print(sum_m1);

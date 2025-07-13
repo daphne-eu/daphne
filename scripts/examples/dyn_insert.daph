@@ -1,0 +1,16 @@
+
+//Test for the simplification rewrite X[a:b, c:d] = Y -> X=Y if dims(X) = dims(Y)
+
+//Simplification cannot be applied
+X = fill(0.0, 7, 8);
+Y = rand(3, 4, 10.0, 100.0, 1.0, 2);
+X[0:3, 2:6] = Y;
+print(Y);
+print(X);
+
+//with simplification
+Q = fill(0.0, 7, 8);
+Z = rand(7, 8, 10.0, 100.0, 1.0, 3);
+Q[0:7, 0:8] = Z;
+print(Z);
+print(Q);

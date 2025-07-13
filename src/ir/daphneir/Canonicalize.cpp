@@ -19,6 +19,276 @@
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
 
+/**
+ * @brief Canonicalizes:
+ 1) sumAll(ewAdd(X, Y)) to ewAdd(sumAll(X), sumAll(Y))
+ 2) sumAll(transpose(X)) to sumAll(X)
+ 3) sum(lambda * X) -> lambda * sum(X)
+ 4) trace(X @ Y) = sum(diagVector(X @ Y)) → sum(X * transpose(Y))
+
+ */
+mlir::LogicalResult mlir::daphne::AllAggSumOp::canonicalize(mlir::daphne::AllAggSumOp op,
+                                                            mlir::PatternRewriter &rewriter) {
+    mlir::Value input = op.getOperand();
+    mlir::Location location = op.getLoc();
+    mlir::Type result_type = op.getResult().getType(); // This is the scalar type of the final sum
+
+    // Type checking for scalars
+    auto isScalar = [](mlir::Type t) {
+        return !t.isa<mlir::daphne::MatrixType>() && !t.isa<mlir::daphne::FrameType>() &&
+               !t.isa<mlir::daphne::UnknownType>();
+    };
+
+    // Rule 1: sumAll(ewAdd(X, Y)) to ewAdd(sumAll(X), sumAll(Y))
+    if (auto addOp = input.getDefiningOp<mlir::daphne::EwAddOp>()) {
+        // Ensure inputs to sumAll are matrices
+        if (!addOp.getLhs().getType().isa<mlir::daphne::MatrixType>() ||
+            !addOp.getRhs().getType().isa<mlir::daphne::MatrixType>()) {
+            return mlir::failure();
+        }
+
+        mlir::Value lSum = rewriter.create<mlir::daphne::AllAggSumOp>(location, result_type, addOp.getLhs());
+        mlir::Value rSum = rewriter.create<mlir::daphne::AllAggSumOp>(location, result_type, addOp.getRhs());
+
+        // Check if the results of the inner sums are indeed scalars (they should be)
+        if (!isScalar(lSum.getType()) || !isScalar(rSum.getType())) {
+            return mlir::failure(); // This indicates an unexpected type from AllAggSumOp
+        }
+
+        // Perform scalar addition based on type
+        if (lSum.getType().isF64() || lSum.getType().isF32()) {
+            mlir::Value scalar_add = rewriter.create<mlir::arith::AddFOp>(location, result_type, lSum, rSum);
+            rewriter.replaceOp(op, scalar_add);
+            return mlir::success();
+        }
+
+        if (lSum.getType().isa<mlir::IntegerType>()) {
+            mlir::Value scalar_add = rewriter.create<mlir::arith::AddIOp>(location, result_type, lSum, rSum);
+            rewriter.replaceOp(op, scalar_add);
+            return mlir::success();
+        }
+        return mlir::failure();
+    }
+    // Rule 2: sumAll(transpose(X)) to sumAll(X)
+    else if (auto transOp = input.getDefiningOp<mlir::daphne::TransposeOp>()) {
+        mlir::Value input_tr = transOp.getArg();
+        // Ensure input to sumAll is a matrix
+        if (!input_tr.getType().isa<mlir::daphne::MatrixType>()) {
+            return mlir::failure(); // Input to Transpose (and thus to sumAll) must be a matrix
+        }
+        mlir::Value simplf_sumOftranspose = rewriter.create<mlir::daphne::AllAggSumOp>(location, result_type, input_tr);
+        rewriter.replaceOp(op, simplf_sumOftranspose);
+        return mlir::success();
+    }
+    // Rule 3: sum(lambda * X) -> lambda * sum(X)
+    else if (auto lambdaMul = input.getDefiningOp<mlir::daphne::EwMulOp>()) {
+        mlir::Value left_o = lambdaMul.getLhs();
+        mlir::Value right_o = lambdaMul.getRhs();
+
+        mlir::Value scalarOperand;
+        mlir::Value matrixOperand;
+
+        bool lhsIsSca = isScalar(left_o.getType());
+        bool rhsIsSca = isScalar(right_o.getType());
+        bool lhsIsContainer = left_o.getType().isa<mlir::daphne::MatrixType>();
+        bool rhsIsContainer = right_o.getType().isa<mlir::daphne::MatrixType>();
+
+        if (lhsIsSca && rhsIsContainer) {
+            scalarOperand = left_o;
+            matrixOperand = right_o;
+        } else if (rhsIsSca && lhsIsContainer) {
+            scalarOperand = right_o;
+            matrixOperand = left_o;
+        } else {
+            return mlir::failure();
+        }
+
+        mlir::Type matrixElementType = matrixOperand.getType().cast<mlir::daphne::MatrixType>().getElementType();
+        mlir::Value innerSum = rewriter.create<mlir::daphne::AllAggSumOp>(location, result_type, matrixOperand);
+
+        // Ensure innerSum result is scalar
+        if (!isScalar(innerSum.getType())) {
+            return mlir::failure();
+        }
+
+        // Type checking for multiplication
+        mlir::Type scalarOpType = scalarOperand.getType();
+        mlir::Type innerSumType = innerSum.getType();
+        mlir::Value finalScalarOperand = scalarOperand;
+        mlir::Value finalInnerSum = innerSum;
+
+        if ((scalarOpType.isF32() || scalarOpType.isF64()) && innerSumType.isa<mlir::IntegerType>()) {
+
+            finalInnerSum = rewriter.create<mlir::arith::SIToFPOp>(location, scalarOpType, innerSum);
+
+        } else if (scalarOpType.isa<mlir::IntegerType>() && (innerSumType.isF32() || innerSumType.isF64())) {
+
+            finalScalarOperand = rewriter.create<mlir::arith::SIToFPOp>(location, innerSumType, scalarOperand);
+        }
+
+        if (finalScalarOperand.getType().isF32() || finalScalarOperand.getType().isF64()) {
+            mlir::Value newMul =
+                rewriter.create<mlir::arith::MulFOp>(location, result_type, finalScalarOperand, finalInnerSum);
+            rewriter.replaceOp(op, newMul);
+            return mlir::success();
+        } else if (finalScalarOperand.getType().isa<mlir::IntegerType>()) { // Corrected
+            mlir::Value newMul =
+                rewriter.create<mlir::arith::MulIOp>(location, result_type, finalScalarOperand, finalInnerSum);
+            rewriter.replaceOp(op, newMul);
+            return mlir::success();
+        }
+        return mlir::failure(); // Unsupported type combination for multiplication
+    }
+    // Rule 4: trace(X @ Y) = sum(diagVector(X @ Y)) -> sum(X * transpose(Y))
+    else if (auto diagVec = input.getDefiningOp<mlir::daphne::DiagVectorOp>()) {
+        mlir::Value input_dV = diagVec.getOperand(); // This should be a matrix (result of MatMul)
+        if (auto matMul = input_dV.getDefiningOp<mlir::daphne::MatMulOp>()) {
+            mlir::Value lhs = matMul.getLhs();
+            mlir::Value rhs = matMul.getRhs();
+
+            if (!lhs.getType().isa<mlir::daphne::MatrixType>() || !rhs.getType().isa<mlir::daphne::MatrixType>()) {
+                return mlir::failure();
+            }
+
+            mlir::Value t_rhs = rewriter.create<mlir::daphne::TransposeOp>(location, rhs.getType(), rhs);
+
+            mlir::Type ewMulResultType = lhs.getType();
+            if (!ewMulResultType.isa<mlir::daphne::MatrixType>()) {
+                return mlir::failure(); // EwMul should produce a matrix
+            }
+
+            mlir::Value ewMul_m = rewriter.create<mlir::daphne::EwMulOp>(location, ewMulResultType, lhs, t_rhs);
+            mlir::Value simplifiedSum = rewriter.create<mlir::daphne::AllAggSumOp>(location, result_type, ewMul_m);
+
+            rewriter.replaceOp(op, simplifiedSum);
+            return mlir::success();
+        }
+    }
+
+    return mlir::failure(); // No matching canonicalization rule found
+}
+
+/**
+* @brief Canonicalizes:
+1)(X%*%Y)[7,3] → X[7,]%*%Y[,3]
+
+*/
+mlir::LogicalResult mlir::daphne::SliceColOp::canonicalize(mlir::daphne::SliceColOp op,
+                                                           mlir::PatternRewriter &rewriter) {
+
+    auto sliceRowOp = op.getOperand(0).getDefiningOp<mlir::daphne::SliceRowOp>();
+    if (!sliceRowOp)
+        return mlir::failure();
+
+    auto matMulOp = sliceRowOp.getOperand(0).getDefiningOp<mlir::daphne::MatMulOp>();
+    if (!matMulOp)
+        return mlir::failure();
+
+    mlir::Value X = matMulOp.getLhs();
+    mlir::Value Y = matMulOp.getRhs();
+
+    mlir::Value i = sliceRowOp.getOperand(1);
+    mlir::Value i1 = sliceRowOp.getOperand(2);
+    mlir::Value j = op.getOperand(1);
+    mlir::Value j1 = op.getOperand(2);
+
+    mlir::Value t_X = matMulOp.getOperand(2);
+    mlir::Value t_Y = matMulOp.getOperand(3);
+
+    // Check to see whether any of the inputs of matMulOp is a transpose
+    bool isTransposedX = false;
+    bool isTransposedY = false;
+
+    if (auto c_X = t_X.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        isTransposedX = c_X.getValue().cast<mlir::BoolAttr>().getValue();
+    }
+
+    if (auto c_Y = t_Y.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        isTransposedY = c_Y.getValue().cast<mlir::BoolAttr>().getValue();
+    }
+
+    mlir::Value row;
+    mlir::Value col;
+
+    // Control flow for different types of inputs
+    if (isTransposedX && isTransposedY) {
+        row = rewriter.create<mlir::daphne::SliceColOp>(op.getLoc(), X.getType(), X, i, i1);
+        col = rewriter.create<mlir::daphne::SliceRowOp>(op.getLoc(), Y.getType(), Y, j, j1);
+    } else if (!isTransposedX && isTransposedY) {
+        row = rewriter.create<mlir::daphne::SliceColOp>(op.getLoc(), X.getType(), X, i, i1);
+        col = rewriter.create<mlir::daphne::SliceColOp>(op.getLoc(), Y.getType(), Y, j, j1);
+    } else if (isTransposedX && !isTransposedY) {
+        row = rewriter.create<mlir::daphne::SliceRowOp>(op.getLoc(), X.getType(), X, i, i1);
+        col = rewriter.create<mlir::daphne::SliceRowOp>(op.getLoc(), Y.getType(), Y, j, j1);
+    } else {
+        row = rewriter.create<mlir::daphne::SliceRowOp>(op.getLoc(), X.getType(), X, i, i1);
+        col = rewriter.create<mlir::daphne::SliceColOp>(op.getLoc(), Y.getType(), Y, j, j1);
+    }
+
+    auto falseAttr = rewriter.getBoolAttr(false);
+    auto falseConst = rewriter.create<mlir::daphne::ConstantOp>(op.getLoc(), rewriter.getI1Type(), falseAttr);
+
+    auto newMatMul = rewriter.create<mlir::daphne::MatMulOp>(op.getLoc(), op.getResult().getType(), row, col,
+                                                             falseConst, falseConst);
+
+    rewriter.replaceOp(op, newMatMul.getResult());
+    return mlir::success();
+}
+/**
+* @brief Canonicalizes:
+1)X[a:b, c:d] = Y -> X=Y if dims(X) = dims(Y)
+//only for matrices with matching element types
+
+*/
+mlir::LogicalResult mlir::daphne::InsertRowOp::canonicalize(mlir::daphne::InsertRowOp op,
+                                                            mlir::PatternRewriter &rewriter) {
+
+    auto insertCol = op.getIns().getDefiningOp<mlir::daphne::InsertColOp>();
+    if (!insertCol) {
+        return mlir::failure();
+    }
+
+    auto sliceRow = insertCol.getArg().getDefiningOp<mlir::daphne::SliceRowOp>();
+    if (!sliceRow) {
+        return mlir::failure();
+    }
+
+    mlir::Value sliceInput = sliceRow.getSource();   // X
+    mlir::Value insertColInput = insertCol.getIns(); // Y
+    if (!sliceInput.getType().isa<mlir::daphne::MatrixType>() ||
+        !insertColInput.getType().isa<mlir::daphne::MatrixType>()) {
+        return mlir::failure();
+    }
+
+    auto sliceType = sliceInput.getType().dyn_cast<mlir::daphne::MatrixType>();
+    auto insertColInputType = insertColInput.getType().dyn_cast<mlir::daphne::MatrixType>();
+    auto opResultType = op.getResult().getType().dyn_cast<mlir::daphne::MatrixType>();
+
+    if (!sliceType || !insertColInputType || !opResultType) {
+        return mlir::failure();
+    }
+
+    if (sliceType.getElementType() != insertColInputType.getElementType()) {
+        return mlir::failure();
+    }
+
+    int64_t numRows_X = sliceType.getNumRows();
+    int64_t numCols_X = sliceType.getNumCols();
+    int64_t numRows_Y = insertColInputType.getNumRows();
+    int64_t numCols_Y = insertColInputType.getNumCols();
+
+    if (numRows_X == -1 || numCols_X == -1 || numRows_Y == -1 || numCols_Y == -1) {
+        return mlir::failure();
+    }
+
+    if (numRows_X != numRows_Y || numCols_X != numCols_Y) {
+        return mlir::failure();
+    }
+
+    rewriter.replaceOp(op, insertColInput);
+    return mlir::success();
+}
+
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
                                                                      mlir::PatternRewriter &rewriter) {
     // // Find duplicate inputs
