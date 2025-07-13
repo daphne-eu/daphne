@@ -422,7 +422,7 @@ class SpecializeGenericFunctionsPass : public PassWrapper<SpecializeGenericFunct
                     } else { // udfReturnsScalar does not match funcResTy
                         throw ErrorHandler::compilerError(
                             mapOp.getOperation(), "SpecializeGenericFunctionsPass",
-                            "map parameter udfReturnsScalar does not match the result of the provided function.");
+                            "map parameter udfReturnsScalar does not match the output type of the provided function.");
                     }
                 }
 

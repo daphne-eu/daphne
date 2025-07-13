@@ -296,7 +296,6 @@ The following built-in functions all follow the same scheme:
     Full aggregation over all elements of the matrix `arg` using aggregation function `agg` (see table below).
     Returns a scalar.
 
-// TODO(#520)
 - **`agg`**`(arg:matrix, axis:si64)`
 
     Row or column aggregation over a *(n x m)* matrix `arg` using aggregation function `agg` (see table below).
@@ -330,6 +329,23 @@ The following built-in functions all follow the same scheme:
 | `cumProd` | cumulative product |
 | `cumMin` | cumulative minimum |
 | `cumMax` | cumulative maximum |
+
+## Map
+
+Standard element-wise mapping, as well as row- and column-wise mapping is supported.
+
+- **`map`**`(arg:matrix, func:str)`
+
+    Element-wise mapping over a *(n x m)* matrix `arg` using a user-defined function `func` written in DaphneDSL. Applies the given UDF to each element of the given matrix.
+
+- **`map`**`(arg:matrix, func:str, axis:si64[, udfReturnsScalar:bool])`
+
+    Row- or column-wise mapping over a *(n x m)* matrix `arg` using a user-defined function `func` written in DaphneDSL. Applies the given UDF to each row/column of the given matrix. If the input of the UDF is a row matrix, the output can be a row or a scalar; if the input is a column matrix, the output can be a column or a scalar.
+    
+    - `axis` == 0: Map an entire row of the input matrix to an entire row of the output matrix; the result is a *(n x ?)* matrix
+    - `axis` == 1: Map an entire column of the input matrix to an entire column of the output matrix; the result is a *(? x m)* matrix
+    - `udfReturnsScalar` == false (optional): The given UDF `func` returns a matrix (default for row-/column-wise map), must match the UDFs output type; the result is as previously described
+    - `udfReturnsScalar` == true: The given UDF `func` returns a scalar; the result is a *(n x 1)* (column) or matrix *(1 x m)* (row) matrix (depending on `axis`)
 
 ## Reorganization
 
