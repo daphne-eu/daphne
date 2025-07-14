@@ -531,7 +531,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto &blocks = op.getBodyStmt().getBlocks();
         llvmFuncOp.getBody().getBlocks().splice(llvmFuncOp.getBody().end(), blocks, blocks.begin(), blocks.end());
         llvmFuncOp->setAttr("parfor_inplace_rewrite_needed", rewriter.getUnitAttr());
-        
+
         rewriter.setInsertionPointToStart(&funcBlock);
         auto locFunc = llvmFuncOp.getLoc();
 
@@ -539,11 +539,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto funcInArg = llvmFuncOp.getArgument(1);
         auto ivArg = llvmFuncOp.getArgument(2);
         auto dctxArg = llvmFuncOp.getArgument(3);
-
-        auto returnOp = llvm::dyn_cast<daphne::ReturnOp>(llvmFuncOp.getBody().back().getTerminator());
-
-        if (!returnOp || !llvm::isa<daphne::ReturnOp>(returnOp))
-            llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
 
         // handle loop induction variable
         opBodyArgs[0].replaceAllUsesWith(ivArg);
@@ -554,7 +549,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // handle other arguments
         auto args = op.getArgs();
         unsigned index = 0;
-       
+
         for (auto [i, blockArg] : llvm::enumerate(opBodyArgs)) {
             // number of arguments must be exactly the same as number of operands stored in args
             if (index >= args.size())
@@ -591,6 +586,10 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // ********************************************************************
         // Write results in output array as CallKernelOp prescribes.          *
         // ********************************************************************
+        auto returnOp = llvm::dyn_cast<daphne::ReturnOp>(llvmFuncOp.getBody().back().getTerminator());
+
+        if (!returnOp || !llvm::isa<daphne::ReturnOp>(returnOp))
+            llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
 
         rewriter.setInsertionPoint(returnOp);
         auto numRes = returnOp->getNumOperands();
@@ -613,7 +612,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // * Create a ptr<ptr<i1>> array containg all outer scope operands of parfor op. *
         // * which is passed to the function created above as funcInArg and funcOutArg.  *
         // *******************************************************************************
-        
+
         // TODO: alloca must probably be added on top of function (see comment about Alloca on top of the current file )
         // TODO: alternative - the same logic can be probably achieved by store variadic pack,
         // but this will also affect the dereference logic above.
@@ -758,38 +757,37 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
     }
 };
 
-
 class ParForOpInPlaceRewrite : public OpRewritePattern<LLVM::LLVMFuncOp> {
   public:
     using OpRewritePattern::OpRewritePattern;
 
     LogicalResult matchAndRewrite(LLVM::LLVMFuncOp op, PatternRewriter &rewriter) const override {
-        // apply the pattern only on parfor loop body functions 
-        // which are already in completely in llvm dialect
-        if (!op.getName().startswith("parfor_body_") || !isBodyInLLVM(op))
+        // Apply the pattern only on parfor loop body functions
+        // where CallKernelOps are completely lowered.
+        if (!op.getName().startswith("parfor_body_") || hasUnconvertedKernelCalls(op))
             return failure();
+
+        // Trace back all values loaded into the output array.
+        // Then rewire outputs of last kernel calls to the respective output of the function.
         
-        // trace back all values loaded into the output array 
-
-
-        // we are done, so we remove the attribute to make the func legal 
+        
+        // we are done, so we remove the attribute to make the func legal
         op->removeAttr("parfor_inplace_rewrite_needed");
         return success();
     }
 
-    bool isBodyInLLVM(LLVM::LLVMFuncOp funcOp) const {
-        bool containsDaphneOps = false;
-        
-        funcOp.walk([&](mlir::Operation *tra) {
-            auto *dialect = tra->getDialect();
-            if (!llvm::isa<mlir::LLVM::LLVMDialect>(dialect)) {
-                containsDaphneOps = true;
+    bool hasUnconvertedKernelCalls(LLVM::LLVMFuncOp funcOp) const {
+        bool foundUnconverted = false;
+
+        funcOp.walk([&](mlir::Operation *op) {
+            if (llvm::isa<daphne::CallKernelOp>(op)) {
+                foundUnconverted = true;
                 return mlir::WalkResult::interrupt();
             }
             return mlir::WalkResult::advance();
         });
 
-        return containsDaphneOps; 
+        return foundUnconverted;
     }
 };
 
@@ -1251,9 +1249,9 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
 
     target.addLegalOp<ModuleOp>();
-    // par for lowering rely partially on fully conversion to llvm 
-    // to be able to rewrite CallOps for Kernel to perform in-place updates 
-   target.addDynamicallyLegalOp<LLVM::LLVMFuncOp>([](LLVM::LLVMFuncOp func) {
+    // par for lowering rely partially on fully conversion to llvm
+    // to be able to rewrite CallOps for Kernel to perform in-place updates
+    target.addDynamicallyLegalOp<LLVM::LLVMFuncOp>([](LLVM::LLVMFuncOp func) {
         // Legal if rewritten already
         return !func->hasAttr("parfor_inplace_rewrite_needed");
     });
@@ -1267,7 +1265,7 @@ void DaphneLowerToLLVMPass::runOnOperation() {
 
     patterns.insert<ParForOpInPlaceRewrite>(&getContext());
     patterns.insert<ParForOpLowering>(typeConverter, &getContext());
-    
+
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.
     if (failed(applyFullConversion(module, target, std::move(patterns))))
