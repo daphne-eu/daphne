@@ -46,13 +46,19 @@ void parfor(DTRes **outputs, size_t numOutputs, int64_t from, int64_t to, int64_
     auto outs = reinterpret_cast<void **>(outputs);
     // create initial buffer for outputs containing the
     if (step > 0) {
-        // #pragma omp parallel for
+#ifdef PARALLEL_PARFOR
+        printf("USE PARALLELIZATION");
+#pragma omp parallel for
+#endif
         for (int64_t i = from; i <= to; i += step) {
             printf("[parforLoop] Iteration i = %ld\n", i);
             body(outs, ins, i, ctx);
         }
     } else {
-        // #pragma omp parallel for
+#ifdef PARALLEL_PARFOR
+        printf("USE PARALLELIZATION");
+#pragma omp parallel for
+#endif
         for (int64_t i = from; i >= to; i += step) {
             printf("[parforLoop] Iteration i = %ld\n", i);
             body(outs, ins, i, ctx);
