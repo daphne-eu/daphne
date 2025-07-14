@@ -769,8 +769,7 @@ class ParForOpInPlaceRewrite : public OpRewritePattern<LLVM::LLVMFuncOp> {
 
         // Trace back all values loaded into the output array.
         // Then rewire outputs of last kernel calls to the respective output of the function.
-        
-        
+
         // we are done, so we remove the attribute to make the func legal
         op->removeAttr("parfor_inplace_rewrite_needed");
         return success();
@@ -1251,10 +1250,10 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     target.addLegalOp<ModuleOp>();
     // par for lowering rely partially on fully conversion to llvm
     // to be able to rewrite CallOps for Kernel to perform in-place updates
-    target.addDynamicallyLegalOp<LLVM::LLVMFuncOp>([](LLVM::LLVMFuncOp func) {
-        // Legal if rewritten already
-        return !func->hasAttr("parfor_inplace_rewrite_needed");
-    });
+    // target.addDynamicallyLegalOp<LLVM::LLVMFuncOp>([](LLVM::LLVMFuncOp func) {
+    // Legal if rewritten already
+    // return !func->hasAttr("parfor_inplace_rewrite_needed");
+    //});
 
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
@@ -1263,7 +1262,7 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     patterns.insert<ConstantOpLowering, ReturnOpLowering, StoreVariadicPackOpLowering, GenericCallOpLowering,
                     MapOpLowering>(&getContext());
 
-    patterns.insert<ParForOpInPlaceRewrite>(&getContext());
+    // patterns.insert<ParForOpInPlaceRewrite>(&getContext());
     patterns.insert<ParForOpLowering>(typeConverter, &getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This

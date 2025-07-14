@@ -87,11 +87,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     context_.disableMultithreading();
     mlir::PassManager pm(&context_);
     pm.enableIRPrinting();
-  
+
     if (userConfig_.explain_parsing)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
 
-     
     pm.addPass(mlir::daphne::createPrintIRPass("IR after parfor lowering:"));
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
@@ -115,8 +114,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     // run only three iterations of both passes (see #173).
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
     pm.addPass(mlir::createCanonicalizerPass());
-   
-    
+
     if (userConfig_.use_columnar) {
         // Rewrite certain matrix/frame ops from linear/relational algebra to columnar ops from column algebra.
         pm.addPass(mlir::daphne::createRewriteToColumnarOpsPass());
@@ -124,7 +122,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         // Simplify the IR.
         pm.addPass(mlir::createCanonicalizerPass());
-       
+
         // Remove unused ops after simplifications.
         // TODO The CSE pass seems to eliminate only "one row" of dead code at a time, so we need it as many times as
         // the longest chain of ops we reduce; how to apply CSE until a fixpoint?
@@ -174,7 +172,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createProfilingPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createParForReductionDetectionPass());    
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createParForReductionDetectionPass());
 #ifdef USE_CUDA
     if (userConfig_.use_cuda)
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
@@ -205,6 +203,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addPass(mlir::createConvertSCFToCFPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
     pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
+    pm.addNestedPass<mlir::LLVM::LLVMFuncOp>(mlir::daphne::createLinkParForOutputPass());
     pm.addPass(mlir::createReconcileUnrealizedCastsPass());
     if (userConfig_.explain_llvm)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));

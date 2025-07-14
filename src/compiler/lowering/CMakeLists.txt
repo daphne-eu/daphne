@@ -37,6 +37,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     TransposeOpLowering.cpp
     SparsityExploitationPass.cpp
     ParForReductionDetectionPass.cpp
+    LinkParForOutputPass.cpp
     DEPENDS
     MLIRDaphneOpsIncGen
     MLIRDaphneTransformsIncGen
