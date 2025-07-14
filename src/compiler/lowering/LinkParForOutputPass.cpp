@@ -27,6 +27,7 @@
 
 using namespace mlir;
 
+//TODO: REFACTORE ME 
 namespace {
 struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, OperationPass<LLVM::LLVMFuncOp>> {
     void runOnOperation() override {
@@ -41,8 +42,8 @@ struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, Operation
             return;
 
         // find all GEPOps that have the return arg as their base pointer
-        auto blockArgs = blocks.front().getArguments();
-        auto funcOutArg = blockArgs[0]; // output pointer is always passed first for kernels
+         // output pointer is always passed first for kernels
+        auto funcOutArg = blocks.front().getArgument(0);
 
         std::vector<LLVM::GEPOp> outGEPOps;
         for (auto *user : funcOutArg.getUsers()) {
@@ -74,50 +75,37 @@ struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, Operation
             auto retValDef2 = retValDef->getOperand(0).getDefiningOp();
             // load
             auto load = retValDef2->getOperand(0).getDefiningOp();
-            // pointer
+            // find the call to last kernel 
             LLVM::CallOp lastUpdate = nullptr;
             auto ptr = load->getOperand(0);
             for (auto usr : ptr.getUsers()) {
-                if (lastUpdate = llvm::dyn_cast<LLVM::CallOp>(usr)) {
+                if ((lastUpdate = llvm::dyn_cast<LLVM::CallOp>(usr))) {
                     break;
                 }
             }
-
-            auto gep = store->getOperand(1);
-            gep.dump();
-
             // Set the insertion point before lastUpdate
             b.setInsertionPoint(lastUpdate);
 
             // Get the defining operation of gep
+            auto gep = store->getOperand(1);
             auto gepOp = gep.getDefiningOp();
             auto offset = gepOp->getOperand(1).getDefiningOp();
+
             // Insert a clone of gepOp at the new location (if moving, use move semantics if supported)
             auto *clonedGepOp = gepOp->clone();
             auto *clonedOffset = offset->clone();
-            b.insert(clonedOffset);
             clonedGepOp->setOperand(1, clonedOffset->getResult(0));
+
+            b.insert(clonedOffset);
             b.insert(clonedGepOp);
 
-            // Erase the old store operation
-            store->erase();
-
             // Update lastUpdate operand to use the result of the newly inserted gepOp
-
             lastUpdate.setOperand(0, clonedGepOp->getResult(0));
 
-            // Optionally erase the original gepOp if it is no longer needed
+            // Erase the old operations
+            store->erase();
             gepOp->erase();
-
-            //exit(-1);
-            // TODO : can we somehow check whether its a kernel ?
-            // if (!llvm::isa<daphne::CallKernelOp>(retValDef))
-            //     llvm::report_fatal_error(
-            //         "For parfor loops the defining op of the return value as of now is limited to CallKernelOps.");
-
-            // TODO : the position of GEPOp relative to reValDef might be non-dominating
-
-            // rewire output of the last kernel call to GEPOp of the output
+           
         }
         func->removeAttr("parfor_inplace_rewrite_needed");
     }

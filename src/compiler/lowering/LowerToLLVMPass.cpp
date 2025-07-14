@@ -32,6 +32,7 @@
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -491,6 +492,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
 
     using OpConversionPattern::OpConversionPattern;
 
+    // TODO: REFACTORE ME
     LogicalResult matchAndRewrite(daphne::ParForOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
@@ -531,7 +533,17 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto &blocks = op.getBodyStmt().getBlocks();
         llvmFuncOp.getBody().getBlocks().splice(llvmFuncOp.getBody().end(), blocks, blocks.begin(), blocks.end());
         llvmFuncOp->setAttr("parfor_inplace_rewrite_needed", rewriter.getUnitAttr());
-
+        
+        // Manual conversion of block arguments
+        // cf dialect does not convert properly inside of the parfor body loop function 
+        for (Block &block : llvmFuncOp.getBody().getBlocks()) {
+            for (auto &arg : block.getArguments()) {
+                auto newType = typeConverter->convertType(arg.getType());
+                if (!newType)
+                    return failure();
+                arg.setType(newType);
+            }
+        }
         rewriter.setInsertionPointToStart(&funcBlock);
         auto locFunc = llvmFuncOp.getLoc();
 
@@ -549,7 +561,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // handle other arguments
         auto args = op.getArgs();
         unsigned index = 0;
-
         for (auto [i, blockArg] : llvm::enumerate(opBodyArgs)) {
             // number of arguments must be exactly the same as number of operands stored in args
             if (index >= args.size())
@@ -676,8 +687,16 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             adaptor.getCtx()};
 
         auto resultTypes = op->getResultTypes();
+        auto firstResultTy = resultTypes[0];
+        for (auto resultTy : resultTypes) {
+            if (resultTy != firstResultTy) {
+                throw ErrorHandler::compilerError(loc, "LowerToLLVMPass",
+                                                  "Different result types are not supported yet!");
+            }
+        }
+
         if (numRes > 0) {
-            callee << "_parfor__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0], false) << "_variadic__size_t";
+            callee << "_parfor__" << CompilerUtils::mlirTypeToCppTypeName(firstResultTy, false) << "_variadic__size_t";
             callee << "__int64_t__int64_t__int64_t__void__void__int64_t";
         } else { // no results, so we need to add null ptr as output and 0 as number of results values as kernel
                  // operands
@@ -686,32 +705,13 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             kernelOperands.insert(kernelOperands.begin() + 1,
                                   rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(0)));
         }
-
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, resultTypes);
         if (numRes > 0)
             kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
-
+        // module.dump();
+        // exit(-1);
         return success();
-    }
-
-    Operation *getCombineOperation(Value returnVal, BlockArgument arg) const {
-        Operation *curOp = returnVal.getDefiningOp();
-        while (curOp) {
-            if (llvm::any_of(curOp->getOperands(), [&](Value operand) { return operand == arg; }))
-                return curOp;
-            bool foundNext = false;
-            for (Value operand : curOp->getOperands()) {
-                if (auto defOp = operand.getDefiningOp()) {
-                    curOp = defOp;
-                    foundNext = true;
-                    break;
-                }
-            }
-            if (!foundNext)
-                break;
-        }
-        return curOp;
     }
 
     void determinateIndexesOfLoopCarriedVariables(daphne::ParForOp op, mlir::Block::BlockArgListType args,
@@ -724,11 +724,8 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             Value *returnVal = nullptr;
             if (isLoopCarried(arg, returnOp, returnVal)) {
                 if (returnVal != nullptr) {
-                    llvm::errs() << "Found loop-carried variable at index " << idx << "\n";
                     indexLoopCarried.push_back(idx);
                 }
-            } else {
-                llvm::errs() << "Argument at index " << idx << " is not loop-carried.\n";
             }
         }
     }
@@ -754,39 +751,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             }
         }
         return false;
-    }
-};
-
-class ParForOpInPlaceRewrite : public OpRewritePattern<LLVM::LLVMFuncOp> {
-  public:
-    using OpRewritePattern::OpRewritePattern;
-
-    LogicalResult matchAndRewrite(LLVM::LLVMFuncOp op, PatternRewriter &rewriter) const override {
-        // Apply the pattern only on parfor loop body functions
-        // where CallKernelOps are completely lowered.
-        if (!op.getName().startswith("parfor_body_") || hasUnconvertedKernelCalls(op))
-            return failure();
-
-        // Trace back all values loaded into the output array.
-        // Then rewire outputs of last kernel calls to the respective output of the function.
-
-        // we are done, so we remove the attribute to make the func legal
-        op->removeAttr("parfor_inplace_rewrite_needed");
-        return success();
-    }
-
-    bool hasUnconvertedKernelCalls(LLVM::LLVMFuncOp funcOp) const {
-        bool foundUnconverted = false;
-
-        funcOp.walk([&](mlir::Operation *op) {
-            if (llvm::isa<daphne::CallKernelOp>(op)) {
-                foundUnconverted = true;
-                return mlir::WalkResult::interrupt();
-            }
-            return mlir::WalkResult::advance();
-        });
-
-        return foundUnconverted;
     }
 };
 
@@ -1248,13 +1212,6 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     populateReturnOpTypeConversionPattern(patterns, typeConverter);
 
     target.addLegalOp<ModuleOp>();
-    // par for lowering rely partially on fully conversion to llvm
-    // to be able to rewrite CallOps for Kernel to perform in-place updates
-    // target.addDynamicallyLegalOp<LLVM::LLVMFuncOp>([](LLVM::LLVMFuncOp func) {
-    // Legal if rewritten already
-    // return !func->hasAttr("parfor_inplace_rewrite_needed");
-    //});
-
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
     patterns.insert<CallKernelOpLowering, CreateVariadicPackOpLowering>(typeConverter, &getContext());
@@ -1262,7 +1219,6 @@ void DaphneLowerToLLVMPass::runOnOperation() {
     patterns.insert<ConstantOpLowering, ReturnOpLowering, StoreVariadicPackOpLowering, GenericCallOpLowering,
                     MapOpLowering>(&getContext());
 
-    // patterns.insert<ParForOpInPlaceRewrite>(&getContext());
     patterns.insert<ParForOpLowering>(typeConverter, &getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
