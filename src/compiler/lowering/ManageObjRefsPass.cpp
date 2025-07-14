@@ -18,6 +18,7 @@
 #include <compiler/utils/LoweringUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <llvm/Support/Casting.h>
 #include <util/ErrorHandler.h>
 
 #include <mlir/Dialect/SCF/IR/SCF.h>
@@ -212,14 +213,16 @@ void processBlock(OpBuilder builder, Block *b) {
 
     // Protect parfor arg from getting garbage collected between iterations
     auto parent = b->getParentOp();
-    if (llvm::isa<daphne::ParForOp>(parent)) {
+    if (auto parforParent = llvm::dyn_cast<daphne::ParForOp>(parent)) {
         // Protect parfor arg from getting garbage collected immediately after
         // the kernel call
-        auto ip = builder.saveInsertionPoint();
-        builder.setInsertionPoint(parent);
-        auto outputOperand = parent->getOperand(0);
-        builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
-        builder.restoreInsertionPoint(ip);
+        if (!parforParent.getArgs().empty()) {
+            auto ip = builder.saveInsertionPoint();
+            builder.setInsertionPoint(parent);
+            auto outputOperand = parent->getOperand(0);
+            builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
+            builder.restoreInsertionPoint(ip);
+        }
     } else {
         // Make sure that the reference counters of block arguments are decreased.
         for (BlockArgument &arg : b->getArguments())
