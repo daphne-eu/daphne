@@ -533,17 +533,12 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto &blocks = op.getBodyStmt().getBlocks();
         llvmFuncOp.getBody().getBlocks().splice(llvmFuncOp.getBody().end(), blocks, blocks.begin(), blocks.end());
         llvmFuncOp->setAttr("parfor_inplace_rewrite_needed", rewriter.getUnitAttr());
-        
+
         // Manual conversion of block arguments
-        // cf dialect does not convert properly inside of the parfor body loop function 
-        for (Block &block : llvmFuncOp.getBody().getBlocks()) {
-            for (auto &arg : block.getArguments()) {
-                auto newType = typeConverter->convertType(arg.getType());
-                if (!newType)
-                    return failure();
-                arg.setType(newType);
-            }
-        }
+        // cf dialect does not convert properly inside of the parfor body loop function
+        if(!convertBlockArguments(llvmFuncOp)) 
+            return failure();
+
         rewriter.setInsertionPointToStart(&funcBlock);
         auto locFunc = llvmFuncOp.getLoc();
 
@@ -561,6 +556,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // handle other arguments
         auto args = op.getArgs();
         unsigned index = 0;
+
         for (auto [i, blockArg] : llvm::enumerate(opBodyArgs)) {
             // number of arguments must be exactly the same as number of operands stored in args
             if (index >= args.size())
@@ -633,6 +629,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         auto arrayBaseVoidPtr = rewriter.create<LLVM::AllocaOp>(loc, ptrPtrI1Ty, arraySizeConst, 0);
         index = 0;
         auto one = rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(1));
+
         for (Value operand : args) {
             auto operandType = operand.getType();
             auto llvmOperandType = typeConverter->convertType(operandType);
@@ -662,6 +659,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
 
             ++index;
         }
+
         // *****************************************************************************
         // Create a kernel call to the parfor loop body function
         // *****************************************************************************
@@ -682,6 +680,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             rewriter.create<daphne::StoreVariadicPackOp>(loc, loopCarriedArr, idxConst, attrK);
         }
 
+        llvm::errs() << "err \n";
         std::vector<Value> kernelOperands{
             adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, loopCarriedArr, kId,
             adaptor.getCtx()};
@@ -709,9 +708,22 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         if (numRes > 0)
             kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
+
         // module.dump();
         // exit(-1);
         return success();
+    }
+
+    bool convertBlockArguments(LLVM::LLVMFuncOp func) const {
+        for (Block &block : func.getBody().getBlocks()) {
+            for (auto &arg : block.getArguments()) {
+                auto newType = typeConverter->convertType(arg.getType());
+                if (!newType)
+                    return false;
+                arg.setType(newType);
+            }
+        }
+        return true;
     }
 
     void determinateIndexesOfLoopCarriedVariables(daphne::ParForOp op, mlir::Block::BlockArgListType args,
