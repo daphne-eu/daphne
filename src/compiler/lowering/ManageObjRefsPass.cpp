@@ -163,9 +163,9 @@ void processValue(OpBuilder builder, Value v) {
         } else
             builder.setInsertionPointToStart(pb);
     }
-    
+
     // Finally create the DecRefOp.
-    //builder.create<daphne::DecRefOp>(v.getLoc(), v);
+    builder.create<daphne::DecRefOp>(v.getLoc(), v);
 }
 
 /**
@@ -212,7 +212,15 @@ void processBlock(OpBuilder builder, Block *b) {
 
     // Protect parfor arg from getting garbage collected between iterations
     auto parent = b->getParentOp();
-    if (!llvm::isa<daphne::ParForOp>(parent)) {
+    if (llvm::isa<daphne::ParForOp>(parent)) {
+        // Protect parfor arg from getting garbage collected immediately after
+        // the kernel call
+        auto ip = builder.saveInsertionPoint();
+        builder.setInsertionPoint(parent);
+        auto outputOperand = parent->getOperand(0);
+        builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
+        builder.restoreInsertionPoint(ip);
+    } else {
         // Make sure that the reference counters of block arguments are decreased.
         for (BlockArgument &arg : b->getArguments())
             processValue(builder, arg);
@@ -242,7 +250,7 @@ void processBlock(OpBuilder builder, Block *b) {
             for (Value arg : op.getOperands())
                 if (arg.getParentBlock() != op.getBlock())
                     incRefIfObj(arg, builder);
-        } 
+        }
         // Terminators.
         else if (op.hasTrait<OpTrait::IsTerminator>()) {
             // By default, we do not decrease the reference counter of a
