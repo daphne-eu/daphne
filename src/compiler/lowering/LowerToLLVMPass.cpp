@@ -686,15 +686,14 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             adaptor.getCtx()};
 
         auto resultTypes = op->getResultTypes();
-        auto firstResultTy = resultTypes[0];
-        for (auto resultTy : resultTypes) {
-            if (resultTy != firstResultTy) {
-                throw ErrorHandler::compilerError(loc, "LowerToLLVMPass",
-                                                  "Different result types are not supported yet!");
-            }
-        }
-
         if (numRes > 0) {
+            auto firstResultTy = resultTypes[0];
+            for (auto resultTy : resultTypes) {
+                if (resultTy != firstResultTy) {
+                    throw ErrorHandler::compilerError(loc, "LowerToLLVMPass",
+                                                      "Different result types are not supported yet!");
+                }
+            }
             callee << "_parfor__" << CompilerUtils::mlirTypeToCppTypeName(firstResultTy, false) << "_variadic__size_t";
             callee << "__int64_t__int64_t__int64_t__void__void__int64_t";
         } else { // no results, so we need to add null ptr as output and 0 as number of results values as kernel
