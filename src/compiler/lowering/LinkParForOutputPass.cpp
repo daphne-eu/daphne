@@ -33,7 +33,7 @@ struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, Operation
         LLVM::LLVMFuncOp func = getOperation();
         llvm::StringRef fName = func.getSymName();
 
-        if (!fName.starts_with("parfor_body"))
+        if (!fName.starts_with("parfor_body") || !func->hasAttr("parfor_inplace_rewrite_needed"))
             return;
 
         auto &blocks = func.getBody().getBlocks();
@@ -63,13 +63,53 @@ struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, Operation
                 }
             }
         }
+        OpBuilder b(&getContext());
 
         // rewire outputs of last kernel calls to the respective output of the function.
         for (auto store : returnStores) {
             auto retVal = store->getOperand(0);
-
+            // unrealized cast 1
             auto retValDef = retVal.getDefiningOp();
+            // unrealized cast 2
+            auto retValDef2 = retValDef->getOperand(0).getDefiningOp();
+            // load
+            auto load = retValDef2->getOperand(0).getDefiningOp();
+            // pointer
+            LLVM::CallOp lastUpdate = nullptr;
+            auto ptr = load->getOperand(0);
+            for (auto usr : ptr.getUsers()) {
+                if (lastUpdate = llvm::dyn_cast<LLVM::CallOp>(usr)) {
+                    break;
+                }
+            }
 
+            auto gep = store->getOperand(1);
+            gep.dump();
+
+            // Set the insertion point before lastUpdate
+            b.setInsertionPoint(lastUpdate);
+
+            // Get the defining operation of gep
+            auto gepOp = gep.getDefiningOp();
+            auto offset = gepOp->getOperand(1).getDefiningOp();
+            // Insert a clone of gepOp at the new location (if moving, use move semantics if supported)
+            auto *clonedGepOp = gepOp->clone();
+            auto *clonedOffset = offset->clone();
+            b.insert(clonedOffset);
+            clonedGepOp->setOperand(1, clonedOffset->getResult(0));
+            b.insert(clonedGepOp);
+
+            // Erase the old store operation
+            store->erase();
+
+            // Update lastUpdate operand to use the result of the newly inserted gepOp
+
+            lastUpdate.setOperand(0, clonedGepOp->getResult(0));
+
+            // Optionally erase the original gepOp if it is no longer needed
+            gepOp->erase();
+
+            //exit(-1);
             // TODO : can we somehow check whether its a kernel ?
             // if (!llvm::isa<daphne::CallKernelOp>(retValDef))
             //     llvm::report_fatal_error(
@@ -78,11 +118,8 @@ struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, Operation
             // TODO : the position of GEPOp relative to reValDef might be non-dominating
 
             // rewire output of the last kernel call to GEPOp of the output
-            auto gep = store->getOperand(1);
-            retValDef->setOperand(0, gep);
-
-            store->erase();
         }
+        func->removeAttr("parfor_inplace_rewrite_needed");
     }
 };
 
