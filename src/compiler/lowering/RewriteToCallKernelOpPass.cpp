@@ -686,6 +686,7 @@ void RewriteToCallKernelOpPass::runOnOperation() {
         auto dctx = dctxCreate;
         auto parentOp = parForOp->getParentOp();
         while (parentOp != func) {
+            //llvm::errs() << "try to find context...\n";
             // early return if we found a parfor before reaching the (gurranteed) func op
             if (auto parentParFor = llvm::dyn_cast_or_null<daphne::ParForOp>(parentOp)) {
                 auto &entryBlock = parentParFor.getRegion().front();
@@ -699,9 +700,9 @@ void RewriteToCallKernelOpPass::runOnOperation() {
                         parentParFor, "RewriteToCallKernelOpPass",
                         "expected the last arg of a ParFor entry block to be the daphne context.");
                 }
-
                 break;
             }
+            parentOp = parentOp->getParentOp();
         }
 
         parForOp.getCtxMutable().assign(dctx);
