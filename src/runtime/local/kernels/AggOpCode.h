@@ -37,20 +37,18 @@ enum class AggOpCode {
 /**
  * @brief Template constant specifying if the given AggOpCode
  * should be supported on arguments of the given value types for optimistic split.
- * 
+ *
  * @tparam VTRes The result value type.
  * @tparam VData The left-hand-side argument value type.
  * @tparam op The AggOpCode.
  */
-template <AggOpCode op, typename VTRes, typename VData>
-static constexpr bool isSupportOptimistic = false;
+template <AggOpCode op, typename VTRes, typename VData> static constexpr bool isSupportOptimistic = false;
 
 // Macros for concisely specifying which AggOpCode and data type
 // should be supported by optimistic split.
 
 #define SUPPORT(Op, VT) template <> constexpr bool isSupportOptimistic<AggOpCode::Op, VT, VT> = true;
-// Update the AggOpCodeUtils to map AggOpCode 
-// to correct optimistic split BinaryOpCode.
+// Note: Update the AggOpCodeUtils to map AggOpCode
 SUPPORT(SUM, int64_t)
 SUPPORT(SUM, uint64_t)
 SUPPORT(SUM, int32_t)

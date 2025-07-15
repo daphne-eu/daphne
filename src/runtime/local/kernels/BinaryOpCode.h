@@ -53,7 +53,9 @@ enum class BinaryOpCode {
     // Strings.
     CONCAT,
     // Agg for optimistic split
-    SUMOP, SUMOVERFLOW, SUMEXP
+    SUMOP,
+    SUMOVERFLOW,
+    SUMEXP
 };
 
 /**
@@ -77,8 +79,7 @@ static std::string_view binary_op_codes[] = {
     // Strings.
     "CONCAT",
     // Agg for optimistic split
-    "SUMOP", "SUMOVERFLOW", "SUMEXP"
-};
+    "SUMOP", "SUMOVERFLOW", "SUMEXP"};
 
 // ****************************************************************************
 // Specification which binary ops should be supported on which value types

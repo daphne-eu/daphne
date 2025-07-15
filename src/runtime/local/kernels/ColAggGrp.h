@@ -64,20 +64,20 @@ void applyAgg(AggOpCode opCode, const VTPos *valuesGrpIds, const VTData *valuesD
 
 template <typename VTData, typename VTPos>
 void applyAggOptimisticSplit(AggOpCode opCode, const VTPos *valuesGrpIds, const VTData *valuesData, VTData *valuesRes,
-              const size_t numData, size_t numDistinct, DCTX(ctx)) {
+                             const size_t numData, size_t numDistinct, DCTX(ctx)) {
 
-    // split result value 
+    // split result value
     using HalfTypeT = typename ValueTypeUtils::HalfType<VTData>::type;
     auto resCommon = DataObjectFactory::create<Column<HalfTypeT>>(numDistinct, false);
-    HalfTypeT *valuesResCom =  resCommon->getValues();
+    HalfTypeT *valuesResCom = resCommon->getValues();
     std::fill(valuesResCom, valuesResCom + numDistinct, AggOpCodeUtils::getNeutral<HalfTypeT>(opCode));
-    
+
     auto funcOpt = getEwBinaryScaFuncPtr<HalfTypeT, VTData, HalfTypeT>(AggOpCodeUtils::optimisticSplitCommon(opCode));
     auto funcExp = getEwBinaryScaFuncPtr<VTData, VTData, HalfTypeT>(AggOpCodeUtils::optimisticSplitExcept(opCode));
     auto funcOverflow = getEwBinaryScaFuncPtr<bool, VTData, HalfTypeT>(AggOpCodeUtils::optimisticSplitOverflow(opCode));
 
     // store the operand result. In case of overflow the current valuesResCom[grpId] will be safe.
-    HalfTypeT tmp = 0; 
+    HalfTypeT tmp = 0;
 
     for (size_t r = 0; r < numData; r++) {
         VTPos grpId = valuesGrpIds[r];
@@ -86,16 +86,16 @@ void applyAggOptimisticSplit(AggOpCode opCode, const VTPos *valuesGrpIds, const 
 
         tmp = funcOpt(valuesData[r], valuesResCom[grpId], ctx);
         bool overflow = funcOverflow(valuesData[r], tmp, ctx);
-        if(overflow){
+        if (overflow) {
             // if overflow update the result directly.
-            valuesRes[grpId] += funcExp(valuesData[r],  valuesResCom[grpId], ctx);
+            valuesRes[grpId] += funcExp(valuesData[r], valuesResCom[grpId], ctx);
         }
         // If overflow, valuesResCom[grpId] is added to result. So set it to 0 otherwise to tmp.
         // Note: this default value (HalfTypeT(0)) may need to be updated based on opCode.
         valuesResCom[grpId] = overflow ? HalfTypeT(0) : tmp;
     }
 
-    for(size_t r = 0; r < numDistinct; r++){
+    for (size_t r = 0; r < numDistinct; r++) {
         valuesRes[r] += valuesResCom[r] > 0 ? static_cast<VTData>(valuesResCom[r]) : 0;
     }
 }
@@ -129,16 +129,14 @@ template <typename VTData, typename VTPos> struct ColAggGrp<Column<VTData>, Colu
 
         // Perform the grouped aggregation.
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
-            if(opCode == AggOpCode::SUM){
-                if constexpr(isSupportOptimistic<AggOpCode::SUM, VTData, VTData>){
-                    applyAggOptimisticSplit<VTData, VTPos>(opCode, valuesGrpIds, valuesData, valuesRes, numData, numDistinct, ctx);
-                }
-                else
-                {
+            if (opCode == AggOpCode::SUM) {
+                if constexpr (isSupportOptimistic<AggOpCode::SUM, VTData, VTData>) {
+                    applyAggOptimisticSplit<VTData, VTPos>(opCode, valuesGrpIds, valuesData, valuesRes, numData,
+                                                           numDistinct, ctx);
+                } else {
                     applyAgg<VTData, VTPos>(opCode, valuesGrpIds, valuesData, valuesRes, numData, numDistinct, ctx);
                 }
-            }
-            else{
+            } else {
                 applyAgg<VTData, VTPos>(opCode, valuesGrpIds, valuesData, valuesRes, numData, numDistinct, ctx);
             }
         } else
