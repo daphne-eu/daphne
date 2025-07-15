@@ -536,7 +536,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
 
         // Manual conversion of block arguments
         // cf dialect does not convert properly inside of the parfor body loop function
-        if(!convertBlockArguments(llvmFuncOp)) 
+        if (!convertBlockArguments(llvmFuncOp))
             return failure();
 
         rewriter.setInsertionPointToStart(&funcBlock);
@@ -680,11 +680,10 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             rewriter.create<daphne::StoreVariadicPackOp>(loc, loopCarriedArr, idxConst, attrK);
         }
 
-        llvm::errs() << "err \n";
         std::vector<Value> kernelOperands{
             adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), arrayBaseVoidPtr, fnPtr, loopCarriedArr, kId,
             adaptor.getCtx()};
-
+        
         auto resultTypes = op->getResultTypes();
         if (numRes > 0) {
             auto firstResultTy = resultTypes[0];
@@ -708,8 +707,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
 
-        // module.dump();
-        // exit(-1);
         return success();
     }
 
@@ -751,13 +748,46 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
      * @return true if the argument is loop-carried, false otherwise.
      */
     bool isLoopCarried(BlockArgument arg, daphne::ReturnOp returnOp, Value *&returnVal) const {
-        SetVector<Operation *> slice;
-        mlir::getForwardSlice(arg, &slice);
-        for (auto op : returnOp.getOperands()) {
-            if (Operation *defOp = op.getDefiningOp()) {
-                if (slice.contains(defOp)) {
-                    returnVal = &op;
+        SmallVector<Value, 8> worklist = {arg};
+        DenseSet<Value> visited;
+
+        while (!worklist.empty()) {
+            Value current = worklist.pop_back_val();
+            if (!visited.insert(current).second)
+                continue;
+
+            // Check if this value is directly returned by the ReturnOp
+            for (Value retOperand : returnOp.getOperands()) {
+                if (retOperand == current) {
+                    returnVal = &retOperand;
                     return true;
+                }
+            }
+
+            // Traverse forward: all uses of the current value
+            for (OpOperand &use : current.getUses()) {
+                Operation *user = use.getOwner();
+
+                // Add all results of this operation
+                for (Value result : user->getResults()) {
+                    worklist.push_back(result);
+                }
+
+                // If the value is passed as an operand to a block argument (e.g., branching),
+                // track the corresponding block argument
+                if (auto branch = dyn_cast<BranchOpInterface>(user)) {
+                    // Find which successor block this operand goes to
+                    for (unsigned i = 0; i < branch->getNumSuccessors(); ++i) {
+                        Block *succ = branch->getSuccessor(i);
+                        auto succArgs = succ->getArguments();
+                        auto succOperands = branch.getSuccessorOperands(i);
+
+                        for (unsigned j = 0; j < succOperands.size(); ++j) {
+                            if (succOperands[j] == current) {
+                                worklist.push_back(succArgs[j]);
+                            }
+                        }
+                    }
                 }
             }
         }
