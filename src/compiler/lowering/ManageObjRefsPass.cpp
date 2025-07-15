@@ -219,9 +219,10 @@ void processBlock(OpBuilder builder, Block *b) {
         if (!parforParent.getArgs().empty()) {
             auto ip = builder.saveInsertionPoint();
             builder.setInsertionPoint(parent);
-            auto outputOperand = parent->getOperand(0);
-            if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(outputOperand.getType()))
-                builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
+            for (auto outputOperand : parforParent.getArgs()) {
+                if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(outputOperand.getType()))
+                    builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
+            }
             builder.restoreInsertionPoint(ip);
         }
     } else {
