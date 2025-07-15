@@ -35,23 +35,20 @@ void parfor(DTRes **outputs, size_t numOutputs, int64_t from, int64_t to, int64_
 
     auto body = reinterpret_cast<void (*)(void **, void **, int64_t, DCTX(ctx))>(func);
     auto ins = reinterpret_cast<void **>(inputs);
-    
+
+    // create initial buffer for outputs containing the
     for(size_t i = 0; i < numOutputs; ++i) {
-        printf("[parforLoop] Output %zu, lpIdxs[i] = %ld\n", i, lpIdxs[i]);
         outputs[i] = reinterpret_cast<DTRes *>(ins[lpIdxs[i]]);
-        auto matrix = reinterpret_cast<DenseMatrix<int64_t> *>(ins[lpIdxs[i]]);
-        matrix->print(std::cout);
     }
     
     auto outs = reinterpret_cast<void **>(outputs);
-    // create initial buffer for outputs containing the
+  
     if (step > 0) {
 #ifdef PARALLEL_PARFOR
         printf("USE PARALLELIZATION");
 #pragma omp parallel for
 #endif
         for (int64_t i = from; i <= to; i += step) {
-            printf("[parforLoop] Iteration i = %ld\n", i);
             body(outs, ins, i, ctx);
         }
     } else {
@@ -60,11 +57,9 @@ void parfor(DTRes **outputs, size_t numOutputs, int64_t from, int64_t to, int64_
 #pragma omp parallel for
 #endif
         for (int64_t i = from; i >= to; i += step) {
-            printf("[parforLoop] Iteration i = %ld\n", i);
             body(outs, ins, i, ctx);
         }
     }
-    printf("[parforLoop] Finished!\n");
 }
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_PARFOR_H
