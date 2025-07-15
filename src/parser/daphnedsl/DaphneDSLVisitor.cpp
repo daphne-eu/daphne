@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
+#include "DaphneDSLGrammarLexer.h"
+#include "DaphneDSLGrammarParser.h"
+#include "antlr4-runtime.h"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/Transforms/RegionUtils.h"
 #include <compiler/inference/TypeInferenceUtils.h>
 #include <compiler/utils/CompilerUtils.h>
 #include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
+#include <llvm/ADT/STLExtras.h>
 #include <parser/CancelingErrorListener.h>
 #include <parser/ScopedSymbolTable.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <util/ErrorHandler.h>
-#include "mlir/IR/BuiltinAttributes.h"
-#include "DaphneDSLGrammarLexer.h"
-#include "DaphneDSLGrammarParser.h"
-#include "mlir/Transforms/RegionUtils.h"
-#include "antlr4-runtime.h"
 
 #include "llvm/ADT/SetVector.h"
 #include <limits>
@@ -714,14 +715,15 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
     symbolTable.pushScope();
-    // dummy induction variable for block parsing 
+
+    // Dummy induction variable for block parsing
     auto ivName = ctx->var->getText();
     auto ivPH = bodyBlock.addArgument(builder.getIndexType(), loc);
     symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(ivPH, false));
+
     // Parse the loop's body.
     visit(ctx->bodyStmt);
-    
-    // popScope also returns the dependency candidates (writes to non-local variables).
+
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ParForOp.
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
@@ -734,39 +736,38 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     }
     for (mlir::Operation &op : bodyBlock) {
         for (mlir::Value operand : op.getOperands()) {
-            if(std::find(forOperands.begin(), forOperands.end(), operand) != forOperands.end()) {
+            if (llvm::is_contained(forOperands, operand))
                 continue;
-            }
-            // Check if operand is not defined in the block 
+
             if (auto *defOp = operand.getDefiningOp()) {
+                // operand is not defined in the block
                 if (defOp->getBlock() != &bodyBlock) {
                     forOperands.push_back(operand);
                 }
-            }
-            // Or it's a block argument from a parent region
-            else if (auto blockArg = operand.dyn_cast<mlir::BlockArgument>()) {
+            } else if (auto blockArg = operand.dyn_cast<mlir::BlockArgument>()) {
+                // operand is a block argument from a parent region
                 if (blockArg.getOwner() != &bodyBlock) {
                     forOperands.push_back(operand);
                 }
             }
         }
     }
-    // block terminator for parfor 
-    auto returnOp = builder.create<mlir::daphne::ReturnOp>(loc, resVals);
+
+    // Block terminator for parfor
+    builder.create<mlir::daphne::ReturnOp>(loc, resVals);
 
     builder.restoreInsertionPoint(ip);
 
     // Create the actual ParForOp.
-    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, mlir::ValueRange(resVals).getTypes(), forOperands, from, to, step, mlir::Value());
+    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, mlir::ValueRange(resVals).getTypes(), forOperands, from,
+                                                           to, step, mlir::Value());
+
     // Moving the operations in the block created above
     // into the actual body of the ParForOp.
-    
     mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
     targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
-    //parforOp.getRegion().push_back(&bodyBlock);
-    //auto &targetBlock = parforOp.getRegion().front();
+
     auto iv = targetBlock.addArgument(builder.getIndexType(), loc);
-   
     for (mlir::Value v : forOperands)
         targetBlock.addArgument(v.getType(), v.getLoc());
 
@@ -780,11 +781,12 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
             return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
         });
     }
-    size_t i = 0;
+
     // Rewire the results of the ParForOp to their variable names.
-    for (auto it = ow.begin(); it != ow.end(); it++, i++) {
-        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(parforOp.getResults()[i], false));
+    for (const auto &[i, pair] : llvm::enumerate(ow)) {
+        symbolTable.put(pair.first, ScopedSymbolTable::SymbolInfo(parforOp.getResults()[i], false));
     }
+
     return nullptr;
 }
 
