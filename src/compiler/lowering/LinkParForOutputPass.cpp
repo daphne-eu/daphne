@@ -27,8 +27,11 @@
 
 using namespace mlir;
 
-// TODO: REFACTORE ME
 namespace {
+/**
+ * @brief Exploits the canonical form of ParFor output handling to rewrite the ParFor loop body function, 
+ * so that it conduct in-place updates on the shared buffer.  
+*/
 struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, OperationPass<LLVM::LLVMFuncOp>> {
     void runOnOperation() override {
         LLVM::LLVMFuncOp func = getOperation();
@@ -67,64 +70,63 @@ struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, Operation
         OpBuilder b(&getContext());
 
         // rewire outputs of last kernel calls to the respective output of the function.
-        llvm::errs() << "return stores found " << returnStores.size() << "\n";
-        SetVector<Operation *> toErase = {}; 
+        SetVector<Operation *> toErase = {};
         for (auto store : returnStores) {
             auto retVal = store->getOperand(0);
-            // unrealized cast 1
             auto retValDef = retVal.getDefiningOp();
-            retValDef->dump();
-            // unrealized cast 2
             mlir::Value operand = retValDef->getOperand(0);
             // load the output from the kernel
-            operand.dump();
             if (auto retValDef2 = retValDef->getOperand(0).getDefiningOp()) {
-                auto load = retValDef2->getOperand(0).getDefiningOp();
-                llvm::errs() << "def 0 \n";
-                load->dump();
-                setInPlace(load, store, b, &toErase);
+                setInPlaceCalcKernelCall(retValDef2->getOperand(0).getDefiningOp(), store, b, &toErase);
             } else if (auto blockArg = operand.dyn_cast<mlir::BlockArgument>()) {
-                mlir::Block *parentBlock = blockArg.getOwner();
-                unsigned argIndex = blockArg.getArgNumber();
-
-                for (mlir::Block *pred : parentBlock->getPredecessors()) {
-                    mlir::Operation &terminator = pred->back();
-
-                    if (auto branchInterface = mlir::dyn_cast<mlir::BranchOpInterface>(terminator)) {
-                        auto successors = terminator.getSuccessors();
-
-                        for (unsigned succIdx = 0; succIdx < successors.size(); ++succIdx) {
-                            if (successors[succIdx] == parentBlock) {
-                                auto succOperands = branchInterface.getSuccessorOperands(succIdx);
-                                if (argIndex < succOperands.size()) {
-                                    mlir::Value incoming = succOperands[argIndex];
-                                    llvm::errs() << "def 1 \n";
-                                    incoming.getDefiningOp()->dump();
-                                    setInPlace(incoming.getDefiningOp(), store, b, &toErase);
-                                }
-                            }
-                        }
-                    } else if (terminator.getNumSuccessors() == 1 && terminator.getSuccessor(0) == parentBlock) {
-                        auto succOperands = terminator.getOperands();
-                        if (argIndex < succOperands.size()) {
-                            mlir::Value incoming = succOperands[argIndex];
-                            llvm::errs() << "def 2 \n";
-                            incoming.getDefiningOp()->dump();
-                            setInPlace(incoming.getDefiningOp(), store, b, &toErase);
-                        }
-                    }
-                }
+                setInPlaceCalcKernelCallInPrevBlocks(blockArg, store, b, &toErase);
             }
         }
-        
-        // erase old operations after rewire 
-        for(auto opToErase : toErase) {
+
+        // erase old operations after rewire
+        for (auto opToErase : toErase) {
             opToErase->erase();
         }
         func->removeAttr("parfor_inplace_rewrite_needed");
     }
 
-    void setInPlace(mlir::Operation *load, mlir::Operation* store, OpBuilder b, SetVector<Operation* > *toErase) {
+    /**
+     * @brief Traverses blocks backwards to determinate the `LLVM::LoadOp`, which loads the result of the last kernel
+     * call.
+     */
+    void setInPlaceCalcKernelCallInPrevBlocks(BlockArgument blockArg, mlir::Operation *store, OpBuilder b, SetVector<Operation *> *toErase) {
+        mlir::Block *parentBlock = blockArg.getOwner();
+        unsigned argIndex = blockArg.getArgNumber();
+
+        for (mlir::Block *pred : parentBlock->getPredecessors()) {
+            mlir::Operation &terminator = pred->back();
+
+            if (auto branchInterface = mlir::dyn_cast<mlir::BranchOpInterface>(terminator)) {
+                auto successors = terminator.getSuccessors();
+
+                for (unsigned succIdx = 0; succIdx < successors.size(); ++succIdx) {
+                    if (successors[succIdx] == parentBlock) {
+                        auto succOperands = branchInterface.getSuccessorOperands(succIdx);
+                        if (argIndex < succOperands.size()) {
+                            setInPlaceCalcKernelCall(succOperands[argIndex].getDefiningOp(), store, b, toErase);
+                        }
+                    }
+                }
+            } else if (terminator.getNumSuccessors() == 1 && terminator.getSuccessor(0) == parentBlock) {
+                auto succOperands = terminator.getOperands();
+                if (argIndex < succOperands.size()) {
+                    setInPlaceCalcKernelCall(succOperands[argIndex].getDefiningOp(), store, b, toErase);
+                }
+            }
+        }
+    }
+
+    /**
+     * @brief Replaces output argument of kernel CallOp with output argument of parfor body function to conduct in-place
+     * updates in shared buffer
+     */
+    void setInPlaceCalcKernelCall(mlir::Operation *load, mlir::Operation *store, OpBuilder b,
+                                  SetVector<Operation *> *toErase) {
         auto ptr = load->getOperand(0);
         mlir::Operation *lastUpdate = nullptr;
         for (auto usr : ptr.getUsers()) {
@@ -142,9 +144,9 @@ struct LinkParForOutputPass : public PassWrapper<LinkParForOutputPass, Operation
         // Insert a clone of gepOp at the new location (if moving, use move semantics if supported)
         auto *clonedGepOp = gepOp->clone();
         auto *clonedOffset = offset->clone();
-        
+
         clonedGepOp->setOperand(1, clonedOffset->getResult(0));
-        
+
         b.insert(clonedOffset);
         b.insert(clonedGepOp);
         // Update lastUpdate operand to use the result of the newly inserted gepOp
