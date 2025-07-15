@@ -45,6 +45,62 @@ void colAggGrp(AggOpCode opCode, DTRes *&res, const DTData *data, const DTGrpIds
 }
 
 // ****************************************************************************
+// Utility function
+// ****************************************************************************
+
+template <typename VTData, typename VTPos>
+void applyAgg(AggOpCode opCode, const VTPos *valuesGrpIds, const VTData *valuesData, VTData *valuesRes,
+              const size_t numData, size_t numDistinct, DCTX(ctx)) {
+    EwBinaryScaFuncPtr<VTData, VTData, VTData> func;
+    func = getEwBinaryScaFuncPtr<VTData, VTData, VTData>(AggOpCodeUtils::getBinaryOpCode(opCode));
+
+    for (size_t r = 0; r < numData; r++) {
+        VTPos grpId = valuesGrpIds[r];
+        if (grpId < 0 || grpId > numDistinct)
+            throw std::runtime_error("out-of-bounds access");
+        valuesRes[grpId] = func(valuesRes[grpId], valuesData[r], ctx);
+    }
+}
+
+template <typename VTData, typename VTPos>
+void applyAggOptimisticSplit(AggOpCode opCode, const VTPos *valuesGrpIds, const VTData *valuesData, VTData *valuesRes,
+              const size_t numData, size_t numDistinct, DCTX(ctx)) {
+
+    // split result value 
+    using HalfTypeT = typename ValueTypeUtils::HalfType<VTData>::type;
+    auto resCommon = DataObjectFactory::create<Column<HalfTypeT>>(numDistinct, false);
+    HalfTypeT *valuesResCom =  resCommon->getValues();
+    std::fill(valuesResCom, valuesResCom + numDistinct, AggOpCodeUtils::getNeutral<HalfTypeT>(opCode));
+    
+    auto funcOpt = getEwBinaryScaFuncPtr<HalfTypeT, VTData, HalfTypeT>(AggOpCodeUtils::optimisticSplitCommon(opCode));
+    auto funcExp = getEwBinaryScaFuncPtr<VTData, VTData, HalfTypeT>(AggOpCodeUtils::optimisticSplitExcept(opCode));
+    auto funcOverflow = getEwBinaryScaFuncPtr<bool, VTData, HalfTypeT>(AggOpCodeUtils::optimisticSplitOverflow(opCode));
+
+    // store the operand result. In case of overflow the current valuesResCom[grpId] will be safe.
+    HalfTypeT tmp = 0; 
+
+    for (size_t r = 0; r < numData; r++) {
+        VTPos grpId = valuesGrpIds[r];
+        if (grpId < 0 || grpId > numDistinct)
+            throw std::runtime_error("out-of-bounds access");
+
+        tmp = funcOpt(valuesData[r], valuesResCom[grpId], ctx);
+        bool overflow = funcOverflow(valuesData[r], tmp, ctx);
+        if(overflow){
+            // if overflow update the result directly.
+            valuesRes[grpId] += funcExp(valuesData[r],  valuesResCom[grpId], ctx);
+        }
+        // If overflow, valuesResCom[grpId] is added to result. So set it to 0 otherwise to tmp.
+        // Note: this default value (HalfTypeT(0)) may need to be updated based on opCode.
+        valuesResCom[grpId] = overflow ? HalfTypeT(0) : tmp;
+    }
+
+    for(size_t r = 0; r < numDistinct; r++){
+        valuesRes[r] += valuesResCom[r] > 0 ? static_cast<VTData>(valuesResCom[r]) : 0;
+    }
+}
+
+// ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
@@ -72,15 +128,18 @@ template <typename VTData, typename VTPos> struct ColAggGrp<Column<VTData>, Colu
         std::fill(valuesRes, valuesRes + numDistinct, AggOpCodeUtils::getNeutral<VTData>(opCode));
 
         // Perform the grouped aggregation.
-        EwBinaryScaFuncPtr<VTData, VTData, VTData> func;
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
-            func = getEwBinaryScaFuncPtr<VTData, VTData, VTData>(AggOpCodeUtils::getBinaryOpCode(opCode));
-
-            for (size_t r = 0; r < numData; r++) {
-                VTPos grpId = valuesGrpIds[r];
-                if (grpId < 0 || grpId > numDistinct)
-                    throw std::runtime_error("out-of-bounds access");
-                valuesRes[grpId] = func(valuesRes[grpId], valuesData[r], ctx);
+            if(opCode == AggOpCode::SUM){
+                if constexpr(isSupportOptimistic<AggOpCode::SUM, VTData, VTData>){
+                    applyAggOptimisticSplit<VTData, VTPos>(opCode, valuesGrpIds, valuesData, valuesRes, numData, numDistinct, ctx);
+                }
+                else
+                {
+                    applyAgg<VTData, VTPos>(opCode, valuesGrpIds, valuesData, valuesRes, numData, numDistinct, ctx);
+                }
+            }
+            else{
+                applyAgg<VTData, VTPos>(opCode, valuesGrpIds, valuesData, valuesRes, numData, numDistinct, ctx);
             }
         } else
             throw std::runtime_error("unsupported op code");
