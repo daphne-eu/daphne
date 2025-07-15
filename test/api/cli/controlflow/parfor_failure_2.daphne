@@ -1,4 +1,5 @@
 def foo(d, X) {
+    X = X * 2; 
     parfor(i in 0:d) {
         X[i, ] = X[i, ] * d; 
     }

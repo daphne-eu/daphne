@@ -2108,7 +2108,13 @@ void rectifyEarlyReturns(mlir::Block *funcBlock) {
         auto parentOp = mostNestedReturn->getParentOp();
         if (auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
             rectifyEarlyReturn(ifOp);
-        } else {
+        }
+        else if(auto parForOp = llvm::dyn_cast<mlir::daphne::ParForOp>(parentOp)) {
+            // it's ok, since ParForOp is lowered to a function call 
+            // which is then not the part of the surrounding function  
+            break;
+        }
+        else {
             throw ErrorHandler::compilerError(parentOp->getLoc(), "DSLVisitor",
                                               "Early return in `" + parentOp->getName().getStringRef().str() +
                                                   "` is not supported.");
