@@ -678,8 +678,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         // corresponding block arguments.
         forOperands[i].replaceUsesWithIf(forOp.getRegionIterArgs()[i], [&](mlir::OpOperand &operand) -> bool {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
-            // TODO
-            return parentRegion != nullptr && forOp->getParentRegion()->isAncestor(parentRegion);
+            return parentRegion != nullptr && forOp.getBodyRegion().isAncestor(parentRegion);
         });
 
         // Rewire the results of the ForOp to their variable names.
