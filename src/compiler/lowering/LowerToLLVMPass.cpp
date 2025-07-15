@@ -514,14 +514,12 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         // Induction variable and the context are not considered to be loop carried variables and dropped therefore.
         std::vector<int64_t> loopCarriedIdxs = {};
         determinateIndexesOfLoopCarriedVariables(op, opBodyArgs.drop_front(1).drop_back(1), loopCarriedIdxs);
-
         // transfer loop body to function
         rewriter.setInsertionPointToStart(module.getBody());
         static int idx = 0;
         std::string funcName = "parfor_body_" + std::to_string(idx++);
 
         auto llvmFuncOp = createLoopBodyFunction(op, rewriter, funcName);
-
         // Manual conversion of block arguments:
         // CF dialect does not convert properly complex daphne types to llvm pointer inside of the parfor body loop
         // function
@@ -537,7 +535,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             llvm::report_fatal_error("Cannot determinate terminator of parfor body region, expected daphne::ReturnOp");
 
         storeResultsInOutput(loc, rewriter, llvmFuncOp.getArgument(0), returnOp);
-
         // store inputs to the functions in an ptr<ptr<i1>> array
         auto funcInputs = prepareBodyFuncInput(loc, rewriter, args, ip, ipAlloca, numRes);
 
@@ -551,14 +548,13 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         std::vector<Value> kernelOperands{
             adaptor.getFrom(), adaptor.getTo(), adaptor.getStep(), funcInputs, fnPtr, loopCarriedIdxsPtr, kId,
             adaptor.getCtx()};
-
         auto resultTypes = op->getResultTypes();
-        auto callee = getCallee(kernelOperands, rewriter, loc, resultTypes);
+        auto callee = getCallee(kernelOperands, rewriter, loc, resultTypes, numRes);
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee, kernelOperands, resultTypes);
-        if (numRes > 0) // only in case if there is a output
+        if (!resultTypes.empty()) // only in case if there is a output
             kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
+        
         rewriter.replaceOp(op, kernel.getResults());
-
         return success();
     }
 
@@ -566,14 +562,14 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
      * @brief Determinates based on the provided `resultTypes` the correct name of kernel to be called
      */
     std::string getCallee(std::vector<Value> &kernelOperands, ConversionPatternRewriter &rewriter, Location loc,
-                          mlir::Operation::result_type_range resultTypes) const {
+                          mlir::Operation::result_type_range resultTypes, size_t numRes) const {
         std::stringstream callee;
 
         auto i64Type = typeConverter->convertType(rewriter.getIntegerType(64, true));
         auto i1Ty = IntegerType::get(getContext(), 1);
         auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
         auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
-
+        
         if (resultTypes.empty()) {
             // No results: void return, insert dummy output pointer and count 0
             callee << "_parfor__void_variadic__size_t__int64_t__int64_t__int64_t__void__void__int64_t";
@@ -581,8 +577,7 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
             kernelOperands.insert(kernelOperands.begin() + 1,
                                   rewriter.create<LLVM::ConstantOp>(loc, i64Type, rewriter.getI64IntegerAttr(0)));
             return callee.str();
-        }
-
+        } 
         // With results: check uniform result type
         Type firstResultTy = resultTypes[0];
         for (Type ty : resultTypes) {
@@ -591,7 +586,6 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
                                                   "Different result types are not supported yet!");
             }
         }
-
         callee << "_parfor__" << CompilerUtils::mlirTypeToCppTypeName(firstResultTy, false)
                << "_variadic__size_t__int64_t__int64_t__int64_t__void__void__int64_t";
 
