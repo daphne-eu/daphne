@@ -34,6 +34,28 @@ enum class AggOpCode {
     VAR,
 };
 
+/**
+ * @brief Template constant specifying if the given AggOpCode
+ * should be supported on arguments of the given value types for optimistic split.
+ * 
+ * @tparam VTRes The result value type.
+ * @tparam VData The left-hand-side argument value type.
+ * @tparam op The AggOpCode.
+ */
+template <AggOpCode op, typename VTRes, typename VData>
+static constexpr bool isSupportOptimistic = false;
+
+// Macros for concisely specifying which AggOpCode and data type
+// should be supported by optimistic split.
+
+#define SUPPORT(Op, VT) template <> constexpr bool isSupportOptimistic<AggOpCode::Op, VT, VT> = true;
+// Update the AggOpCodeUtils to map AggOpCode 
+// to correct optimistic split BinaryOpCode.
+SUPPORT(SUM, int64_t)
+SUPPORT(SUM, uint64_t)
+SUPPORT(SUM, int32_t)
+SUPPORT(SUM, uint32_t)
+
 struct AggOpCodeUtils {
     static bool isPureBinaryReduction(AggOpCode opCode) {
         switch (opCode) {
@@ -104,6 +126,34 @@ struct AggOpCodeUtils {
             throw std::runtime_error("unsupported AggOpCode");
         }
     }
+
+    static BinaryOpCode optimisticSplitCommon(AggOpCode opCode) {
+        switch (opCode) {
+        case AggOpCode::SUM:
+            return BinaryOpCode::SUMOP;
+        default:
+            throw std::runtime_error("unsupported AggOpCode for optimistic split");
+        }
+    }
+    static BinaryOpCode optimisticSplitExcept(AggOpCode opCode) {
+        switch (opCode) {
+        case AggOpCode::SUM:
+            return BinaryOpCode::SUMEXP;
+        default:
+            throw std::runtime_error("unsupported AggOpCode for optimistic split");
+        }
+    }
+    static BinaryOpCode optimisticSplitOverflow(AggOpCode opCode) {
+        switch (opCode) {
+        case AggOpCode::SUM:
+            return BinaryOpCode::SUMOVERFLOW;
+        default:
+            throw std::runtime_error("unsupported AggOpCode for optimistic split");
+        }
+    }
 };
+
+
+#undef SUPPORT
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_AGGOPCODE_H
