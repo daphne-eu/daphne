@@ -220,7 +220,8 @@ void processBlock(OpBuilder builder, Block *b) {
             auto ip = builder.saveInsertionPoint();
             builder.setInsertionPoint(parent);
             auto outputOperand = parent->getOperand(0);
-            builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
+            if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(outputOperand.getType()))
+                builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
             builder.restoreInsertionPoint(ip);
         }
     } else {
