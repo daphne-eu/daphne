@@ -151,7 +151,6 @@ struct AggOpCodeUtils {
     }
 };
 
-
 #undef SUPPORT
 
 #endif // SRC_RUNTIME_LOCAL_KERNELS_AGGOPCODE_H
