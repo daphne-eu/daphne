@@ -51,7 +51,9 @@ enum class BinaryOpCode {
     // Bitwise.
     BITWISE_AND,
     // Strings.
-    CONCAT
+    CONCAT,
+    // Agg for optimistic split
+    SUMOP, SUMOVERFLOW, SUMEXP
 };
 
 /**
@@ -73,7 +75,10 @@ static std::string_view binary_op_codes[] = {
     // Bitwise.
     "BITWISE_AND",
     // Strings.
-    "CONCAT"};
+    "CONCAT",
+    // Agg for optimistic split
+    "SUMOP", "SUMOVERFLOW", "SUMEXP"
+};
 
 // ****************************************************************************
 // Specification which binary ops should be supported on which value types
@@ -158,6 +163,14 @@ static constexpr bool supportsBinaryOp = false;
     /*  it always return std::string*/                                                                                 \
     SUPPORT_RLR(CONCAT, VTRes, VTLhs, VTRhs)
 
+#define SUPPORT_OPTIMISTIC_SPLIT_RLR(VTLhs, VTRhs)                                                                     \
+    /* optimistic split for aggregations*/                                                                             \
+    /* optimistic split only applied to some data type and aggregations*/                                              \
+    /* intermidiate result data type will be splitted into two part with half size*/                                   \
+    SUPPORT_RLR(SUMOP, VTRhs, VTLhs, VTRhs)                                                                            \
+    SUPPORT_RLR(SUMEXP, VTLhs, VTLhs, VTRhs)                                                                           \
+    SUPPORT_RLR(SUMOVERFLOW, bool, VTLhs, VTRhs)
+
 // Generates code specifying that all binary operations typically supported on a
 // certain category of value types should be supported on the given value type
 // `VT` (for the result and the two arguments, for simplicity).
@@ -198,7 +211,11 @@ SUPPORT_STRING_RLR(std::string, std::string, std::string)
 SUPPORT_STRING_RLR(std::string, FixedStr16, FixedStr16)
 SUPPORT_STRING_RLR(const char *, const char *, const char *)
 SUPPORT_STRING_RLR(std::string, std::string, const char *)
-
+// optimistic split for aggregations
+SUPPORT_OPTIMISTIC_SPLIT_RLR(int64_t, ValueTypeUtils::HalfType<int64_t>::type)
+SUPPORT_OPTIMISTIC_SPLIT_RLR(uint64_t, ValueTypeUtils::HalfType<uint64_t>::type)
+SUPPORT_OPTIMISTIC_SPLIT_RLR(int32_t, ValueTypeUtils::HalfType<int32_t>::type)
+SUPPORT_OPTIMISTIC_SPLIT_RLR(uint32_t, ValueTypeUtils::HalfType<uint32_t>::type)
 // Undefine helper macros.
 #undef SUPPORT
 #undef SUPPORT_RLR
@@ -213,3 +230,4 @@ SUPPORT_STRING_RLR(std::string, std::string, const char *)
 #undef SUPPORT_COMPARISONS_RLR
 #undef SUPPORT_COMPARISONS_EQUAL_RLR
 #undef SUPPORT_STRING_RLR
+#undef SUPPORT_OPTIMISTIC_SPLIT_RLR
