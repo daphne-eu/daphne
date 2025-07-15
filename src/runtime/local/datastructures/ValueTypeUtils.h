@@ -49,6 +49,9 @@ struct ValueTypeUtils {
     static const std::string cppNameForCode(ValueTypeCode type);
 
     static const std::string irNameForCode(ValueTypeCode type);
+
+    // Template to get the half-size type
+    template <typename ValueType> struct HalfType;
 };
 
 template <> const ValueTypeCode ValueTypeUtils::codeFor<int8_t>;
@@ -68,6 +71,8 @@ template <> const std::string ValueTypeUtils::cppNameFor<int64_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<uint8_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<uint32_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<uint64_t>;
+template<> inline std::string ValueTypeUtils::cppNameFor<uint16_t>;
+template<> inline std::string ValueTypeUtils::cppNameFor<int16_t>; 
 template <> const std::string ValueTypeUtils::cppNameFor<float>;
 template <> const std::string ValueTypeUtils::cppNameFor<double>;
 template <> const std::string ValueTypeUtils::cppNameFor<bool>;
@@ -93,3 +98,13 @@ template <> const double ValueTypeUtils::defaultValue<double>;
 template <> const std::string ValueTypeUtils::defaultValue<std::string>;
 template <> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16>;
 template <> const char *ValueTypeUtils::defaultValue<const char *>;
+
+template <> struct ValueTypeUtils::HalfType<int64_t>  { using type = int32_t; };
+template <> struct ValueTypeUtils::HalfType<int32_t>  { using type = int16_t; };
+template <> struct ValueTypeUtils::HalfType<int16_t>  { using type = int8_t; };
+template <> struct ValueTypeUtils::HalfType<uint64_t> { using type = uint32_t; };
+template <> struct ValueTypeUtils::HalfType<uint32_t> { using type = uint16_t; };
+template <> struct ValueTypeUtils::HalfType<uint16_t> { using type = uint8_t; };
+template <> struct ValueTypeUtils::HalfType<double>   { using type = float; };
+template <> struct ValueTypeUtils::HalfType<signed char> { using type = signed char; };
+template <> struct ValueTypeUtils::HalfType<unsigned char> { using type = unsigned char; };
