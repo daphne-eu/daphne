@@ -757,7 +757,7 @@ antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::Par
     builder.restoreInsertionPoint(ip);
 
     // Create the actual ParForOp.
-    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, mlir::ValueRange(resVals).getTypes(), forOperands, from, to, step, mlir::Value(), nullptr);
+    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, mlir::ValueRange(resVals).getTypes(), forOperands, from, to, step, mlir::Value());
     // Moving the operations in the block created above
     // into the actual body of the ParForOp.
     
