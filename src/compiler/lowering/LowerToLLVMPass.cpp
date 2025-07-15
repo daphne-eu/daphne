@@ -615,9 +615,9 @@ class ParForOpLowering : public OpConversionPattern<daphne::ParForOp> {
         funcBlock.getOperations().splice(funcBlock.end(), op.getBodyStmt().front().getOperations());
 
         // Detach from old region and inline conditional blocks if present
-        op.getBodyStmt().getBlocks().remove(&op.getBodyStmt().front());
         auto &blocks = op.getBodyStmt().getBlocks();
-        llvmFuncOp.getBody().getBlocks().splice(llvmFuncOp.getBody().end(), blocks, blocks.begin(), blocks.end());
+        auto blocksSkip1 = std::next(blocks.begin());
+        llvmFuncOp.getBody().getBlocks().splice(llvmFuncOp.getBody().end(), blocks, blocksSkip1, blocks.end());
 
         // attribute to mark the function for later conversion
         llvmFuncOp->setAttr("parfor_inplace_rewrite_needed", rewriter.getUnitAttr());
