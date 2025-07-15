@@ -84,11 +84,9 @@ def Daphne_ParForOp : Daphne_Op<"parfor"> {
         AnyInteger:$from,
         AnyInteger:$to,
         AnyInteger:$step,
-        Optional<DaphneContext>:$ctx,
-        OptionalAttr<DictionaryAttr>:$combinerMapping
+        Optional<DaphneContext>:$ctx
     );
     let results = (outs Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>>:$res);
-    //let regions = (region SizedRegion<1>:$bodyStmt);
     let regions = (region AnyRegion:$bodyStmt);
     let traits = [AttrSizedOperandSegments, IsolatedFromAbove];
 }
