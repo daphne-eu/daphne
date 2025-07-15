@@ -172,7 +172,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createProfilingPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createParForReductionDetectionPass());
 #ifdef USE_CUDA
     if (userConfig_.use_cuda)
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
