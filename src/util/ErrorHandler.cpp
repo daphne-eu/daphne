@@ -94,13 +94,36 @@ std::runtime_error ErrorHandler::compilerError(mlir::Operation *op, const std::s
 }
 
 std::runtime_error ErrorHandler::compilerError(mlir::Location loc, const std::string &pass, const std::string &msg) {
-
-    auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(loc);
     std::stringstream header;
-    auto fName = flcLoc.getFilename().str();
     header << DAPHNE_BLUE << pass << RESET_COLOR << " failed with the following message [ " << DAPHNE_RED << msg
            << RESET_COLOR << " ]\n";
-    return makeError(header.str(), msg, fName, flcLoc.getLine(), flcLoc.getColumn());
+
+    // Try to cast to FileLineColLoc for detailed error information
+    if (auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(loc)) {
+        auto fName = flcLoc.getFilename().str();
+        return makeError(header.str(), msg, fName, flcLoc.getLine(), flcLoc.getColumn());
+    }
+
+    // Handle other location types
+    if (auto fusedLoc = llvm::dyn_cast<mlir::FusedLoc>(loc)) {
+        // For fused locations, try to find the first FileLineColLoc
+        for (auto subLoc : fusedLoc.getLocations()) {
+            if (auto flcLoc = llvm::dyn_cast<mlir::FileLineColLoc>(subLoc)) {
+                auto fName = flcLoc.getFilename().str();
+                return makeError(header.str(), msg, fName, flcLoc.getLine(), flcLoc.getColumn());
+            }
+        }
+    }
+
+    // Fallback for unknown or other location types
+    header << INDENT << DAPHNE_BLUE << " | " << RESET_COLOR << "Source location: ";
+    std::string locStr;
+    llvm::raw_string_ostream os(locStr);
+    loc.print(os);
+    os.flush();
+    header << locStr << "\n";
+
+    return std::runtime_error(header.str());
 }
 
 std::runtime_error ErrorHandler::rethrowError(const std::string &action, const std::string &msg) {
