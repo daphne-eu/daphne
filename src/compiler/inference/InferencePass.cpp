@@ -290,6 +290,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
         // object, we generally set mismatching properties to unknown. The
         // details depend on the specific SCF operation.
         else if (auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
+            return WalkResult::skip();
             Block &beforeBlock = whileOp.getBefore().front();
             Block &afterBlock = whileOp.getAfter().front();
             OpBuilder builder(whileOp.getContext());
@@ -385,6 +386,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
             // have already triggered a walk on them explicitly.
             return WalkResult::skip();
         } else if (auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
+            return WalkResult::skip();
             Block &block = forOp.getRegion().front();
             const size_t numIndVars = forOp.getNumInductionVars();
             OpBuilder builder(forOp.getContext());
