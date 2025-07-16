@@ -39,7 +39,7 @@ def ManageObjRefs : Pass<"manage-obj-refs", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createManageObjRefsPass()";
 }
 
-def PrintIR : Pass<"print-ir", "::mlir::func::FuncOp"> {
+def PrintIR : Pass<"prnt-ir", "::mlir::ModuleOp"> {
     let constructor = "mlir::daphne::createPrintIRPass()";
 }
 
