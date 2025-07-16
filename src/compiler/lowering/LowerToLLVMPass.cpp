@@ -197,8 +197,14 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
             for (auto type : resultTypes) {
                 if (typeConverter->isLegal(type)) {
                     args.push_back(type);
-                } else if (failed(typeConverter->convertType(type, args)))
-                    emitError(loc) << "Couldn't convert result type `" << type << "`\n";
+                } else {
+                    Type convertedType = typeConverter->convertType(type);
+                    if (convertedType) {
+                        args.push_back(convertedType);
+                    } else {
+                        emitError(loc) << "Couldn't convert result type `" << type << "`\n";
+                    }
+                }
             }
 
         // --------------------------------------------------------------------
@@ -288,14 +294,14 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
         TypeRange ts;
         rewriter.create<func::CallOp>(loc, kernelRef, ts, kernelOperands);
         rewriter.replaceOp(op,
-                           dereferenceOutputs(loc, rewriter, module, op->getNumResults(), hasVarRes, kernelOperands, inputOutputTypes));
+                           dereferenceOutputs(op, loc, rewriter, module, op->getNumResults(), hasVarRes, kernelOperands, inputOutputTypes, typeConverter));
         return success();
     }
 
   private:
-    static std::vector<Value> dereferenceOutputs(Location &loc, PatternRewriter &rewriter, ModuleOp &module,
+    static std::vector<Value> dereferenceOutputs(daphne::CallKernelOp &op, Location &loc, PatternRewriter &rewriter, ModuleOp &module,
                                                  size_t numResults, bool hasVarRes, std::vector<Value> kernelOperands, 
-                                                 std::vector<Type> inputOutputTypes) {
+                                                 TypeRange originalResultTypes, const TypeConverter *typeConverter) {
         // transformed results
         std::vector<Value> results;
 
@@ -311,11 +317,9 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
                 // dereference output
                 auto value = kernelOperands[i];
                 // load element (dereference)
-                // The result type should match the converted type from inputOutputTypes
-                // For typical case, inputOutputTypes[i] contains the converted result type
-                auto resultType = inputOutputTypes[i];
-                auto resultVal = rewriter.create<LLVM::LoadOp>(loc, resultType, value);
-
+                // Convert the original DAPHNE result type to LLVM type for loading
+                Type convertedResultType = typeConverter->convertType(op.getResult(i).getType());
+                auto resultVal = rewriter.create<LLVM::LoadOp>(loc, convertedResultType, value);
                 results.push_back(resultVal);
             }
 
