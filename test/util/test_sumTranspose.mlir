@@ -1,4 +1,4 @@
-// RUN: /daphne/bin/daphne --explain property_inference /daphne/scripts/examples/sum_transpose.daph 2>&1 | /usr/lib/llvm-18/bin/FileCheck %s
+// RUN: %daphne_bin --explain property_inference /daphne/scripts/examples/sum_transpose.daph 2>&1 | /usr/lib/llvm-18/bin/FileCheck %s
 
 // COM: This test verifies the simplification of sum(transpose(X)) to sum(X)
 

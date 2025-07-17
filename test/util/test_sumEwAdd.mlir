@@ -1,4 +1,4 @@
-// RUN: /daphne/bin/daphne --explain property_inference /daphne/scripts/examples/sum_ewAdd.daph 2>&1 | /usr/lib/llvm-18/bin/FileCheck %s
+// RUN: %daphne_bin--explain property_inference /daphne/scripts/examples/sum_ewAdd.daph 2>&1 | /usr/lib/llvm-18/bin/FileCheck %s
 
 
 // COM: This test verifies the rewrite for the simplification SUM(X + Y) = SUM(X) + SUM(Y)
