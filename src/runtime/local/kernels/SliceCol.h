@@ -57,7 +57,7 @@ template <typename VTSel> void validateArgsSliceCol(VTSel lowerIncl, VTSel upper
         numColsArg < static_cast<size_t>(upperExcl)) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << lowerIncl << ", " << upperExcl << "' passed to SliceCol: "
-               << "it must hold 0 <= lowerIncl < #columns and lowerIncl <= upperExcl <= #columns "
+               << "it must hold 0 <= lowerIncl < #columns and lowerIncl <= upperExcl <= #columns ";
         throw std::out_of_range(errMsg.str());
     }
 }
