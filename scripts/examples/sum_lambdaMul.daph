@@ -1,0 +1,5 @@
+
+m1 = rand(4, 3, 100.0, 300.0, 1.0, 4);
+lamda = as.scalar(rand(1, 1, 1.0, 100.0, 1.0, 42));
+sum_lam = sum(lamda * m1);
+print(sum_lam);

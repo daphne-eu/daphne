@@ -1,0 +1,6 @@
+//Test for the simplificiation rewrite:  trace(X @ Y) = sum(diagVector(X @ Y)) → sum(X @ transpose(Y))
+
+X = rand(7, 7, 1.0, 10.0, 1.0, 42);
+Y = rand(7, 7, 1.0, 10.0, 1.0, 42);
+tr = sum(diagVector(X @ Y));
+print(tr);

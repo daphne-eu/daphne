@@ -1,0 +1,18 @@
+// Test for the simplification rewrite "(X%*%Y)[7,3] → X[7,]%*%Y[,3]" with transposed inputs:
+m1 = rand(8, 8, 10.0, 20.0, 1.0, 1);
+m2 = rand(8, 8, 10.0, 20.0, 1.0, 1);
+
+mm1 = (m1 @ m2)[7,3];
+mm2 = (transpose(m1) @ transpose(m2))[7,3];
+mm3 = (m1 @ transpose(m2))[7,3];
+mm4 = (transpose(m1) @ m2)[7,3];
+
+
+print(mm1);
+print(mm2);
+print(mm3);
+print(mm4);
+
+
+
+
