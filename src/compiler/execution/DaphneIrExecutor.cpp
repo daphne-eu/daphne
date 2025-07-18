@@ -21,6 +21,7 @@
 #include <ir/daphneir/Passes.h.inc>
 #include <ir/daphneir/Passes.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <mlir/Dialect/LLVMIR/Transforms/InlinerInterfaceImpl.h>
 #include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 
 #include <filesystem>
@@ -36,6 +37,7 @@
 #include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
+#include "mlir/Dialect/Func/Extensions/InlinerExtension.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Math/IR/Math.h"
@@ -46,13 +48,21 @@
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Support/LogicalResult.h"
-#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Transforms/Passes.h"
 #include "llvm/Support/TargetSelect.h"
 
+static mlir::DialectRegistry createDialectRegistry() {
+    mlir::DialectRegistry registry;
+    mlir::LLVM::registerInlinerInterface(registry);
+    mlir::func::registerInlinerExtension(registry);
+    return registry;
+}
+
 DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserConfig cfg)
-    : userConfig_(std::move(cfg)), selectMatrixRepresentations_(selectMatrixRepresentations) {
+    : context_(createDialectRegistry()), userConfig_(std::move(cfg)),
+      selectMatrixRepresentations_(selectMatrixRepresentations) {
     // register loggers
     if (userConfig_.log_ptr != nullptr)
         userConfig_.log_ptr->registerLoggers();
