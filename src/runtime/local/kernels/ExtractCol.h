@@ -95,14 +95,14 @@ struct ExtractCol<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTSel>> {
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numColsRes; c++) {
-                const VTSel VTcolIdx = VTcolIdxs[c];
+                VTSel VTcolIdx = VTcolIdxs[c];
+                if (VTcolIdx < 0)
+                    VTcolIdx += numColsArg;
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
                     std::ostringstream errMsg;
-                    errMsg << "invalid argument '" << VTcolIdx
-                           << "' passed to ExtractCol: out of bounds "
-                              "for dense matrix with column boundaries '[0, "
-                           << numColsArg << ")'";
+                    errMsg << "invalid argument '" << VTcolIdxs[c] << "' passed to ExtractCol: out of bounds "
+                           << "for dense matrix with column boundaries '[0, " << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }
 
@@ -147,25 +147,28 @@ template <typename VTSel> struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
     static void apply(Frame *&res, const Frame *arg, const DenseMatrix<VTSel> *sel, DCTX(ctx)) {
         VALIDATE_ARGS(sel->getNumCols());
 
-        // left as VTSel to enable more boundary validation, converted to size_t
-        // later
         const VTSel *VTvaluesSel = sel->getValues();
-        const size_t *colIdxs = reinterpret_cast<const size_t *>(VTvaluesSel);
         const size_t numColsRes = sel->getNumRows();
         const size_t numRowsRes = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
+
+        auto colIdxs = std::make_unique<size_t[]>(numColsRes);
         for (size_t c = 0; c < numColsRes; c++) {
-            const VTSel VTcolIdx = VTvaluesSel[c];
-            if (VTcolIdx < 0 || numColsArg <= colIdxs[c]) {
+            int64_t VTcolIdx = VTvaluesSel[c];
+            if (VTcolIdx < 0)
+                VTcolIdx += numColsArg;
+
+            if (VTcolIdx < 0 || static_cast<size_t>(VTcolIdx) >= numColsArg) {
                 std::ostringstream errMsg;
-                errMsg << "invalid argument '" << VTcolIdx
-                       << "' passed to ExtractCol: ouf of bounds "
+                errMsg << "invalid argument '" << VTvaluesSel[c]
+                       << "' passed to ExtractCol: out of bounds "
                           "for frame with column boundaries '[0, "
                        << numColsArg << ")'";
                 throw std::out_of_range(errMsg.str());
             }
+            colIdxs[c] = static_cast<size_t>(VTcolIdx);
         }
-        res = DataObjectFactory::create<Frame>(arg, 0, numRowsRes, numColsRes, colIdxs);
+        res = DataObjectFactory::create<Frame>(arg, 0, numRowsRes, numColsRes, colIdxs.get());
     }
 };
 
@@ -187,13 +190,14 @@ template <typename VTArg, typename VTSel> struct ExtractCol<Matrix<VTArg>, Matri
         res->prepareAppend();
         for (size_t r = 0; r < numRowsRes; ++r) {
             for (size_t c = 0; c < numColsRes; ++c) {
-                const VTSel VTcolIdx = sel->get(c, 0);
+                VTSel VTcolIdx = sel->get(c, 0);
+                if (VTcolIdx < 0)
+                    VTcolIdx += numColsArg;
                 const size_t colIdx = static_cast<const size_t>(VTcolIdx);
                 if (VTcolIdx < 0 || numColsArg <= colIdx) {
                     std::ostringstream errMsg;
-                    errMsg << "invalid argument '" << VTcolIdx
-                           << "' passed to ExtractCol: out of bounds "
-                              "for dense matrix with column boundaries '[0, "
+                    errMsg << "invalid argument '" << sel->get(c, 0)
+                           << "' passed to ExtractCol: out of bounds for dense matrix with column boundaries '[0, "
                            << numColsArg << ")'";
                     throw std::out_of_range(errMsg.str());
                 }
