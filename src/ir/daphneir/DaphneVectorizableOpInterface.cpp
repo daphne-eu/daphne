@@ -257,7 +257,7 @@ std::vector<std::pair<Value, Value>> daphne::ColBindOp::createOpsOutputSizes(OpB
     auto colsRhs = builder.create<daphne::NumColsOp>(loc, sizeTy, getRhs());
     return {{rows, builder.create<daphne::CastOp>(
                        loc, sizeTy,
-                       builder.create<daphne::EwAddOp>(loc, builder.create<daphne::CastOp>(loc, i64Ty, colsLhs),
+                       builder.create<daphne::EwAddOp>(loc, i64Ty, builder.create<daphne::CastOp>(loc, i64Ty, colsLhs),
                                                        builder.create<daphne::CastOp>(loc, i64Ty, colsRhs)))}};
 }
 // ----------------------------------------------------------------------------

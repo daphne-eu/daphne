@@ -35,9 +35,12 @@ class IntegerModOpt : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
 
     mlir::LogicalResult matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
                                         mlir::ConversionPatternRewriter &rewriter) const override {
+        mlir::Type u = daphne::UnknownType::get(getContext());
         mlir::Value cst_one = rewriter.create<mlir::daphne::ConstantOp>(op.getLoc(), static_cast<uint64_t>(1));
-        mlir::Value sub = rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), adaptor.getRhs(), cst_one);
-        mlir::Value andOp = rewriter.create<mlir::daphne::EwBitwiseAndOp>(op.getLoc(), adaptor.getLhs(), sub);
+        mlir::Value sub = CompilerUtils::retValWithInferedType(
+            rewriter.create<mlir::daphne::EwSubOp>(op.getLoc(), u, adaptor.getRhs(), cst_one));
+        mlir::Value andOp = CompilerUtils::retValWithInferedType(
+            rewriter.create<mlir::daphne::EwBitwiseAndOp>(op.getLoc(), u, adaptor.getLhs(), sub));
         rewriter.replaceOp(op, andOp);
         return success();
     }
