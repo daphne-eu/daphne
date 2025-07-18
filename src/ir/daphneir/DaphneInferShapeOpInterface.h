@@ -119,11 +119,11 @@ namespace mlir::daphne {
  * If any shape inference traits are attached to the given operation, these are
  * applied to infer the result shape. If the operation implements any shape
  * inference interface, that implementation is invoked. If the shapes cannot be
- * infered based on the available information, or if the operation does not
+ * inferred based on the available information, or if the operation does not
  * have any relevant traits or interfaces, -1 will be returned for all
  * dimensions.
  *
- * @param op The operation whose results' shapes shall be infered.
+ * @param op The operation whose results' shapes shall be inferred.
  * @return A vector of pairs of (number of rows, number of columns). The i-th
  * pair in this vector represents the shape of the i-th result of the given
  * operation. A value of -1 for any of the numbers of rows or columns indicates

@@ -37,7 +37,7 @@ namespace mlir::daphne {
  * If any related inference traits are attached to the given operation, these are
  * applied to infer this data property of the result. If the operation implements any related
  * inference interface, that implementation is invoked. If this data property cannot be
- * infered based on the available information, or if the operation does not
+ * inferred based on the available information, or if the operation does not
  * have any related traits or interfaces, an value representing unknown for this data property will be returned for all
  * results.
  *

@@ -109,13 +109,13 @@ Type getTypeWithCommonInfo(Type t1, Type t2) {
 } // namespace
 
 /**
- * @brief A compiler pass infering various properties of the data objects.
+ * @brief A compiler pass inferring various properties of the data objects.
  *
  * Rooted at a function, the pass walks the operations, and for each operation
  * it encounters, it infers all currently considered properties of the
  * operation's results based on the properties of the operation's arguments.
  * This approach can easily handle dependencies between different properties to
- * be infered without explicitly modeling them.
+ * be inferred without explicitly modeling them.
  *
  * Note that the actual inference logic is outsourced to MLIR operation
  * interfaces.
@@ -170,7 +170,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
             if (cfg.typeInference && returnsUnknownType(op)) {
                 // Try to infer the types of all results of this operation.
                 try {
-                    daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
+                    daphne::setInferredTypes(op, cfg.partialInferenceAllowed);
                 } catch (std::runtime_error &re) {
                     throw ErrorHandler::rethrowError("InferencePass.cpp:" + std::to_string(__LINE__), re.what());
                 }
@@ -186,7 +186,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                                                           " shapes, but the op has " + std::to_string(numRes) +
                                                           " results");
                 }
-                // Set the infered shapes on all results of this operation.
+                // Set the inferred shapes on all results of this operation.
                 for (size_t i = 0; i < numRes; i++) {
                     if (llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i]) ||
                         llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
