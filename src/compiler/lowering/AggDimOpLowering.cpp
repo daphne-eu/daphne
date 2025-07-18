@@ -311,7 +311,7 @@ class AggDimIdxOpLowering : public OpConversionPattern<AggOp> {
                                  rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(rewriter.getIndexType()))}
                     : ValueRange{rewriter.create<arith::ConstantOp>(loc, rewriter.getZeroAttr(rewriter.getIndexType())),
                                  outerLoop.getInductionVar()};
-            rewriter.create<affine::AffineStoreOp>(loc, innerLoop.getResult(0), resMemRef, storeResIdx);
+            rewriter.create<memref::StoreOp>(loc, innerLoop.getResult(0), resMemRef, storeResIdx);
 
         } // end outer loop
         rewriter.setInsertionPointAfter(outerLoop);

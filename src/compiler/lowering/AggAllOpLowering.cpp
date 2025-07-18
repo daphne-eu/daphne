@@ -204,8 +204,8 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
 // ****************************************************************************
 
 using SumAllOpLowering = AggAllOpLowering<daphne::AllAggSumOp, arith::AddIOp, arith::AddIOp, arith::AddFOp>;
-// using MinAllOpLowering = AggAllOpLowering<daphne::AllAggMinOp, arith::MinSIOp, arith::MinUIOp, arith::MinFOp>;
-// using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>;
+using MinAllOpLowering = AggAllOpLowering<daphne::AllAggMinOp, arith::MinSIOp, arith::MinUIOp, arith::MinimumFOp>;
+using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaximumFOp>;
 
 namespace {
 /**
@@ -258,7 +258,7 @@ void AggAllLoweringPass::runOnOperation() {
         return true;
     });
 
-    patterns.insert<SumAllOpLowering>(typeConverter, &getContext());
+    patterns.insert<SumAllOpLowering, MinAllOpLowering, MaxAllOpLowering>(typeConverter, &getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();
