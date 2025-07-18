@@ -326,13 +326,6 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
 
-    let builders = [
-        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
-            // TODO This is wrong if lhs is a scalar and rhs is a matrix.
-            $_state.addTypes(lhs.getType());
-            $_state.addOperands({lhs, rhs});
-        }]>
-    ];
     let hasFolder = 1;
 }
 
