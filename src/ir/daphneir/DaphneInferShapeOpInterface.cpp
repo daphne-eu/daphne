@@ -82,9 +82,9 @@ ssize_t inferNumRowsFromArgs(Operation *op, ValueRange vs) {
 
 ssize_t inferNumColsFromArgs(Operation *op, ValueRange vs) {
     // If the #cols of all arguments is known and matches, then this is the
-    // infered #cols. If the known #cols of any two arguments mismatch, an
+    // inferred #cols. If the known #cols of any two arguments mismatch, an
     // exception is thrown. Otherwise, if the #cols of any argument is unknown,
-    // the infered #cols is unknown.
+    // the inferred #cols is unknown.
     ssize_t numCols = getShape(vs[0]).second;
     bool someUnknown = false;
     if (numCols == -1)

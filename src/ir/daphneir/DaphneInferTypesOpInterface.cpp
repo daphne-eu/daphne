@@ -773,7 +773,7 @@ std::vector<Type> daphne::tryInferType(Operation *op) {
     return resTys;
 }
 
-void daphne::setInferedTypes(Operation *op, bool partialInferenceAllowed) {
+void daphne::setInferredTypes(Operation *op, bool partialInferenceAllowed) {
     // Try to infer the types of all results of this operation.
     std::string opStr;
     llvm::raw_string_ostream ss(opStr);

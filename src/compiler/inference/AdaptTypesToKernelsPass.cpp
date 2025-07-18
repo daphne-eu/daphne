@@ -30,7 +30,7 @@ using namespace mlir;
  * to an available pre-compiled kernel.
  *
  * While type inference propagates types through the IR, it is not guaranteed
- * that a pre-compiled kernel for each infered type combination is available.
+ * that a pre-compiled kernel for each inferred type combination is available.
  * Thus, the task of this pass is to adapt input and output types by casts,
  * where necessary, to ensure that an existing pre-compiled kernel can be used.
  *

@@ -230,7 +230,7 @@ struct ColumnarOpReplacement : public RewritePattern {
         : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context) {}
 
     LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
-        // Note that all unknown data/value types we introduce when creating new ops are infered in subsequent compiler
+        // Note that all unknown data/value types we introduce when creating new ops are inferred in subsequent compiler
         // passes. We only specify the necessary type information, i.e., the result data type of casts.
         Type u = daphne::UnknownType::get(rewriter.getContext());
         Type cu = daphne::ColumnType::get(rewriter.getContext(), u);
