@@ -74,7 +74,7 @@ module {
     %6 = "daphne.reshape"(%5, %0, %1) : (!daphne.Matrix<6x1xf64>, index, index) -> !daphne.Matrix<2x3xf64>
     // CHECK-NOT: daphne.minRow
     // CHECK: linalg.generic
-    // CHECK: arith.minf
+    // CHECK: arith.minimumf
     %7 = "daphne.minRow"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<2x1xf64>
     "daphne.print"(%7, %3, %2) : (!daphne.Matrix<2x1xf64>, i1, i1) -> ()
     %8 = "daphne.cast"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<2x3xsi64>
@@ -104,7 +104,7 @@ module {
     %6 = "daphne.reshape"(%5, %0, %1) : (!daphne.Matrix<6x1xf64>, index, index) -> !daphne.Matrix<2x3xf64>
     // CHECK-NOT: daphne.minCol
     // CHECK: linalg.generic
-    // CHECK: arith.minf
+    // CHECK: arith.minimumf
     %7 = "daphne.minCol"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<1x3xf64>
     "daphne.print"(%7, %3, %2) : (!daphne.Matrix<1x3xf64>, i1, i1) -> ()
     %8 = "daphne.cast"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<2x3xsi64>
@@ -134,7 +134,7 @@ module {
     %6 = "daphne.reshape"(%5, %0, %1) : (!daphne.Matrix<6x1xf64>, index, index) -> !daphne.Matrix<2x3xf64>
     // CHECK-NOT: daphne.maxRow
     // CHECK: linalg.generic
-    // CHECK: arith.maxf
+    // CHECK: arith.maximumf
     %7 = "daphne.maxRow"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<2x1xf64>
     "daphne.print"(%7, %3, %2) : (!daphne.Matrix<2x1xf64>, i1, i1) -> ()
     %8 = "daphne.cast"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<2x3xsi64>
@@ -164,7 +164,7 @@ module {
     %6 = "daphne.reshape"(%5, %0, %1) : (!daphne.Matrix<6x1xf64>, index, index) -> !daphne.Matrix<2x3xf64>
     // CHECK-NOT: daphne.maxCol
     // CHECK: linalg.generic
-    // CHECK: arith.maxf
+    // CHECK: arith.maximumf
     %7 = "daphne.maxCol"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<1x3xf64>
     "daphne.print"(%7, %3, %2) : (!daphne.Matrix<1x3xf64>, i1, i1) -> ()
     %8 = "daphne.cast"(%6) : (!daphne.Matrix<2x3xf64>) -> !daphne.Matrix<2x3xsi64>
