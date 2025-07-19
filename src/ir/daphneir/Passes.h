@@ -31,12 +31,13 @@
 namespace mlir::daphne {
 struct InferenceConfig {
     InferenceConfig(bool partialInferenceAllowed, bool typeInference, bool shapeInference, bool frameLabelInference,
-                    bool sparsityInference);
+                    bool sparsityInference, bool symmetricInference);
     bool partialInferenceAllowed;
     bool typeInference;
     bool shapeInference;
     bool frameLabelInference;
     bool sparsityInference;
+    bool symmetricInference;
 };
 
 // alphabetically sorted list of passes
@@ -48,7 +49,9 @@ std::unique_ptr<Pass> createDistributeComputationsPass();
 std::unique_ptr<Pass> createDistributePipelinesPass();
 std::unique_ptr<Pass> createEwOpLoweringPass();
 std::unique_ptr<Pass> createSparsityExploitationPass();
-std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
+std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true, true});
+std::unique_ptr<Pass> createRecordPropertiesPass();
+std::unique_ptr<OperationPass<func::FuncOp>> createInsertPropertiesPass(std::string properties_file_path = "");
 std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createManageObjRefsPass();
@@ -72,8 +75,11 @@ std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConf
 std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createTransposeOpLoweringPass();
 std::unique_ptr<Pass> createVectorizeComputationsPass();
+
 std::unique_ptr<Pass> createParForReductionDetectionPass();
 std::unique_ptr<Pass> createLinkParForOutputPass();
+
+ std::unique_ptr<Pass> createTransferDataPropertiesPass();
 
 #ifdef USE_CUDA
 std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig &cfg);

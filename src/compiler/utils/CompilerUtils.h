@@ -438,4 +438,26 @@ struct CompilerUtils {
                 (matT1 && matT2 &&
                  (llvm::isa<UnknownType>(matT1.getElementType()) || llvm::isa<UnknownType>(matT2.getElementType())))));
     }
+
+    /**
+     * @brief Infers and sets the result type of the given operation and returns the result as an `mlir::Value`.
+     *
+     * Works only for operations with exactly one result. For operations with more than one result, use
+     * `retValsWithInferredTypes()`.
+     */
+    template <class Op> static mlir::Value retValWithInferredType(Op op) {
+        mlir::daphne::setInferredTypes(op.getOperation());
+        return static_cast<mlir::Value>(op);
+    }
+
+    /**
+     * @brief Infers and sets the result types of the given operation and returns the results as an `mlir::ResultRange`.
+     *
+     * Works for operations with any number of results. For operations with exactly one result, using
+     * `retValWithInferredType()` can be more convenient.
+     */
+    template <class Op> static mlir::ResultRange retValsWithInferredTypes(Op op) {
+        mlir::daphne::setInferredTypes(op.getOperation());
+        return op.getResults();
+    }
 };

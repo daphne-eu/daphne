@@ -20,7 +20,7 @@
 import pandas as pd
 from daphne.context.daphne_context import DaphneContext
 
-df = pd.DataFrame({"abc": [1, 2, 3], "def": [-1.1, -2.2, -3.3]})
+df = pd.DataFrame({"abc": [1, 2, 3], "def": [-1.1, -2.2, -3.3], "ghi": ["red", "green", "blue"]})
 
 dctx = DaphneContext()
 

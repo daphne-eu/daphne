@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/inference/TypeInferenceUtils.h>
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
@@ -110,31 +111,17 @@ std::vector<double> daphne::ReadOp::inferSparsity() {
 // Sparsity inference trait implementations
 // ****************************************************************************
 
-// TODO This is also used in DaphneInferShapeOpInterface.cpp, make it a central
-// utility.
-/**
- * @brief Utility for trying a parametric trait for all values of the parameter
- * from 0 to some upper bound.
- */
-template <size_t upper, template <size_t> class tryParametricTrait> struct tryParamTraitUntil {
-    static void apply(double &sparsity, Operation *op) {
-        tryParametricTrait<upper>::apply(sparsity, op);
-        tryParamTraitUntil<upper - 1, tryParametricTrait>::apply(sparsity, op);
-    }
-};
-template <template <size_t> class tryParametricTrait> struct tryParamTraitUntil<0, tryParametricTrait> {
-    static void apply(double &sparsity, Operation *op) { tryParametricTrait<0>::apply(sparsity, op); }
-};
-
 template <size_t i> struct trySparsityFromIthScalar {
-    static void apply(double &sparsity, Operation *op) {
+    using T = double;
+    static void apply(T &sparsity, Operation *op) {
         if (op->hasTrait<SparsityFromIthScalar<i>::template Impl>())
-            sparsity = CompilerUtils::constantOrDefault<double>(op->getOperand(i), -1);
+            sparsity = CompilerUtils::constantOrDefault<T>(op->getOperand(i), -1);
     }
 };
 
 template <size_t i> struct trySparsityFromIthArg {
-    static void apply(double &sparsity, Operation *op) {
+    using T = double;
+    static void apply(T &sparsity, Operation *op) {
         if (op->hasTrait<SparsityFromIthArg<i>::template Impl>())
             sparsity = getSparsityOrUnknownFromType(op->getOperand(i));
     }

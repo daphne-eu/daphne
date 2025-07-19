@@ -1,0 +1,2 @@
+registerView("s", {"b": [2.5]});
+print(sql("SELECT 1 * s.b FROM s;"));

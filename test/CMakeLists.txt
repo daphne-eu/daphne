@@ -52,6 +52,7 @@ set(TEST_SOURCES
         api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/vectorized/VectorizedPipelineTest.cpp
+        api/cli/utils/UtilsTest.cpp
         api/cli/Utils.cpp
 
         api/python/DaphneLibTest.cpp
@@ -174,6 +175,8 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
+
+        util/RecordPropertiesTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

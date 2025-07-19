@@ -17,6 +17,7 @@
 #include "antlr4-runtime.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/OpDefinition.h"
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include <util/ErrorHandler.h>
@@ -879,9 +880,11 @@ antlrcpp::Any SQLVisitor::visitMulExpr(SQLGrammarParser::MulExprContext *ctx) {
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
     if (op == "*")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwMulOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "/")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwDivOp>(loc, utils.unknownType, lhs, rhs));
 
     throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "unexpected op symbol");
 }
@@ -901,9 +904,11 @@ antlrcpp::Any SQLVisitor::visitAddExpr(SQLGrammarParser::AddExprContext *ctx) {
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
     if (op == "+")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwAddOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "-")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwSubOp>(loc, utils.unknownType, lhs, rhs));
 
     throw ErrorHandler::compilerError(queryLoc, "SQLVisitor", "unexpected op symbol");
 }
@@ -923,17 +928,23 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext *ctx) {
     mlir::Value rhs = utils.valueOrError(utils.getLoc(ctx->rhs->start), vRhs);
 
     if (op == "=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwEqOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "<>")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwNeqOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "<")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwLtOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "<=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwLeOp>(loc, utils.unknownType, lhs, rhs));
     if (op == ">")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwGtOp>(loc, utils.unknownType, lhs, rhs));
     if (op == ">=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwGeOp>(loc, utils.unknownType, lhs, rhs));
     throw ErrorHandler::compilerError(queryLoc, "SQLVisitor (visitCmpExpr)", "unexpected comparision operation symbol");
 }
 
@@ -958,17 +969,23 @@ antlrcpp::Any SQLVisitor::visitBetweenExpr(SQLGrammarParser::BetweenExprContext 
     //  to get this feature in.
 
     // lhs <= rhs (lhs <= obj <= rhs) (this will be it in most case but not all)
-    mlir::Value a1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, lhs));
-    mlir::Value a2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, rhs));
-    mlir::Value a = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, a1, a2));
+    mlir::Value a1 =
+        CompilerUtils::retValWithInferredType(builder.create<mlir::daphne::EwGeOp>(loc, utils.unknownType, obj, lhs));
+    mlir::Value a2 =
+        CompilerUtils::retValWithInferredType(builder.create<mlir::daphne::EwLeOp>(loc, utils.unknownType, obj, rhs));
+    mlir::Value a =
+        CompilerUtils::retValWithInferredType(builder.create<mlir::daphne::EwAndOp>(loc, utils.unknownType, a1, a2));
 
     // lhs >= rhs (rhs <= obj <= lhs)
-    mlir::Value b1 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, obj, rhs));
-    mlir::Value b2 = static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, obj, lhs));
-    mlir::Value b = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, b1, b2));
+    mlir::Value b1 =
+        CompilerUtils::retValWithInferredType(builder.create<mlir::daphne::EwGeOp>(loc, utils.unknownType, obj, rhs));
+    mlir::Value b2 =
+        CompilerUtils::retValWithInferredType(builder.create<mlir::daphne::EwLeOp>(loc, utils.unknownType, obj, lhs));
+    mlir::Value b =
+        CompilerUtils::retValWithInferredType(builder.create<mlir::daphne::EwAndOp>(loc, utils.unknownType, b1, b2));
 
     // both combined give the solution
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, a, b));
+    return CompilerUtils::retValWithInferredType(builder.create<mlir::daphne::EwOrOp>(loc, utils.unknownType, a, b));
 }
 
 antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext *ctx) {
@@ -988,7 +1005,8 @@ antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext *ctx) {
     lhs = castToMatrixColumn(lhs);
     rhs = castToMatrixColumn(rhs);
 
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
+    return CompilerUtils::retValWithInferredType(
+        builder.create<mlir::daphne::EwAndOp>(loc, utils.unknownType, lhs, rhs));
 }
 
 antlrcpp::Any SQLVisitor::visitOrExpr(SQLGrammarParser::OrExprContext *ctx) {
@@ -1008,7 +1026,8 @@ antlrcpp::Any SQLVisitor::visitOrExpr(SQLGrammarParser::OrExprContext *ctx) {
     lhs = castToMatrixColumn(lhs);
     rhs = castToMatrixColumn(rhs);
 
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
+    return CompilerUtils::retValWithInferredType(
+        builder.create<mlir::daphne::EwOrOp>(loc, utils.unknownType, lhs, rhs));
 }
 
 // tableReference

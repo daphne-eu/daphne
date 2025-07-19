@@ -908,6 +908,16 @@
             ]
         },
         "instantiations": [
+            ["bool", ["DenseMatrix", "double"]],
+            ["bool", ["DenseMatrix", "float"]],
+            ["bool", ["DenseMatrix", "int64_t"]],
+            ["bool", ["DenseMatrix", "int32_t"]],
+            ["bool", ["DenseMatrix", "int8_t"]],
+            ["bool", ["DenseMatrix", "uint64_t"]],
+            ["bool", ["DenseMatrix", "uint32_t"]],
+            ["bool", ["DenseMatrix", "uint8_t"]],
+            ["bool", ["DenseMatrix", "size_t"]],
+
             ["double", ["DenseMatrix", "double"]],
             ["double", ["DenseMatrix", "float"]],
             ["double", ["DenseMatrix", "int64_t"]],
@@ -1421,6 +1431,10 @@
                 {
                     "type": "uint64_t",
                     "name": "statisticsPtr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "propertyLoggerPtr"
                 },
                 {
                     "type": "uint64_t",
@@ -3450,6 +3464,49 @@
                 ["DenseMatrix", "uint8_t"],
                 ["DenseMatrix", "uint8_t"]
             ]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "RecordProperties.h",
+            "opName": "recordProperties",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "uint32_t",
+                    "name": "valueId"
+                }
+            ]
+        },
+        "instantiations":[
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "size_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "size_t"]]
         ]
     },
     {
@@ -7604,6 +7661,58 @@
         "instantiations": [
             [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "TransferProperties.h",
+            "opName": "transferProperties",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                },
+                {
+                    "type": "double",
+                    "name": "sparsity"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "symmetric"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "std::string"]],
+
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "size_t"]],
+            [["CSRMatrix", "bool"]],
+            [["CSRMatrix", "std::string"]]
         ]
     }
 ]

@@ -23,14 +23,15 @@ include "ir/daphneir/DaphneDialect.td"
 include "ir/daphneir/DaphneTypes.td"
 include "ir/daphneir/DaphneDistributableOpInterface.td"
 include "ir/daphneir/DaphneInferFrameLabelsOpInterface.td"
+include "ir/daphneir/DaphneInferSymmetricOpInterface.td"
 include "ir/daphneir/DaphneInferShapeOpInterface.td"
+include "ir/daphneir/DaphneInferShapeTraits.td"
 include "ir/daphneir/DaphneInferSparsityOpInterface.td"
 include "ir/daphneir/DaphneInferSparsityTraits.td"
 include "ir/daphneir/DaphneInferTypesOpInterface.td"
+include "ir/daphneir/DaphneInferTypesTraits.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
-include "ir/daphneir/DaphneShapeInferenceTraits.td"
 include "ir/daphneir/DaphneTypeAdaptationTraits.td"
-include "ir/daphneir/DaphneTypeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
 
@@ -140,7 +141,8 @@ def Daphne_ConvertCSRMatrixToRowOffsetsMemRef : Daphne_Op<"convertCSRMatrixToRow
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport,
+    DeclareOpInterfaceMethods<InferSymmetricOpInterface>
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
     let results = (outs MatrixOrU:$res);
@@ -223,7 +225,7 @@ def Daphne_NumRowsOp : Daphne_NumOp<"numRows">;
 def Daphne_NumColsOp : Daphne_NumOp<"numCols">;
 def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 
-def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
+def Daphne_SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
   let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
   let results = (outs FloatScalar:$res);
 
@@ -346,13 +348,6 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
 
-    let builders = [
-        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
-            // TODO This is wrong if lhs is a scalar and rhs is a matrix.
-            $_state.addTypes(lhs.getType());
-            $_state.addOperands({lhs, rhs});
-        }]>
-    ];
     let hasFolder = 1;
 }
 
@@ -760,6 +755,7 @@ def Daphne_TransposeOp : Daphne_Op<"transpose", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg, CUDASupport,
+    DeclareOpInterfaceMethods<InferSymmetricOpInterface>,
     Pure
 ]> {
     let arguments = (ins MatrixOrU:$arg);
@@ -1865,7 +1861,9 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
                     UI64 : $userConfigPtr,
                     UI64 : $dispatchMappingPtr,
                     UI64 : $statisticsPtr,
-                    UI64 : $stringRefCountPtr);
+                    UI64 : $propertyLoggerPtr,
+                    UI64 : $stringRefCountPtr
+                    );
     let results = (outs DaphneContext : $ctx);
 }
 
@@ -2034,6 +2032,24 @@ def Daphne_RemoveOp : Daphne_Op<"remove", [
 }
 
 // ****************************************************************************
+// Handling of data properties
+// ****************************************************************************
+
+def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
+    let arguments = (ins MatrixOrU:$arg, UI32:$valueId);
+    let results = (outs);
+
+    let summary = "Records the data properties of the given matrix.";
+}
+
+def Daphne_TransferPropertiesOp : Daphne_Op<"transferProperties"> {
+    let summary = "Transfers compile-time information on data properties to the runtime data objects";
+
+    let arguments = (ins MatrixOrU:$arg, F64:$sparsity, SI64:$symmetric);
+    let results = (outs);
+}
+
+// ****************************************************************************
 // Old operations
 // ****************************************************************************
 // These are currently still need for the prototype to work. They will be
@@ -2054,6 +2070,10 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, Pure]> {
         }]>,
         OpBuilder<(ins "int64_t":$value), [{
             Type t = $_builder.getIntegerType(64, true);
+            build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
+        }]>,
+        OpBuilder<(ins "uint32_t":$value), [{
+            Type t = $_builder.getIntegerType(32, false);
             build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
         }]>,
         OpBuilder<(ins "uint64_t":$value), [{

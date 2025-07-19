@@ -78,7 +78,7 @@ DataTypeCode getDataTypeCode(mlir::Type t);
  *
  * @param argDtc Information on the argument data types.
  * @param argVts Information on the argument value types.
- * @return The infered value type.
+ * @return The inferred value type.
  */
 std::vector<mlir::Type> inferValueTypeFromArgs(const std::vector<DataTypeCode> &argDtc,
                                                std::vector<std::vector<mlir::Type>> &argVts);
@@ -90,7 +90,7 @@ std::vector<mlir::Type> inferValueTypeFromArgs(const std::vector<DataTypeCode> &
  * @tparam O The type of the operation. For the inference in the compiler we
  * use `mlir::Operation`, but for the unit tests we use a mock class.
  * @param op
- * @return The infered type of the single result of the operation.
+ * @return The inferred type of the single result of the operation.
  */
 template <class O> mlir::Type inferTypeByTraits(O *op) {
     using namespace mlir;
@@ -318,3 +318,19 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
     // exactly one result (which is the case for most DaphneIR ops).
     return resTy;
 }
+
+/**
+ * @brief Utility for trying a parametric trait for all values of the parameter
+ * from 0 to some upper bound.
+ */
+template <size_t upper, template <size_t> class tryParametricTrait> struct tryParamTraitUntil {
+    static void apply(typename tryParametricTrait<0>::T &prop, mlir::Operation *op) {
+        tryParametricTrait<upper>::apply(prop, op);
+        tryParamTraitUntil<upper - 1, tryParametricTrait>::apply(prop, op);
+    }
+};
+template <template <size_t> class tryParametricTrait> struct tryParamTraitUntil<0, tryParametricTrait> {
+    static void apply(typename tryParametricTrait<0>::T &prop, mlir::Operation *op) {
+        tryParametricTrait<0>::apply(prop, op);
+    }
+};

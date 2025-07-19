@@ -1,0 +1,2 @@
+registerView("r", {"a": [1]}); // using a table should not be necessary (see #978)
+print(sql("SELECT 1 * 2.5 FROM r;"));

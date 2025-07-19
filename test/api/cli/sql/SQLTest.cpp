@@ -108,3 +108,5 @@ MAKE_TEST_CASE("strings", 6)
 
 MAKE_TEST_CASE("between", 4)
 // TODO Use the scripts testing failure cases.
+
+MAKE_TEST_CASE("arithmetics", 2);

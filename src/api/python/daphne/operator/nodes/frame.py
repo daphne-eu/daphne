@@ -73,7 +73,7 @@ class Frame(OperationNode):
                         "numCols": self._pd_dataframe.shape[1],
                         "schema": [
                             {
-                                "label": self._pd_dataframe.columns[i],
+                                "label": str(self._pd_dataframe.columns[i]),
                                 "valueType": self.getDType(self._pd_dataframe.dtypes.iloc[i])
                             }
                             for i in range(self._pd_dataframe.shape[1])
@@ -94,6 +94,8 @@ class Frame(OperationNode):
             return "si64"
         elif d_type == "float64":
             return "f64"
+        elif d_type.kind in {'U', 'S', 'O'}:
+            return "str"
         else:
             print("Error")
 
