@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
+#include "DaphneDSLGrammarLexer.h"
+#include "DaphneDSLGrammarParser.h"
+#include "antlr4-runtime.h"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/Transforms/RegionUtils.h"
 #include <compiler/inference/TypeInferenceUtils.h>
 #include <compiler/utils/CompilerUtils.h>
 #include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
+#include <llvm/ADT/STLExtras.h>
 #include <parser/CancelingErrorListener.h>
 #include <parser/ScopedSymbolTable.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
@@ -25,14 +31,10 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <util/ErrorHandler.h>
 
-#include "DaphneDSLGrammarLexer.h"
-#include "DaphneDSLGrammarParser.h"
-#include "antlr4-runtime.h"
-
-#include <mlir/Dialect/SCF/IR/SCF.h>
-
+#include "llvm/ADT/SetVector.h"
 #include <limits>
 #include <memory>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -654,6 +656,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
     std::vector<mlir::Value> resVals;
     std::vector<mlir::Value> forOperands;
+
     for (auto it = ow.begin(); it != ow.end(); it++) {
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
@@ -688,6 +691,103 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(forOp.getResults()[i], false));
 
         i++;
+    }
+
+    return nullptr;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitParForStatement(DaphneDSLGrammarParser::ParForStatementContext *ctx) {
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    // The type we assume for from, to, and step.
+    mlir::Type t = builder.getIntegerType(64, true);
+
+    // Parse from, to, and step.
+    mlir::Value from = utils.castIf(t, valueOrErrorOnVisit(ctx->from));
+    mlir::Value to = utils.castIf(t, valueOrErrorOnVisit(ctx->to));
+    mlir::Value step;
+    if (ctx->step) {
+        step = utils.castIf(t, valueOrErrorOnVisit(ctx->step));
+    } else {
+        step = builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 1));
+    }
+
+    auto ip = builder.saveInsertionPoint();
+
+    // A block for the body of the for-loop.
+    mlir::Block bodyBlock;
+    builder.setInsertionPointToEnd(&bodyBlock);
+    symbolTable.pushScope();
+
+    // Dummy induction variable for block parsing
+    auto ivName = ctx->var->getText();
+    auto ivPH = bodyBlock.addArgument(builder.getIndexType(), loc);
+    symbolTable.put(ivName, ScopedSymbolTable::SymbolInfo(ivPH, false));
+
+    // Parse the loop's body.
+    visit(ctx->bodyStmt);
+
+    // Determine which variables created before the loop are updated in the
+    // loop's body. These become the arguments and results of the ParForOp.
+    ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
+    std::vector<mlir::Value> resVals = {};
+    std::vector<mlir::Value> forOperands = {};
+
+    for (auto it = ow.begin(); it != ow.end(); it++) {
+        resVals.push_back(it->second.value);
+        forOperands.push_back(symbolTable.get(it->first).value);
+    }
+    for (mlir::Operation &op : bodyBlock) {
+        for (mlir::Value operand : op.getOperands()) {
+            if (llvm::is_contained(forOperands, operand))
+                continue;
+
+            if (auto *defOp = operand.getDefiningOp()) {
+                // operand is not defined in the block
+                if (defOp->getBlock() != &bodyBlock) {
+                    forOperands.push_back(operand);
+                }
+            } else if (auto blockArg = operand.dyn_cast<mlir::BlockArgument>()) {
+                // operand is a block argument from a parent region
+                if (blockArg.getOwner() != &bodyBlock) {
+                    forOperands.push_back(operand);
+                }
+            }
+        }
+    }
+
+    // Block terminator for parfor
+    builder.create<mlir::daphne::ReturnOp>(loc, resVals);
+
+    builder.restoreInsertionPoint(ip);
+
+    // Create the actual ParForOp.
+    auto parforOp = builder.create<mlir::daphne::ParForOp>(loc, mlir::ValueRange(resVals).getTypes(), forOperands, from,
+                                                           to, step, mlir::Value());
+
+    // Moving the operations in the block created above
+    // into the actual body of the ParForOp.
+    mlir::Block &targetBlock = parforOp.getRegion().emplaceBlock();
+    targetBlock.getOperations().splice(targetBlock.end(), bodyBlock.getOperations());
+
+    auto iv = targetBlock.addArgument(builder.getIndexType(), loc);
+    for (mlir::Value v : forOperands)
+        targetBlock.addArgument(v.getType(), v.getLoc());
+
+    ivPH.replaceAllUsesWith(iv);
+
+    // Replace usages of the variables updated in the loop's body by the
+    // corresponding block arguments.
+    for (auto [idx, op] : llvm::enumerate(forOperands)) {
+        op.replaceUsesWithIf(targetBlock.getArgument(idx + 1), [&](mlir::OpOperand &operand) {
+            auto parentRegion = operand.getOwner()->getBlock()->getParent();
+            return parentRegion != nullptr && parforOp.getRegion().isAncestor(parentRegion);
+        });
+    }
+
+    // Rewire the results of the ParForOp to their variable names.
+    for (const auto &[i, pair] : llvm::enumerate(ow)) {
+        symbolTable.put(pair.first, ScopedSymbolTable::SymbolInfo(parforOp.getResults()[i], false));
     }
 
     return nullptr;
@@ -2029,7 +2129,13 @@ void rectifyEarlyReturns(mlir::Block *funcBlock) {
         auto parentOp = mostNestedReturn->getParentOp();
         if (auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
             rectifyEarlyReturn(ifOp);
-        } else {
+        }
+        else if(auto parForOp = llvm::dyn_cast<mlir::daphne::ParForOp>(parentOp)) {
+            // it's ok, since ParForOp is lowered to a function call 
+            // which is then not the part of the surrounding function  
+            break;
+        }
+        else {
             throw ErrorHandler::compilerError(parentOp->getLoc(), "DSLVisitor",
                                               "Early return in `" + parentOp->getName().getStringRef().str() +
                                                   "` is not supported.");

@@ -1,0 +1,11 @@
+def foo(d, X) {
+    X = X * 2; 
+    parfor(i in 0:d) {
+        X[i, ] = X[i, ] * d; 
+    }
+    return X;
+}
+d = 5;
+X = rand(d, d, 0, 1, 1, -1);
+X = foo(d, X);
+print(X);

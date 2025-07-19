@@ -1,0 +1,11 @@
+X = rand(5, 5, 0, 1, 1, -1);
+parfor(i in 1:4) {
+    Y = rand(5, 5, 0, 1, 1, -1);
+    if(i == 1) {
+        Y = Y * 2; 
+    } else {
+        Y = Y - Y * 4;
+    }
+    X[i, ] = Y[i, ] * 2;
+}
+print(X);
