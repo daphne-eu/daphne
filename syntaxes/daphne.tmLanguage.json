@@ -5,15 +5,17 @@
   "patterns": [
     {
       "name": "keyword.control.daphne",
-      "match": "\\b(method|return)\\b"
+      "match": "\\b(method|return|if|else)\\b"
+    },
+    {
+      "name": "string.quoted.double.daphne",
+      "begin": "\"",
+      "end": "\""
     },
     {
       "name": "comment.line.double-slash.daphne",
       "match": "//.*$"
-    },
-    {
-      "name": "string.quoted.double.daphne",
-      "match": "\".*?\""
-   }
-  ]
+    }
+  ],
+  "uuid": "daphne-basic-syntax"
 }

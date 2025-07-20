@@ -1,0 +1,5 @@
+def add(a, b) -> f64 {
+  return a + b;
+}
+
+x = add(1, 2);

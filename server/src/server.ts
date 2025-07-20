@@ -1,227 +1,73 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
 import {
-	createConnection,
-	TextDocuments,
-	Diagnostic,
-	DiagnosticSeverity,
-	ProposedFeatures,
-	InitializeParams,
-	DidChangeConfigurationNotification,
-	CompletionItem,
-	CompletionItemKind,
-	TextDocumentPositionParams,
-	TextDocumentSyncKind,
-	InitializeResult,
-	type DefinitionParams,
-	type Location,
-	Range,
-	Position,
-	DocumentDiagnosticReportKind,
-	type DocumentDiagnosticReport,
-	type Hover
+  createConnection,
+  TextDocuments,
+  Diagnostic,
+  DiagnosticSeverity,
+  ProposedFeatures,
+  InitializeParams,
+  TextDocumentSyncKind,
+  InitializeResult,
+  DocumentDiagnosticReportKind,
+  type DocumentDiagnosticReport,
+  type DefinitionParams,
+  type Location,
+  type Hover,
+  CompletionItem,
+  CompletionItemKind,
+  TextDocumentPositionParams,
+  DidChangeConfigurationNotification
 } from 'vscode-languageserver/node';
 
-import {
-	TextDocument
-} from 'vscode-languageserver-textdocument';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+import { performance } from 'perf_hooks';
+
+// 🧩 ANTLR integration:
+// FIXED PATHS:
+import { DaphneDSLGrammarLexer } from './server/DaphneDSLGrammarLexer';
+import { DaphneDSLGrammarParser } from './server/DaphneDSLGrammarParser';
+
+import { ANTLRInputStream, CommonTokenStream, RecognitionException } from 'antlr4ts';
 
 const connection = createConnection(ProposedFeatures.all);
-connection.console.log("Daphne LSP server started!");
+connection.console.log("✅ Daphne LSP server started!");
 
 const documents = new TextDocuments(TextDocument);
 
-let hasConfigurationCapability = false;
-let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
-
-connection.onInitialize((params: InitializeParams) => {
-	const capabilities = params.capabilities;
-
-	hasConfigurationCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.configuration
-	);
-	hasWorkspaceFolderCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.workspaceFolders
-	);
-	hasDiagnosticRelatedInformationCapability = !!(
-		capabilities.textDocument &&
-		capabilities.textDocument.publishDiagnostics &&
-		capabilities.textDocument.publishDiagnostics.relatedInformation
-	);
-
-	const result: InitializeResult = {
-		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Incremental,
-			definitionProvider: true,
-			hoverProvider: true,
-			completionProvider: {
-				resolveProvider: true
-			},
-			diagnosticProvider: {
-				interFileDependencies: false,
-				workspaceDiagnostics: false
-			}
-		}
-	};
-	if (hasWorkspaceFolderCapability) {
-		result.capabilities.workspace = {
-			workspaceFolders: {
-				supported: true
-			}
-		};
-	}
-	return result;
-});
-
-connection.onInitialized(() => {
-	if (hasConfigurationCapability) {
-		connection.client.register(DidChangeConfigurationNotification.type, undefined);
-	}
-	if (hasWorkspaceFolderCapability) {
-		connection.workspace.onDidChangeWorkspaceFolders(_event => {
-			connection.console.log('Workspace folder change event received.');
-		});
-	}
-});
-
-function getWordAt(position: Position, text: string): string {
-	const lines = text.split(/\r?\n/g);
-	const line = lines[position.line] || '';
-	const wordRegex = /\b\w+\b/g;
-
-	let match: RegExpExecArray | null;
-	while ((match = wordRegex.exec(line))) {
-		const start = match.index;
-		const end = start + match[0].length;
-		if (position.character >= start && position.character <= end) {
-			return match[0];
-		}
-	}
-	return '';
-}
-
-connection.onDefinition((params: DefinitionParams): Location[] => {
-	const uri = params.textDocument.uri;
-	connection.console.log("onDefinition called at position: " + JSON.stringify(params.position));
-
-	const word = getWordAt(params.position, documents.get(uri)?.getText() || '');
-	connection.console.log(`🔍 Word under cursor: "${word}"`);
-
-	if (word === 'test') {
-		const location: Location = {
-			uri,
-			range: {
-				start: { line: 2, character: 7 },
-				end: { line: 2, character: 11 }
-			}
-		};
-		return [location];
-	}
-	return [];
-});
-
-connection.onHover((params): Hover | null => {
-  const document = documents.get(params.textDocument.uri);
-  if (!document) {return null;}
-
-  const position = params.position;
-  const line = document.getText().split(/\r?\n/g)[position.line] || '';
-  const wordRegex = /\b\w+\b/g;
-  let match: RegExpExecArray | null;
-  let word: string | null = null;
-
-  while ((match = wordRegex.exec(line))) {
-    const start = match.index;
-    const end = start + match[0].length;
-    if (position.character >= start && position.character <= end) {
-      word = match[0];
-      break;
-    }
-  }
-
-  if (!word) {return null;}
-
-  const hoverTexts: Record<string, string> = {
-    method: '🛠️ `method` defines a new function.',
-    return: '↩️ `return` returns a value from a function.',
-    test: '`test` is a placeholder function.'
-  };
-
-  const contents = hoverTexts[word];
-  if (!contents) {return null;}
-
-  return {
-    contents: {
-      kind: 'markdown',
-      value: contents
-    }
-  };
-});
-connection.onCompletion(
-  (_params: TextDocumentPositionParams): CompletionItem[] => {
-    return [
-      {
-        label: 'method',
-        kind: CompletionItemKind.Keyword,
-        data: 1
-      },
-      {
-        label: 'return',
-        kind: CompletionItemKind.Keyword,
-        data: 2
-      },
-      {
-        label: 'if',
-        kind: CompletionItemKind.Keyword,
-        data: 3
-      },
-      {
-        label: 'true',
-        kind: CompletionItemKind.Constant,
-        data: 4
+connection.onInitialize((_params: InitializeParams) => {
+  const result: InitializeResult = {
+    capabilities: {
+      textDocumentSync: TextDocumentSyncKind.Incremental,
+      completionProvider: { resolveProvider: true },
+      hoverProvider: true,
+      definitionProvider: true,
+      diagnosticProvider: {
+        interFileDependencies: false,
+        workspaceDiagnostics: false
       }
-    ];
-  }
-);
-
-connection.onCompletionResolve(
-  (item: CompletionItem): CompletionItem => {
-    if (item.data === 1) {
-      item.detail = 'Keyword: method';
-      item.documentation = '`method` declares a function.';
-    } else if (item.data === 2) {
-      item.detail = 'Keyword: return';
-      item.documentation = '`return` returns a value.';
-    } else if (item.data === 3) {
-      item.detail = 'Keyword: if';
-      item.documentation = '`if` starts a conditional block.';
-    } else if (item.data === 4) {
-      item.detail = 'Constant: true';
-      item.documentation = 'Boolean value `true`.';
     }
-    return item;
-  }
-);
+  };
+  return result;
+});
 
 async function validateTextDocument(textDocument: TextDocument): Promise<Diagnostic[]> {
   const text = textDocument.getText();
   const diagnostics: Diagnostic[] = [];
 
-  // Simple example: warn about all-uppercase words with 2 or more letters
-  const pattern = /\b[A-Z]{2,}\b/g;
-  let match: RegExpExecArray | null;
+  try {
+    const inputStream = new ANTLRInputStream(text);
+    const lexer = new DaphneDSLGrammarLexer(inputStream);
+    const tokenStream = new CommonTokenStream(lexer);
+    const parser = new DaphneDSLGrammarParser(tokenStream);
 
-  while ((match = pattern.exec(text))) {
+    parser.script();
+  } catch (err: any) {
     diagnostics.push({
-      severity: DiagnosticSeverity.Warning,
+      severity: DiagnosticSeverity.Error,
       range: {
-        start: textDocument.positionAt(match.index),
-        end: textDocument.positionAt(match.index + match[0].length)
+        start: textDocument.positionAt(0),
+        end: textDocument.positionAt(1)
       },
-      message: `⚠️ "${match[0]}" is all uppercase.`,
+      message: `Syntax error detected.`,
       source: 'daphne-lsp'
     });
   }
@@ -231,25 +77,63 @@ async function validateTextDocument(textDocument: TextDocument): Promise<Diagnos
 
 connection.languages.diagnostics.on(async (params) => {
   const document = documents.get(params.textDocument.uri);
+  const start = performance.now();
+
   if (!document) {
-    return {
-      kind: DocumentDiagnosticReportKind.Full,
-      items: []
-    };
+    return { kind: DocumentDiagnosticReportKind.Full, items: [] };
   }
 
   const diagnostics = await validateTextDocument(document);
 
-  return {
-    kind: DocumentDiagnosticReportKind.Full,
-    items: diagnostics
-  };
+  const end = performance.now();
+  connection.console.log(`🕒 Diagnostics for ${document.uri} took ${(end - start).toFixed(2)} ms`);
+
+  return { kind: DocumentDiagnosticReportKind.Full, items: diagnostics };
 });
 
-// Make the text document manager listen on the connection
+connection.onCompletion((_params: TextDocumentPositionParams): CompletionItem[] => {
+  const keywords = ['def', 'import', 'let', 'if', 'else', 'for', 'while', 'match', 'return', 'true', 'false', 'null'];
+  return keywords.map((kw, index) => ({
+    label: kw,
+    kind: CompletionItemKind.Keyword,
+    data: index
+  }));
+});
+
+connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  item.detail = 'Daphne DSL keyword';
+  item.documentation = `Keyword \`${item.label}\``;
+  return item;
+});
+
+connection.onHover((params): Hover | null => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) {return null;}
+
+  const position = params.position;
+  const text = document.getText();
+  const offset = document.offsetAt(position);
+
+  const hoverWordMatch = /\b\w+\b/g;
+  let word: string | null = null;
+  let match: RegExpExecArray | null;
+
+  while ((match = hoverWordMatch.exec(text))) {
+    if (offset >= match.index && offset <= match.index + match[0].length) {
+      word = match[0];
+      break;
+    }
+  }
+
+  if (word) {
+    return { contents: { kind: 'markdown', value: `Information about \`${word}\`` } };
+  }
+  return null;
+});
+
+connection.onDefinition((_params: DefinitionParams): Location[] => {
+  return [];
+});
+
 documents.listen(connection);
-
-// Listen on the connection
 connection.listen();
-
-

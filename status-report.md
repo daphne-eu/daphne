@@ -4,7 +4,6 @@
 
 ### 1. Language Server Setup
 - Successfully set up a VS Code extension with Language Server Protocol support using TypeScript.
-- Client and server communicate via IPC transport.
 
 ### 2. Syntax Highlighting
 - Added TextMate grammar rules using `daphne.tmLanguage.json`.

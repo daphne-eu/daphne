@@ -2,3 +2,13 @@
 method test() {
     return "Hello";
 }
+
+method test( {
+  return "missing bracket"
+
+
+// This is a comment
+method TEST() {
+  return "HELLO";
+}
+
