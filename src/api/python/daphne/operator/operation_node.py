@@ -30,6 +30,10 @@ from daphne.utils.helpers import create_params_string
 import numpy as np
 import pandas as pd
 try:
+    import scipy.sparse as sp
+except ImportError as e:
+    sp = e
+try:
     import torch as torch
 except ImportError as e:
     torch = e
@@ -188,11 +192,37 @@ class OperationNode(DAGNode):
                 self.clear_tmp()
             elif self._output_type == OutputType.MATRIX and type=="shared memory":
                 daphneLibResult = DaphneLib.getResult()
-                result = np.ctypeslib.as_array(
-                    ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
-                    shape=[daphneLibResult.rows, daphneLibResult.cols]
-                )
-                self.clear_tmp()
+                if not daphneLibResult.isSparse:
+                    # Dense Matrix
+                    daphneLibResult = DaphneLib.getResult()
+                    result = np.ctypeslib.as_array(
+                        ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
+                        shape=[daphneLibResult.rows, daphneLibResult.cols]
+                    )
+                else:
+                    # CSR Matrix
+                    VT = self.getType(daphneLibResult.vtc)
+                    
+                    # wrap each pointer into a numpy array
+                    indptr = np.ctypeslib.as_array(
+                        ctypes.cast(daphneLibResult.row_related, ctypes.POINTER(ctypes.c_size_t)),
+                        shape=(daphneLibResult.rows + 1,)
+                    )
+                    nnz = int(indptr[-1] - indptr[0])
+
+                    
+                    data = np.ctypeslib.as_array(
+                        ctypes.cast(daphneLibResult.data, ctypes.POINTER(VT)),
+                        shape=(nnz,)
+                    )
+
+                    indices = np.ctypeslib.as_array(
+                        ctypes.cast(daphneLibResult.col_related, ctypes.POINTER(ctypes.c_size_t)),
+                        shape=(nnz,)
+                    )
+                    # build scipy CSR
+                    result = sp.csr_matrix((data, indices, indptr), shape=(daphneLibResult.rows, daphneLibResult.cols))
+                self.clear_tmp() 
             elif self._output_type == OutputType.MATRIX and type=="files":
                 # Ensure string data is handled correctly
                 arr = np.genfromtxt(result, delimiter=',', dtype=None, encoding='utf-8')
