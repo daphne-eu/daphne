@@ -34,6 +34,7 @@ limitations under the License.
 - [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
 - [Profiling DAPHNE using PAPI](/doc/Profiling.md)
 - [Custom Extensions to DAPHNE](/doc/Extensions.md)
+- [HDFS Usage](/doc/HDFSUsage.md)
 
 ## Developer Documentation
 
@@ -41,6 +42,7 @@ limitations under the License.
 * [Maintaining GPG signing keys](GPG-signing-keys.md)
 * [Data Properties: Representation, Inference, and Exploitation](/doc/development/PropertyInference.md)
 * [Recording Data Properties](/doc/development/PropertyRecording.md)
+* [Code Generation with MLIR](/doc/Codegen.md)
 
 ### How-tos and Guidelines
 
@@ -51,6 +53,7 @@ limitations under the License.
 - [Extending DAPHNE with more scheduling knobs](/doc/development/ExtendingSchedulingKnobs.md)
 - [Extending the DAPHNE Distributed Runtime](/doc/development/ExtendingDistributedRuntime.md)
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
+- [Building in Unsupported Environments](/doc/BuildEnvironment.md)
 - [Logging in DAPHNE](/doc/development/Logging.md)
 - [Profiling in DAPHNE](/doc/development/Profiling.md)
 - [Testing](/doc/development/Testing.md)
