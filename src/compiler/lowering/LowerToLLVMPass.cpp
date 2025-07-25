@@ -508,11 +508,17 @@ class MapOpLowering : public OpConversionPattern<daphne::MapOp> {
         // Pointer to UDF
         callee << "__void";
 
+        // Axis
+        callee << "__int64_t";
+
+        // udfReturnsScalar
+        callee << "__bool";
+
         // get pointer to UDF
         LLVM::LLVMFuncOp udfFuncOp = module.lookupSymbol<LLVM::LLVMFuncOp>(op.getFunc());
         auto udfFnPtr = rewriter.create<LLVM::AddressOfOp>(loc, udfFuncOp);
 
-        std::vector<Value> kernelOperands{op.getArg(), udfFnPtr};
+        std::vector<Value> kernelOperands{op.getArg(), udfFnPtr, op.getAxis(), op.getUdfReturnsScalar()};
 
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), kernelOperands, op->getResultTypes());
         rewriter.replaceOp(op, kernel.getResults());
