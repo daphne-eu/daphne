@@ -1,0 +1,39 @@
+// Float matrices (f64)
+A_f64 = [ 1.0, 2.0, 3.0, 4.0 ];
+A_f64 = reshape(A_f64, 2, 2);
+
+B_f64 = [ 5.0, 6.0, 7.0, 8.0 ];
+B_f64 = reshape(B_f64, 2, 2);
+
+res1 = sum(diagVector(A_f64 @B_f64));
+print(as.scalar(res1), true, false); // Expect: 69
+
+// Integer matrices (si64)
+A_si64 = [ 1, 2, 3, 4 ];
+A_si64 = reshape(A_si64, 2, 2);
+
+B_si64 = [ 5, 6, 7, 8 ];
+B_si64 = reshape(B_si64, 2, 2);
+
+res2 = sum(diagVector(A_si64 @B_si64));
+print(as.scalar(res2), true, false); // Expect: 69
+
+// Mixed: si64 @ f64
+A_mix1 = [ 1, 2, 3, 4 ]; // si64
+A_mix1 = reshape(A_mix1, 2, 2);
+
+B_mix1 = [ 5.0, 6.0, 7.0, 8.0 ]; // f64
+B_mix1 = reshape(B_mix1, 2, 2);
+
+res3 = sum(diagVector(A_mix1 @B_mix1));
+print(as.scalar(res3), true, false); // Expect: 69
+
+// Mixed: f64 @ si64
+A_mix2 = [ 1.0, 2.0, 3.0, 4.0 ]; // f64
+A_mix2 = reshape(A_mix2, 2, 2);
+
+B_mix2 = [ 5, 6, 7, 8 ]; // si64
+B_mix2 = reshape(B_mix2, 2, 2);
+
+res4 = sum(diagVector(A_mix2 @B_mix2));
+print(as.scalar(res4), true, false); // Expect: 69

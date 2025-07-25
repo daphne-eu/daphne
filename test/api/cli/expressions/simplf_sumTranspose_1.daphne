@@ -1,0 +1,20 @@
+// This triggers canonicalization: sum(transpose(X)) => sum(X)
+
+// Matrix X: floats
+X = [ 1.25, 2.5, 3.0, 4.0, 5.5, 6.0, 3.0, 0.0, 0.0 ];
+X = reshape(X, 3, 3); // Expect: 25.25
+
+res = sum(transpose(X));
+print(as.scalar(res));
+
+// Matrix B: integers
+B = [ 1, 2, 3, 4 ];
+B = reshape(B, 2, 2);
+res_B = sum(transpose(B));
+print(as.scalar(res_B)); // Expect: 10
+
+// Matrix C: mixed values
+C = [ 0.5, 1.5, 2.5, 3.5 ];
+C = reshape(C, 2, 2);
+res_C = sum(transpose(C));
+print(as.scalar(res_C)); // Expect: 8

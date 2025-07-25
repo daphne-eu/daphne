@@ -1,0 +1,29 @@
+43
+34
+39
+38
+43
+34
+39
+38
+43
+34
+39
+38
+43
+34
+39
+38
+DenseMatrix(2x2, double)
+570 610
+895 960
+DenseMatrix(3x2, double)
+830 1130
+895 1220
+960 1310
+DenseMatrix(2x2, double)
+530 730
+855 1180
+DenseMatrix(2x2, double)
+1030 1090
+1095 1160

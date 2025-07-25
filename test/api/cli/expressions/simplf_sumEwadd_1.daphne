@@ -1,0 +1,20 @@
+// This triggers canonicalization: sum(X + Y) => sum(X) + sum(Y)
+X = [ 1.0, 2.0, 3.0, 4.0 ];
+X = reshape(X, 2, 2);
+
+Y = [ 4.0, 3.0, 2.0, 1.0 ];
+Y = reshape(Y, 2, 2);
+
+res = sum(X + Y);
+print(as.scalar(res));
+
+// with different element types
+Q = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ];
+Q = reshape(Q, 3, 3);
+
+Z = [ 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5 ];
+Z = reshape(Z, 3, 3);
+
+// Sum of elementwise addition
+res_2 = sum(Q + Z);
+print(as.scalar(res_2));
