@@ -111,4 +111,4 @@ CHECK-NOT: daphne.ewAdd` looks through the IR and fails if `daphne.ewAdd` can be
 found. These `llvm-lit` tests are all run by the `codegen` testcase in
 `test/codegen/Codegen.cpp`.
 
-All codegen tests can be executed by running `bin/run_tests '[codegen]'`.
+All codegen tests can be executed by running `./test.sh [codegen]`.

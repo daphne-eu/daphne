@@ -81,10 +81,8 @@ Now that we have all workers up and running and the environment variable is set,
 bin/daphne --distributed ./example.script
 ```
 
-For now, only asynchronous gRPC is implemented as a distributed backend and the backend selection is hardcoded in `/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h`.
-<!-- 
-TODO: PR #436 provides support for MPI and implements a cli argument for selecting a distributed backend. This section will be updated once #436 is merged.
- -->
+Currrently, synchronous gRPC, asynchronous gRPC, and [OpenMPI](/doc/MPI-Usage.md) are implemented as distributed backends.
+The distributed backend can be selected using the command-line argument `--dist_backend`.
 
 ## Example
 

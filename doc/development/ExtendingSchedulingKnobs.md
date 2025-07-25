@@ -23,7 +23,7 @@ This document focuses on how a DAPHNE developer may extend DAPHNE by adding new 
 The DAPHNE developer should consider the following files for adding a new scheduling technique:
 
 1. `src/runtime/local/vectorized/LoadPartitioning.h`
-1. `src/api/cli/daphne.cpp`
+1. `src/api/internal/daphne_internal.cpp`
 
 **Adding the actual code of the technique:**
 
@@ -59,7 +59,7 @@ In this file, the developer should change two things:
 
 **Enabling the selection of the newly added technique:**
 
-The second file `daphne.cpp` contains the code that parses the command-line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a valid option. Otherwise, the developer will not be able to use the newly added technique.
+The second file `daphne_internal.cpp` contains the code that parses the command-line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a valid option. Otherwise, the developer will not be able to use the newly added technique.
 There is a variable called `taskPartitioningScheme` and it is of type `opt<SelfSchedulingScheme>`.
 The developer should extend the declaration of `opt<SelfSchedulingScheme>` as follows:
 

@@ -40,6 +40,7 @@ Also, users who want to use other MPI implementations, e.g., Intel MPI may edit 
     Please do not forget to replace `<DAPHNE_INSTALLATION>` with the actual path.
 
 1. Run the basic example `scripts/examples/matrix_addition_for_mpi.daph` as follows:
+    <!-- TODO This file does not exist in the repo. By what script could we replace it? -->
 
     ```bash
     mpirun -np 10 ./bin/daphne --distributed --dist_backend=MPI scripts/examples/matrix_addition_for_mpi.daph

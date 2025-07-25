@@ -16,15 +16,15 @@ limitations under the License.
 
 # Read and Write Data
 
-When loading data with `read()` in a DaphneDSL script, the system expects a file with the same file name in the same
-directory as the data file with an additional extension `.meta`. This file contains a description of meta data stored
+When loading data with `readMatrix()`/`readFrame()` in a DaphneDSL script, the system expects a file with the same file name in the same
+directory as the data file with an *additional* extension `.meta`. This file contains a description of meta data stored
 in JSON format.
 
 There are two slightly varying ways of specifying meta data depending on whether there is a schema for the columns (e.g.,
 a data frame - the corresponding C++ type is the `Frame` class) or not (this data can currently be
 loaded as `DenseMatrix<VT>` or `CSRMatrix<VT>` where `VT` is the value type template parameter).
 
-If data is written from a DaphneDSL script via `write()`, the meta data file will be written to the corresponding `filename.meta`.
+If data is written from a DaphneDSL script via `write()`/`writeMatrix()`/`writeFrame()`, the meta data file will be written to the corresponding `filename.meta`.
 
 ## Currently Supported JSON Fields
 
@@ -32,7 +32,7 @@ If data is written from a DaphneDSL script via `write()`, the meta data file wil
 |-------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | numRows     | Integer       | number of rows                                                                                                                                                                                                                                                                                                                             |
 | numCols     | Integer       | number of columns                                                                                                                                                                                                                                                                                                                          |
-| valueType   | String        | `si8, si32, si64, // signed integers (intX_t)`<br />`ui8, ui32, ui64, // unsigned integers (uintx_t)`<br />`f32, f64, // floating point (float, double)`<br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field |
+| valueType   | String        | `si8, si32, si64, // signed integers (intX_t)`<br />`ui8, ui32, ui64, // unsigned integers (uintX_t)`<br />`f32, f64, // floating point (float, double)`<br />`str // string`<br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field |
 | numNonZeros | Integer       | number of non-zeros (optional)                                                                                                                                                                                                                                                                                                             |
 | schema      | JSON          | nested elements of "label" and "valueType" fields                                                                                                                                                                                                                                                                                            |
 | label       | String        | column name/header (optional, may be empty string "")                                                                                                                                                                                                                                                                                        |

@@ -23,7 +23,7 @@ The cascade consists of the following steps:
 
 - The defaults of all options are hard-coded directly in the `DaphneUserConfig`.
 - At program start-up, a configuration file is loaded, which overrides the defaults **(WIP, #141)**.
-- After that, command-line arguments further override the configuration ([src/api/cli/daphne.cpp](/src/api/cli/daphne.cpp)).
+- After that, command-line arguments further override the configuration ([src/api/internal/daphne_internal.cpp](/src/api/internal/daphne_internal.cpp)).
 - (In the future, DaphneDSL will also offer means to change the configuration at run-time.)
 
 The `DaphneUserConfig` is available to all parts of the code, including:
@@ -39,6 +39,6 @@ Hence, information provided by the user can be used to influence both, the compi
 If you need to add additional information from the user, you must take roughly the following steps:
 
 1. Create a new member in `DaphneUserConfig` and hard-code a reasonable default.
-2. Add a command-line argument to the system's CLI API in [src/api/cli/daphne.cpp](/src/api/cli/daphne.cpp). We use LLVM's [CommandLine 2.0 library](https://llvm.org/docs/CommandLine.html) for parsing CLI arguments. Make sure to update the corresponding member the `DaphneUserConfig` with the parsed argument.
+2. Add a command-line argument to the system's CLI API in [src/api/internal/daphne_internal.cpp](/src/api/internal/daphne_internal.cpp). We use LLVM's [CommandLine 2.0 library](https://llvm.org/docs/CommandLine.html) for parsing CLI arguments. Make sure to update the corresponding member the `DaphneUserConfig` with the parsed argument.
 3. *For compiler passes*: If necessary, pass on the `DaphneUserConfig` to the compiler pass you are working on in [src/compiler/execution/DaphneIrExecutor.cpp](/src/compiler/execution/DaphneIrExecutor.cpp). *For kernels*: All kernels automatically get the `DaphneUserConfig` via the `DaphneContext` (their last parameter), so no action is required from your side.
 4. Access the new member of the `DaphneUserConfig` in your code.
