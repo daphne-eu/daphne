@@ -62,6 +62,8 @@ function printHelp {
     echo "  --hdfs            Compile with support for HDFS"
     echo "  --io_uring        Compile with support for io_uring"
     echo "  --no-papi         Compile without support for PAPI"
+    echo "  --enable-parallel-parfor Compile with omp support for parfor statements"
+    echo "  --enable-time-parfor Run a timer during parfor execution and print the elapsed time"
 }
 
 #******************************************************************************
@@ -456,6 +458,8 @@ BUILD_IO_URING="-DUSE_IO_URING=OFF"
 BUILD_PAPI="-DUSE_PAPI=ON"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
+enableParallelParfor="OFF"
+enableTimeParfor="OFF"
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -527,6 +531,14 @@ while [[ $# -gt 0 ]]; do
         ;;
     -ns | --no-submodule-update)
         WITH_SUBMODULE_UPDATE=0
+        ;;
+    --enable-parallel-parfor)
+        echo enabling parallelization for parfor
+        enableParallelParfor="ON"
+        ;;
+    --enable-time-parfor)
+        echo will run a timer during parfor execution and print the elapsed time
+        enableTimeParfor="ON"
         ;;
       *)
         unknown_options="${unknown_options} ${key}"
@@ -1109,6 +1121,9 @@ daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DENABLE_PARALLEL_PARFOR="$enableParallelParfor" \
+    -DENABLE_TIME_PARFOR="$enableTimeParfor" \
     $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI $BUILD_HDFS $BUILD_PAPI
 
 cmake --build "$daphneBuildDir" --target "$target"
