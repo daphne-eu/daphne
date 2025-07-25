@@ -1632,7 +1632,8 @@ Also, users who want to use other MPI implementations, e.g., Intel MPI may edit 
 <p>Please do not forget to replace <code>&lt;DAPHNE_INSTALLATION&gt;</code> with the actual path.</p>
 </li>
 <li>
-<p>Run the basic example <code>scripts/examples/matrix_addition_for_mpi.daph</code> as follows:</p>
+<p>Run the basic example <code>scripts/examples/matrix_addition_for_mpi.daph</code> as follows:
+    </p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">10</span><span class="w"> </span>./bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>--dist_backend<span class="o">=</span>MPI<span class="w"> </span>scripts/examples/matrix_addition_for_mpi.daph
 </code></pre></div>
 </li>

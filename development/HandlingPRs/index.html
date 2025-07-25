@@ -1379,6 +1379,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#continuous-integration-ci-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Continuous Integration (CI) Checks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#initial-response-and-reviewer-assignment" class="md-nav__link">
     <span class="md-ellipsis">
       Initial Response and Reviewer Assignment
@@ -1719,6 +1728,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#continuous-integration-ci-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Continuous Integration (CI) Checks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#initial-response-and-reviewer-assignment" class="md-nav__link">
     <span class="md-ellipsis">
       Initial Response and Reviewer Assignment
@@ -1829,6 +1847,14 @@ However, they could also be interesting for <em>contributors</em> to (a) underst
 <li>if the PR is marked as a draft, it is handled by an informal discussion depending on concrete questions by the contributor; if there are none, the PR is left alone for now</li>
 <li>if the PR is not marked as a draft, the review/merge procedure continues</li>
 </ul>
+<h3 id="continuous-integration-ci-checks">Continuous Integration (CI) Checks</h3>
+<p>For every pull request on the main branch, the following checks are performed automatically through GitHub actions upon PR creation and updates:</p>
+<ul>
+<li>building DAPHNE and running the test suite</li>
+<li>checking for adherence to the code style</li>
+<li>building and deploying the documentation</li>
+</ul>
+<p>For PRs by first-time contributors, a collaborator needs to approve the CI checks before they can run.</p>
 <h3 id="initial-response-and-reviewer-assignment">Initial Response and Reviewer Assignment</h3>
 <p>The DAPHNE collaborators provide an <em>initial response</em> and <em>assign one (or multiple) reviewers</em> (usually from among themselves, but can also be non-collaborators).</p>
 <ul>
@@ -1906,10 +1932,11 @@ However, they could also be interesting for <em>contributors</em> to (a) underst
 </ul>
 </li>
 <li><em>code style</em><ul>
-<li>don't be strict as long as we don't have a clearly defined code style which can be enforced automatically</li>
-<li>but watch out for things that make code hard to read, e.g.<ul>
-<li>wrong indentation</li>
+<li>the adherence to the code style is checked automatically through GitHub actions</li>
+<li>in addition to that, watch out for things that make code hard to read, e.g.<ul>
+<li>incomprehensible, misleading, or excessively long identifiers</li>
 <li>lots of commented out lines (especially artifacts from development/debugging)</li>
+<li>...</li>
 </ul>
 </li>
 </ul>
@@ -1954,14 +1981,9 @@ However, they could also be interesting for <em>contributors</em> to (a) underst
 </ul>
 </li>
 <li>
-<p>check if the code builds at all (should be checked automatically)</p>
+<p>check if there are compiler warnings when building the code (should be checked automatically); if so, they should be fixed</p>
 </li>
-<li>check if there are compiler warnings (should be fixed) (should be checked automatically)</li>
-<li>check if the test cases pass (should be checked automatically)</li>
-<li>whether these checks succeed or fail may be platform-specific<ul>
-<li><strong>TODO:</strong> think about that aspect in more detail</li>
-</ul>
-</li>
+<li>feel free to try out scenarios that are not covered by the test cases yet (ideally, the test suite should be extended)</li>
 </ul>
 </li>
 </ul>

@@ -1776,13 +1776,13 @@
 
 
 <h1 id="read-and-write-data">Read and Write Data</h1>
-<p>When loading data with <code>read()</code> in a DaphneDSL script, the system expects a file with the same file name in the same
-directory as the data file with an additional extension <code>.meta</code>. This file contains a description of meta data stored
+<p>When loading data with <code>readMatrix()</code>/<code>readFrame()</code> in a DaphneDSL script, the system expects a file with the same file name in the same
+directory as the data file with an <em>additional</em> extension <code>.meta</code>. This file contains a description of meta data stored
 in JSON format.</p>
 <p>There are two slightly varying ways of specifying meta data depending on whether there is a schema for the columns (e.g.,
 a data frame - the corresponding C++ type is the <code>Frame</code> class) or not (this data can currently be
 loaded as <code>DenseMatrix&lt;VT&gt;</code> or <code>CSRMatrix&lt;VT&gt;</code> where <code>VT</code> is the value type template parameter).</p>
-<p>If data is written from a DaphneDSL script via <code>write()</code>, the meta data file will be written to the corresponding <code>filename.meta</code>.</p>
+<p>If data is written from a DaphneDSL script via <code>write()</code>/<code>writeMatrix()</code>/<code>writeFrame()</code>, the meta data file will be written to the corresponding <code>filename.meta</code>.</p>
 <h2 id="currently-supported-json-fields">Currently Supported JSON Fields</h2>
 <table>
 <thead>
@@ -1806,7 +1806,7 @@ loaded as <code>DenseMatrix&lt;VT&gt;</code> or <code>CSRMatrix&lt;VT&gt;</code>
 <tr>
 <td>valueType</td>
 <td>String</td>
-<td><code>si8, si32, si64, // signed integers (intX_t)</code><br /><code>ui8, ui32, ui64, // unsigned integers (uintx_t)</code><br /><code>f32, f64, // floating point (float, double)</code><br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field</td>
+<td><code>si8, si32, si64, // signed integers (intX_t)</code><br /><code>ui8, ui32, ui64, // unsigned integers (uintX_t)</code><br /><code>f32, f64, // floating point (float, double)</code><br /><code>str // string</code><br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field</td>
 </tr>
 <tr>
 <td>numNonZeros</td>

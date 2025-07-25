@@ -1603,7 +1603,7 @@ The cascade consists of the following steps:</p>
 <ul>
 <li>The defaults of all options are hard-coded directly in the <code>DaphneUserConfig</code>.</li>
 <li>At program start-up, a configuration file is loaded, which overrides the defaults <strong>(WIP, #141)</strong>.</li>
-<li>After that, command-line arguments further override the configuration (<a href="https://github.com/daphne-eu/daphne/tree/main/src/api/cli/daphne.cpp">src/api/cli/daphne.cpp</a>).</li>
+<li>After that, command-line arguments further override the configuration (<a href="https://github.com/daphne-eu/daphne/tree/main/src/api/internal/daphne_internal.cpp">src/api/internal/daphne_internal.cpp</a>).</li>
 <li>(In the future, DaphneDSL will also offer means to change the configuration at run-time.)</li>
 </ul>
 <p>The <code>DaphneUserConfig</code> is available to all parts of the code, including:</p>
@@ -1617,7 +1617,7 @@ The cascade consists of the following steps:</p>
 <p>If you need to add additional information from the user, you must take roughly the following steps:</p>
 <ol>
 <li>Create a new member in <code>DaphneUserConfig</code> and hard-code a reasonable default.</li>
-<li>Add a command-line argument to the system's CLI API in <a href="https://github.com/daphne-eu/daphne/tree/main/src/api/cli/daphne.cpp">src/api/cli/daphne.cpp</a>. We use LLVM's <a href="https://llvm.org/docs/CommandLine.html">CommandLine 2.0 library</a> for parsing CLI arguments. Make sure to update the corresponding member the <code>DaphneUserConfig</code> with the parsed argument.</li>
+<li>Add a command-line argument to the system's CLI API in <a href="https://github.com/daphne-eu/daphne/tree/main/src/api/internal/daphne_internal.cpp">src/api/internal/daphne_internal.cpp</a>. We use LLVM's <a href="https://llvm.org/docs/CommandLine.html">CommandLine 2.0 library</a> for parsing CLI arguments. Make sure to update the corresponding member the <code>DaphneUserConfig</code> with the parsed argument.</li>
 <li><em>For compiler passes</em>: If necessary, pass on the <code>DaphneUserConfig</code> to the compiler pass you are working on in <a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/execution/DaphneIrExecutor.cpp">src/compiler/execution/DaphneIrExecutor.cpp</a>. <em>For kernels</em>: All kernels automatically get the <code>DaphneUserConfig</code> via the <code>DaphneContext</code> (their last parameter), so no action is required from your side.</li>
 <li>Access the new member of the <code>DaphneUserConfig</code> in your code.</li>
 </ol>

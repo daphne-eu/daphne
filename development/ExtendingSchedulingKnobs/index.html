@@ -1601,7 +1601,7 @@
 <p>The DAPHNE developer should consider the following files for adding a new scheduling technique:</p>
 <ol>
 <li><code>src/runtime/local/vectorized/LoadPartitioning.h</code></li>
-<li><code>src/api/cli/daphne.cpp</code></li>
+<li><code>src/api/internal/daphne_internal.cpp</code></li>
 </ol>
 <p><strong>Adding the actual code of the technique:</strong></p>
 <p>The first file <code>LoadPartitioning.h</code> contains the implementation of the currently supported scheduling techniques, i.e., the current version of DAPHNE uses self-scheduling techniques to partition the tasks. Also, it uses the self-scheduling principle for executing the tasks.
@@ -1633,7 +1633,7 @@ For more details, please visit <a href="https://daphne-eu.eu/wp-content/uploads/
 </li>
 </ol>
 <p><strong>Enabling the selection of the newly added technique:</strong></p>
-<p>The second file <code>daphne.cpp</code> contains the code that parses the command-line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a valid option. Otherwise, the developer will not be able to use the newly added technique.
+<p>The second file <code>daphne_internal.cpp</code> contains the code that parses the command-line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a valid option. Otherwise, the developer will not be able to use the newly added technique.
 There is a variable called <code>taskPartitioningScheme</code> and it is of type <code>opt&lt;SelfSchedulingScheme&gt;</code>.
 The developer should extend the declaration of <code>opt&lt;SelfSchedulingScheme&gt;</code> as follows:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">opt</span><span class="o">&lt;</span><span class="n">SelfSchedulingScheme</span><span class="o">&gt;</span><span class="w"> </span><span class="n">taskPartitioningScheme</span><span class="p">(</span>

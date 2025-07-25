@@ -1780,7 +1780,8 @@ and ports the workers listen to. For now, we use an environment variable called
 <p><strong>(*)</strong> Note that we execute DAPHNE from the same bash shell we've set up the environment variable  <code>DISTRIBUTED_WORKERS</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bin/daphne<span class="w"> </span>--distributed<span class="w"> </span>./example.script
 </code></pre></div>
-<p>For now, only asynchronous gRPC is implemented as a distributed backend and the backend selection is hardcoded in <code>/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h</code>.</p>
+<p>Currrently, synchronous gRPC, asynchronous gRPC, and <a href="/daphne/MPI-Usage.md">OpenMPI</a> are implemented as distributed backends.
+The distributed backend can be selected using the command-line argument <code>--dist_backend</code>.</p>
 <h2 id="example">Example</h2>
 <p>On one terminal we start up a distributed worker:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>bin/DistributedWorker<span class="w"> </span>localhost:5000
