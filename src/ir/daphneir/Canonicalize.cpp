@@ -271,7 +271,7 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
                 rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
 
             auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+                op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
             rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
             return true;
         }
@@ -293,7 +293,7 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
                 // simply remove Abs function
 
                 auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                    op.getLoc(), op.getResult().getType(), width, height, min, max, sparsity, seed);
+                    op.getLoc(), op.getResult().getType(), height, width, min, max, sparsity, seed);
                 rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
                 return true;
             }
@@ -304,7 +304,7 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
                 auto newMin =
                     rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
                 auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                    op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+                    op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
                 rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
                 return true;
             }
@@ -349,7 +349,7 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
         auto newMax = rewriter.create<Operation>(op.getLoc(), max, rhs);
         auto newMin = rewriter.create<Operation>(op.getLoc(), min, rhs);
         auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-            op.getLoc(), op.getResult().getType(), width, height, newMin, newMax, sparsity, seed);
+            op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
         rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
         return true;
     }
