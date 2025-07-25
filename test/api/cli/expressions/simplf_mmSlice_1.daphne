@@ -1,0 +1,82 @@
+// === FLOAT64 Matrices ===
+A_f = [ 1.0, 2.0, 3.0, 4.0 ]; // [[1,2],[3,4]]
+B_f = [ 5.0, 6.0, 7.0, 8.0 ]; // [[5,6],[7,8]]
+A_f = reshape(A_f, 2, 2);
+B_f = reshape(B_f, 2, 2);
+
+// === INT64 Matrices ===
+A_i = [ 1, 2, 3, 4 ]; // [[1,2],[3,4]]
+B_i = [ 5, 6, 7, 8 ]; // [[5,6],[7,8]]
+A_i = reshape(A_i, 2, 2);
+B_i = reshape(B_i, 2, 2);
+
+// === A_i (int) @ B_f (float) ===
+Aif_Bf_1 = (A_i @B_f)[1, 0];
+Aif_Bf_2 = (transpose(A_i) @transpose(B_f))[1, 0];
+Aif_Bf_3 = (A_i @transpose(B_f))[1, 0];
+Aif_Bf_4 = (transpose(A_i) @B_f)[1, 0];
+
+// === A_f (float) @ B_i (int) ===
+Af_Bi_1 = (A_f @B_i)[1, 0];
+Af_Bi_2 = (transpose(A_f) @transpose(B_i))[1, 0];
+Af_Bi_3 = (A_f @transpose(B_i))[1, 0];
+Af_Bi_4 = (transpose(A_f) @B_i)[1, 0];
+
+// === A_f @ B_f ===
+Aff_Bf_1 = (A_f @B_f)[1, 0];
+Aff_Bf_2 = (transpose(A_f) @transpose(B_f))[1, 0];
+Aff_Bf_3 = (A_f @transpose(B_f))[1, 0];
+Aff_Bf_4 = (transpose(A_f) @B_f)[1, 0];
+
+// === A_i @ B_i ===
+Aii_Bi_1 = (A_i @B_i)[1, 0];
+Aii_Bi_2 = (transpose(A_i) @transpose(B_i))[1, 0];
+Aii_Bi_3 = (A_i @transpose(B_i))[1, 0];
+Aii_Bi_4 = (transpose(A_i) @B_i)[1, 0];
+
+// === PRINT RESULTS ===
+print(as.scalar(Aff_Bf_1)); // Expect: 43
+print(as.scalar(Aff_Bf_2)); // Expect: 31
+print(as.scalar(Aff_Bf_3)); // Expect: 39
+print(as.scalar(Aff_Bf_4)); // Expect: 38
+
+print(as.scalar(Aii_Bi_1)); // Expect: 43
+print(as.scalar(Aii_Bi_2)); // Expect: 31
+print(as.scalar(Aii_Bi_3)); // Expect: 39
+print(as.scalar(Aii_Bi_4)); // Expect: 38
+
+print(as.scalar(Aif_Bf_1)); // Expect: 43
+print(as.scalar(Aif_Bf_2)); // Expect: 31
+print(as.scalar(Aif_Bf_3)); // Expect: 39
+print(as.scalar(Aif_Bf_4)); // Expect: 38
+
+print(as.scalar(Af_Bi_1)); // Expect: 43
+print(as.scalar(Af_Bi_2)); // Expect: 31
+print(as.scalar(Af_Bi_3)); // Expect: 39
+print(as.scalar(Af_Bi_4)); // Expect: 38
+
+// === With more than one row/col ===
+// Define two 5x5 matrices
+m1 = [
+    1.0,  2.0,  3.0,  4.0,  5.0,  6.0,  7.0,  8.0,  9.0,  10.0, 11.0, 12.0, 13.0,
+    14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0
+];
+m1 = reshape(m1, 5, 5);
+
+m2 = [
+    1.0,  2.0,  3.0,  4.0,  5.0,  6.0,  7.0,  8.0,  9.0,  10.0, 11.0, 12.0, 13.0,
+    14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0
+];
+m2 = reshape(m2, 5, 5);
+
+// === Valid sliced matrix multiplications ===
+mm1 = (m1 @m2)[1:3, 2:4]; // plain
+mm2 = (transpose(m1) @transpose(m2))[1:4, 2:4];
+mm3 = (m1 @transpose(m2))[1:3, 2:4];
+mm4 = (transpose(m1) @m2)[1:3, 2:4];
+
+// Print the resulting submatrices (2x2)
+print(mm1);
+print(mm2);
+print(mm3);
+print(mm4);

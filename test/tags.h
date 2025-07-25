@@ -22,6 +22,7 @@
 // tag macros separated by whitespace, e.g., if TAG_A is "[a]" and TAG_B is
 // "[b]", then TAG_A TAG_B is "[a]" "[b]", which is equivalent to "[a][b]".
 
+#define TAG_REWRITE "[rewrite]"
 #define TAG_ALGORITHMS "[algorithms]"
 #define TAG_CAST "[cast]"
 #define TAG_CODEGEN "[codegen]"
