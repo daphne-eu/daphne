@@ -202,7 +202,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ExtractRow - Matrix boundary checking", TAG_KERNELS,
     DTSel *selMatrix = nullptr;
     DT *resMatrix = nullptr;
 
-    SECTION("sel out of bounds - negative") { selMatrix = genGivenVals<DTSel>(3, {-1, 2, 2}); }
+    SECTION("sel out of bounds - negative") { selMatrix = genGivenVals<DTSel>(3, {-4, 2, 2}); }
     SECTION("sel out of bounds - too high") { selMatrix = genGivenVals<DTSel>(3, {0, 2, 3}); }
 
     REQUIRE_THROWS_AS((extractRow<DT, DT, VT>(resMatrix, argMatrix, selMatrix, nullptr)), std::out_of_range);
@@ -227,9 +227,9 @@ TEMPLATE_TEST_CASE("ExtractRow - Frame boundary checking", TAG_KERNELS, int32_t,
     DTSel *selMatrix = nullptr;
     Frame *res = nullptr;
 
-    SECTION("sel out of bounds - negative") {
+    SECTION("sel out of bounds - too small negative") {
         selMatrix = genGivenVals<DTSel>(3, {
-                                               -1,
+                                               -6,
                                                2,
                                                2,
                                            });

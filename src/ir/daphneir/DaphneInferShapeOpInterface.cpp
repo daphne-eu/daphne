@@ -432,19 +432,26 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
     if (srcNumRows != -1 && loIn.first && upEx.first) {
         ssize_t loInPos = loIn.second;
         ssize_t upExPos = upEx.second;
+        if (loInPos < 0) {
+            loInPos += srcNumRows;
+            if (upExPos <= 0)
+                upExPos += srcNumRows;
+        } else if (upExPos < 0)
+            upExPos += srcNumRows;
+
         if (loInPos < 0 || loInPos >= srcNumRows)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
                                               "SliceRowOp shape inference: lowerIncl must be in [0, "
                                               "numRows), "
                                               "but is " +
-                                                  std::to_string(loInPos) + " with " + std::to_string(srcNumRows) +
+                                                  std::to_string(loIn.second) + " with " + std::to_string(srcNumRows) +
                                                   " rows");
         if (upExPos < 0 || upExPos > srcNumRows)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
                                               "SliceRowOp shape inference: upperExcl must be in [0, "
                                               "numRows], "
                                               "but is " +
-                                                  std::to_string(upExPos) + " with " + std::to_string(srcNumRows) +
+                                                  std::to_string(upEx.second) + " with " + std::to_string(srcNumRows) +
                                                   " rows");
         if (loInPos > upExPos)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
@@ -462,7 +469,10 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     Type srcTy = getSource().getType();
     ssize_t srcNumRows;
     ssize_t srcNumCols;
-    if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
+    if (llvm::isa<daphne::UnknownType>(srcTy)) {
+        srcNumRows = -1;
+        srcNumCols = -1;
+    } else if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
         srcNumRows = srcMatTy.getNumRows();
         srcNumCols = srcMatTy.getNumCols();
     } else if (auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
@@ -471,8 +481,8 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     } else
         // If this is the case, shape inference shouldn't have been called.
         throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
-                                          "SliceColOp shape inference does only support matrix and frame "
-                                          "inputs");
+                                          "SliceColOp shape inference does only support unknown, matrix, and "
+                                          "frame inputs");
 
     auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
     auto upEx = CompilerUtils::isConstant<int64_t>(getUpperExcl());
@@ -481,19 +491,26 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     if (srcNumCols != -1 && loIn.first && upEx.first) {
         ssize_t loInPos = loIn.second;
         ssize_t upExPos = upEx.second;
+        if (loInPos < 0) {
+            loInPos += srcNumCols;
+            if (upExPos <= 0)
+                upExPos += srcNumCols;
+        } else if (upExPos < 0)
+            upExPos += srcNumCols;
+
         if (loInPos < 0 || loInPos >= srcNumCols)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
                                               "SliceColOp shape inference: lowerIncl must be in [0, "
                                               "numCols), "
                                               "but is " +
-                                                  std::to_string(loInPos) + " with " + std::to_string(srcNumCols) +
+                                                  std::to_string(loIn.second) + " with " + std::to_string(srcNumCols) +
                                                   " cols");
         if (upExPos < 0 || upExPos > srcNumCols)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
                                               "SliceColOp shape inference: upperExcl must be in [0, "
                                               "numCols], "
                                               "but is " +
-                                                  std::to_string(upExPos) + " with " + std::to_string(srcNumCols) +
+                                                  std::to_string(upEx.second) + " with " + std::to_string(srcNumCols) +
                                                   " cols");
         if (loInPos > upExPos)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
@@ -501,7 +518,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
                                               "than upperExcl"
                                               " (found " +
                                                   std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")");
-        resNumCols = upEx.second - loIn.second;
+        resNumCols = upExPos - loInPos;
     }
 
     return {{srcNumRows, resNumCols}};
@@ -530,7 +547,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::ExtractColOp::inferShape() {
         }
     }
     // Default case except when the selectedCols ends in a wildcard
-    return {{srcNumRows, getShape(getOperand(1)).second}};
+    return {{srcNumRows, getShape(getOperand(1)).first}};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::EigenOp::inferShape() {
