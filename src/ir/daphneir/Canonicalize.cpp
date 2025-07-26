@@ -348,6 +348,14 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
         auto width = lhsRand.getNumCols();
         auto sparsity = lhsRand.getSparsity();
         auto seed = lhsRand.getSeed();
+        auto maxValueInt = CompilerUtils::isConstant<int>(max);
+        auto minValueInt = CompilerUtils::isConstant<int>(min);
+
+        if (maxValueInt.first && minValueInt.first) {
+            // do not push down for integer values as the result might include
+            // ranges not available in between the original values
+            return false;
+        }
         auto newMax = rewriter.create<Operation>(op.getLoc(), max, rhs);
         auto newMin = rewriter.create<Operation>(op.getLoc(), min, rhs);
         auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
