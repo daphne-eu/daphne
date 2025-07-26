@@ -234,7 +234,30 @@ mlir::LogicalResult mlir::daphne::SparsityOp::canonicalize(mlir::daphne::Sparsit
     return mlir::failure();
 }
 
-template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewriter &rewriter) {
+/**
+ * @brief PushDown optimizations will try to optimize aways intermediate results
+ * when function results are used with arithmetic operations.
+ * An example is `abs(fill(2,2,-3))` which will evaluate to
+ * -3,-3
+ * -3,-3
+ *
+ * and the applies abs to each element of the intermediate individually leading to
+ *
+ * 3,3
+ * 3,3
+ *
+ * Instead we can push the math inside the function and have it evaluate first:
+ *
+ * fill(2,2,abs(3)) -> fill(2,2,3)
+ *
+ * which directly fills the matrix
+ *
+ * 3,3
+ * 3,3
+ *
+ * and skips the intermediate.
+ */
+template <class Operation> bool tryPushDownUnary(Operation op, mlir::PatternRewriter &rewriter) {
     mlir::Value arg = op.getArg();
     mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
     mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
@@ -313,7 +336,30 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
     }
     return false;
 }
-template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewriter &rewriter) {
+/**
+ * @brief PushDown optimizations will try to optimize aways intermediate results
+ * when function results are used with arithmetic operations.
+ * An example is `fill(2,2,3) + 3` which will evaluate to
+ * 3,3
+ * 3,3
+ *
+ * and the applies +3 to each element of the intermediate individually leading to
+ *
+ * 6,6
+ * 6,6
+ *
+ * Instead we can push the math inside the function and have it evaluate first:
+ *
+ * fill(2,2,3 + 3) -> fill(2,2,6)
+ *
+ * which directly fills the matrix
+ *
+ * 6,6
+ * 6,6
+ *
+ * and skips the intermediate.
+ */
+template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
@@ -402,49 +448,6 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
 }
 
 /**
- * @brief PushDown optimizations will try to optimize aways intermediate results
- * when function results are used with arithmetic operations.
- * An example is `fill(2,2,3) + 3` which will evaluate to
- * 3,3
- * 3,3
- *
- * and the applies +3 to each element of the intermediate individually leading to
- *
- * 6,6
- * 6,6
- *
- * Instead we can push the math inside the function and have it evaluate first:
- *
- * fill(2,2,3 + 3) -> fill(2,2,6)
- *
- * which directly fills the matrix
- *
- * 6,6
- * 6,6
- *
- * and skips the intermediate.
- */
-template <class Operation> bool tryPushDown(Operation op, mlir::PatternRewriter &rewriter) {
-    if constexpr (std::is_same<Operation, mlir::daphne::EwAbsOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwExpOp>() || std::is_same<Operation, mlir::daphne::EwLnOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwSignOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwSqrtOp>()) {
-        return pushDownUnary(op, rewriter);
-    }
-    if constexpr (std::is_same<Operation, mlir::daphne::EwAddOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwSubOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwMulOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwDivOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwPowOp>() ||
-                  std::is_same<Operation, mlir::daphne::EwLogOp>() || std::is_same<Operation, mlir::daphne::EwModOp>()
-
-    ) {
-        return pushDownBinary(op, rewriter);
-    }
-    return false;
-}
-
-/**
  * @brief Replaces (1) `a + b` by `a concat b`, if `a` or `b` is a string,
  * and (2) `a + X` by `X + a` (`a` scalar, `X` matrix/frame).
  *
@@ -462,7 +465,7 @@ template <class Operation> bool tryPushDown(Operation op, mlir::PatternRewriter 
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(mlir::daphne::EwAddOp op, PatternRewriter &rewriter) {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
-    if (tryPushDown<mlir::daphne::EwAddOp>(op, rewriter)) {
+    if (tryPushDownBinary<mlir::daphne::EwAddOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -524,7 +527,7 @@ mlir::LogicalResult mlir::daphne::EwSubOp::canonicalize(mlir::daphne::EwSubOp op
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
 
-    if (tryPushDown<mlir::daphne::EwSubOp>(op, rewriter)) {
+    if (tryPushDownBinary<mlir::daphne::EwSubOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -557,7 +560,7 @@ mlir::LogicalResult mlir::daphne::EwMulOp::canonicalize(mlir::daphne::EwMulOp op
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
 
-    if (tryPushDown<mlir::daphne::EwMulOp>(op, rewriter)) {
+    if (tryPushDownBinary<mlir::daphne::EwMulOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -586,7 +589,7 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
     mlir::Value rhs = op.getRhs();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
     const bool lhsIsSca = CompilerUtils::isScaType(lhs.getType());
-    if (tryPushDown<mlir::daphne::EwDivOp>(op, rewriter)) {
+    if (tryPushDownBinary<mlir::daphne::EwDivOp>(op, rewriter)) {
         return mlir::success();
     }
 
@@ -608,7 +611,7 @@ mlir::LogicalResult mlir::daphne::EwDivOp::canonicalize(mlir::daphne::EwDivOp op
  */
 mlir::LogicalResult mlir::daphne::EwLogOp::canonicalize(mlir::daphne::EwLogOp op, PatternRewriter &rewriter) {
 
-    if (tryPushDown<mlir::daphne::EwLogOp>(op, rewriter)) {
+    if (tryPushDownBinary<mlir::daphne::EwLogOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -617,7 +620,7 @@ mlir::LogicalResult mlir::daphne::EwLogOp::canonicalize(mlir::daphne::EwLogOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwModOp::canonicalize(mlir::daphne::EwModOp op, PatternRewriter &rewriter) {
-    if (tryPushDown<mlir::daphne::EwModOp>(op, rewriter)) {
+    if (tryPushDownBinary<mlir::daphne::EwModOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -627,7 +630,7 @@ mlir::LogicalResult mlir::daphne::EwModOp::canonicalize(mlir::daphne::EwModOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwAbsOp::canonicalize(mlir::daphne::EwAbsOp op, PatternRewriter &rewriter) {
-    if (tryPushDown<mlir::daphne::EwAbsOp>(op, rewriter)) {
+    if (tryPushDownUnary<mlir::daphne::EwAbsOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -637,7 +640,7 @@ mlir::LogicalResult mlir::daphne::EwAbsOp::canonicalize(mlir::daphne::EwAbsOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwSignOp::canonicalize(mlir::daphne::EwSignOp op, PatternRewriter &rewriter) {
-    if (tryPushDown<mlir::daphne::EwSignOp>(op, rewriter)) {
+    if (tryPushDownUnary<mlir::daphne::EwSignOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -647,7 +650,7 @@ mlir::LogicalResult mlir::daphne::EwSignOp::canonicalize(mlir::daphne::EwSignOp 
  *
  */
 mlir::LogicalResult mlir::daphne::EwExpOp::canonicalize(mlir::daphne::EwExpOp op, PatternRewriter &rewriter) {
-    if (tryPushDown<mlir::daphne::EwExpOp>(op, rewriter)) {
+    if (tryPushDownUnary<mlir::daphne::EwExpOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -657,7 +660,7 @@ mlir::LogicalResult mlir::daphne::EwExpOp::canonicalize(mlir::daphne::EwExpOp op
  *
  */
 mlir::LogicalResult mlir::daphne::EwLnOp::canonicalize(mlir::daphne::EwLnOp op, PatternRewriter &rewriter) {
-    if (tryPushDown<mlir::daphne::EwLnOp>(op, rewriter)) {
+    if (tryPushDownUnary<mlir::daphne::EwLnOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -667,7 +670,7 @@ mlir::LogicalResult mlir::daphne::EwLnOp::canonicalize(mlir::daphne::EwLnOp op, 
  *
  */
 mlir::LogicalResult mlir::daphne::EwSqrtOp::canonicalize(mlir::daphne::EwSqrtOp op, PatternRewriter &rewriter) {
-    if (tryPushDown<mlir::daphne::EwSqrtOp>(op, rewriter)) {
+    if (tryPushDownUnary<mlir::daphne::EwSqrtOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
@@ -677,7 +680,7 @@ mlir::LogicalResult mlir::daphne::EwSqrtOp::canonicalize(mlir::daphne::EwSqrtOp 
  *
  */
 mlir::LogicalResult mlir::daphne::EwPowOp::canonicalize(mlir::daphne::EwPowOp op, PatternRewriter &rewriter) {
-    if (tryPushDown<mlir::daphne::EwPowOp>(op, rewriter)) {
+    if (tryPushDownBinary<mlir::daphne::EwPowOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
