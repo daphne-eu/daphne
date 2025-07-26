@@ -284,29 +284,31 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
             auto maxValueDouble = CompilerUtils::isConstant<double>(max);
             auto minValueDouble = CompilerUtils::isConstant<double>(min);
 
-            // will be int or double. Whichever it isn't will default to 0
-            // so they can simply be added together here
+            if ((maxValueInt.first && minValueInt.first) || (maxValueDouble.first && minValueDouble.first) ||
+                (maxValueInt.first && minValueDouble.first) || (maxValueDouble.first && minValueInt.first)
 
-            auto maxValue = maxValueDouble.second + maxValueInt.second;
-            auto minValue = minValueDouble.second + minValueInt.second;
-            if (minValue >= 0 && maxValue > minValue) {
-                // simply remove Abs function
+            ) {
+                // will be int or double. Whichever it isn't will default to 0
+                // so they can simply be added together here
 
-                auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                    op.getLoc(), op.getResult().getType(), height, width, min, max, sparsity, seed);
-                rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
-                return true;
-            }
-            if (minValue <= 0 && maxValue > minValue) {
-                // swap max and min
-                auto newMax =
-                    rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
-                auto newMin =
-                    rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
-                auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                    op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
-                rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
-                return true;
+                auto maxValue = maxValueDouble.second + maxValueInt.second;
+                auto minValue = minValueDouble.second + minValueInt.second;
+                if (minValue >= 0 && maxValue >= minValue) {
+                    // simply remove Abs function
+                    rewriter.replaceOp(op, {arg.getDefiningOp<mlir::daphne::RandMatrixOp>()});
+                    return true;
+                }
+                if (maxValue <= 0 && maxValue >= minValue) {
+                    // swap max and min
+                    auto newMax = rewriter.create<Operation>(
+                        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
+                    auto newMin = rewriter.create<Operation>(
+                        op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
+                    auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
+                        op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
+                    rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+                    return true;
+                }
             }
         }
     }
