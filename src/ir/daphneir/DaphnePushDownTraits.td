@@ -19,7 +19,11 @@
 
 include "mlir/IR/OpBase.td"
 
+// ============================================================================
+// Traits determining pushdown rewrite possibilities
+// ============================================================================
+
 def PushDownLinear: NativeOpTrait<"PushDownLinear">;
-def PushDownWithIntervalUpdate: NativeOpTrait<"PushDownWithIntervalUpdate">;
+def PushDownIncrementUpdate: NativeOpTrait<"PushDownIncrementUpdate">;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNEPUSHDOWNTRAITS_TD

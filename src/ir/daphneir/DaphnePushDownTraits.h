@@ -4,15 +4,20 @@
 namespace mlir::OpTrait {
 
 // ============================================================================
-// Traits determining pushdown rewrite possibilities
+// Traits determining advanced push-down rewrite possibilities
 // ============================================================================
 
-// Dynamic First Argument
-
-template <class ConcreteOp> class PushDown : public TraitBase<ConcreteOp, PushDown> {};
+/**
+ * @brief This trait is for operations that are linear and might allow for push-downs into functions that
+ * act on e.g. ranges
+ */
 template <class ConcreteOp> class PushDownLinear : public TraitBase<ConcreteOp, PushDownLinear> {};
-template <class ConcreteOp>
-class PushDownWithIntervalUpdate : public TraitBase<ConcreteOp, PushDownWithIntervalUpdate> {};
+
+/**
+ * @brief This trait is for operations that are using an increment value which
+ * needs to be accounted for during push-down optimizations
+ */
+template <class ConcreteOp> class PushDownIncrementUpdate : public TraitBase<ConcreteOp, PushDownIncrementUpdate> {};
 
 } // namespace mlir::OpTrait
 

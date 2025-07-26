@@ -376,7 +376,7 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
 
     const bool supportsPushDownLinear = op->template hasTrait<mlir::OpTrait::PushDownLinear>();
-    const bool supportsPushDownWithIntervalUpdate = op->template hasTrait<mlir::OpTrait::PushDownWithIntervalUpdate>();
+    const bool supportsPushDownIncrementUpdate = op->template hasTrait<mlir::OpTrait::PushDownIncrementUpdate>();
 
     // This will check for the fill operation to push down the arithmetic inside
     // of it
@@ -426,7 +426,7 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
         auto newFrom = rewriter.create<Operation>(op.getLoc(), from, rhs);
         auto newTo = rewriter.create<Operation>(op.getLoc(), to, rhs);
 
-        if (supportsPushDownWithIntervalUpdate) {
+        if (supportsPushDownIncrementUpdate) {
             auto incInt = CompilerUtils::isConstant<int>(inc);
             auto valueInt = CompilerUtils::isConstant<int>(rhs);
             auto valueDouble = CompilerUtils::isConstant<double>(rhs);
