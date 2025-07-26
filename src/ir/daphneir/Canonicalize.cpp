@@ -271,9 +271,7 @@ template <class Operation> bool tryPushDownUnary(Operation op, mlir::PatternRewr
         auto width = fill.getNumCols();
         auto newOp =
             rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), fillValue);
-        auto newCombinedOpAfterPushDown =
-            rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newOp, height, width);
-        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        rewriter.replaceOpWithNewOp<mlir::daphne::FillOp>(op, op.getResult().getType(), newOp, height, width);
         return true;
     }
     // This will check for the rand operation to push down the arithmetic inside
@@ -294,15 +292,13 @@ template <class Operation> bool tryPushDownUnary(Operation op, mlir::PatternRewr
 
             if constexpr (std::is_same<Operation, mlir::daphne::EwMinusOp>()) {
                 // max and min have to be swapped after being negated
-                auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                    op.getLoc(), op.getResult().getType(), height, width, newMax, newMin, sparsity, seed);
-                rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+                rewriter.replaceOpWithNewOp<mlir::daphne::RandMatrixOp>(op, op.getResult().getType(), height, width,
+                                                                        newMax, newMin, sparsity, seed);
                 return true;
             }
 
-            auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
-            rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+            rewriter.replaceOpWithNewOp<mlir::daphne::RandMatrixOp>(op, op.getResult().getType(), height, width, newMin,
+                                                                    newMax, sparsity, seed);
             return true;
         }
         // Handle the special case of RandMatrixOp and EwAbsOp which only works
@@ -334,9 +330,8 @@ template <class Operation> bool tryPushDownUnary(Operation op, mlir::PatternRewr
                         op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
                     auto newMin = rewriter.create<Operation>(
                         op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), max);
-                    auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-                        op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
-                    rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+                    rewriter.replaceOpWithNewOp<mlir::daphne::RandMatrixOp>(op, op.getResult().getType(), height, width,
+                                                                            newMin, newMax, sparsity, seed);
                     return true;
                 }
             }
@@ -386,9 +381,7 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
         auto width = lhsFill.getNumCols();
         auto newOp = rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()),
                                                 fillValue, rhs);
-        auto newCombinedOpAfterPushDown =
-            rewriter.create<mlir::daphne::FillOp>(op.getLoc(), op.getResult().getType(), newOp, height, width);
-        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        rewriter.replaceOpWithNewOp<mlir::daphne::FillOp>(op, op.getResult().getType(), newOp, height, width);
         return true;
     }
     // This will check for the rand operation to push down the arithmetic inside
@@ -410,9 +403,8 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
         }
         auto newMax = rewriter.create<Operation>(op.getLoc(), max, rhs);
         auto newMin = rewriter.create<Operation>(op.getLoc(), min, rhs);
-        auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
-            op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
-        rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+        rewriter.replaceOpWithNewOp<mlir::daphne::RandMatrixOp>(op, op.getResult().getType(), height, width, newMin,
+                                                                newMax, sparsity, seed);
         return true;
     }
 
@@ -440,15 +432,11 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
             }
             auto newInc = rewriter.create<Operation>(op.getLoc(), rhs, inc);
 
-            auto newCombinedOpAfterPushDown =
-                rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, newInc);
-            rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+            rewriter.replaceOpWithNewOp<mlir::daphne::SeqOp>(op, op.getResult().getType(), newFrom, newTo, newInc);
             return true;
 
         } else {
-            auto newCombinedOpAfterPushDown =
-                rewriter.create<mlir::daphne::SeqOp>(op.getLoc(), op.getResult().getType(), newFrom, newTo, inc);
-            rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+            rewriter.replaceOpWithNewOp<mlir::daphne::SeqOp>(op, op.getResult().getType(), newFrom, newTo, inc);
             return true;
         }
     }
