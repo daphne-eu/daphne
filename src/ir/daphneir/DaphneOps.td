@@ -256,7 +256,7 @@ class Daphne_EwUnaryOp<string name, Type scalarType, list<Trait> traits = []> : 
 // ----------------------------------------------------------------------------
 
 // TODO EwMinusOp: Should an unsigned integer argument yield a signed integer result?
-def Daphne_EwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar, [ValueTypeFromFirstArg]> {
+def Daphne_EwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar, [ValueTypeFromFirstArg,PushDownLinear]> {
    let hasFolder = 1;
    let hasCanonicalizeMethod = 1;
 }

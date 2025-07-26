@@ -1,0 +1,2 @@
+DenseMatrix(1x3, int64_t)
+6 6 3

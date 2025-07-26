@@ -292,6 +292,14 @@ template <class Operation> bool tryPushDownUnary(Operation op, mlir::PatternRewr
             auto newMin =
                 rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()), min);
 
+            if constexpr (std::is_same<Operation, mlir::daphne::EwMinusOp>()) {
+                // max and min have to be swapped after being negated
+                auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
+                    op.getLoc(), op.getResult().getType(), height, width, newMax, newMin, sparsity, seed);
+                rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
+                return true;
+            }
+
             auto newCombinedOpAfterPushDown = rewriter.create<mlir::daphne::RandMatrixOp>(
                 op.getLoc(), op.getResult().getType(), height, width, newMin, newMax, sparsity, seed);
             rewriter.replaceOp(op, {newCombinedOpAfterPushDown});
@@ -904,6 +912,9 @@ mlir::LogicalResult mlir::daphne::RenameOp::canonicalize(mlir::daphne::RenameOp 
 mlir::LogicalResult mlir::daphne::EwMinusOp::canonicalize(mlir::daphne::EwMinusOp op, PatternRewriter &rewriter) {
     if (auto innerOp = op.getOperand().getDefiningOp<mlir::daphne::EwMinusOp>()) {
         rewriter.replaceOp(op, innerOp.getOperand());
+        return mlir::success();
+    }
+    if (tryPushDownUnary<mlir::daphne::EwMinusOp>(op, rewriter)) {
         return mlir::success();
     }
     return mlir::failure();
