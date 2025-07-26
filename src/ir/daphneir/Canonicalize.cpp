@@ -239,11 +239,10 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
     mlir::daphne::FillOp fill = arg.getDefiningOp<mlir::daphne::FillOp>();
     mlir::daphne::RandMatrixOp rand = arg.getDefiningOp<mlir::daphne::RandMatrixOp>();
 
-    const bool supportsPushDown = op->template hasTrait<mlir::OpTrait::PushDown>();
     const bool supportsPushDownLinear = op->template hasTrait<mlir::OpTrait::PushDownLinear>();
 
     // This will check for the fill operation to push down the arithmetic inside
-    if (fill && supportsPushDown) {
+    if (fill) {
         auto fillValue = fill.getArg();
         auto height = fill.getNumRows();
         auto width = fill.getNumCols();
@@ -256,7 +255,7 @@ template <class Operation> bool pushDownUnary(Operation op, mlir::PatternRewrite
     }
     // This will check for the rand operation to push down the arithmetic inside
     // of it
-    if (rand && supportsPushDown) {
+    if (rand) {
         auto max = rand.getMax();
         auto min = rand.getMin();
         auto height = rand.getNumRows();
@@ -322,13 +321,12 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
     mlir::daphne::SeqOp lhsSeq = lhs.getDefiningOp<mlir::daphne::SeqOp>();
     const bool rhsIsSca = CompilerUtils::isScaType(rhs.getType());
 
-    const bool supportsPushDown = op->template hasTrait<mlir::OpTrait::PushDown>();
     const bool supportsPushDownLinear = op->template hasTrait<mlir::OpTrait::PushDownLinear>();
     const bool supportsPushDownWithIntervalUpdate = op->template hasTrait<mlir::OpTrait::PushDownWithIntervalUpdate>();
 
     // This will check for the fill operation to push down the arithmetic inside
     // of it
-    if (lhsFill && rhsIsSca && supportsPushDown) {
+    if (lhsFill && rhsIsSca) {
         auto fillValue = lhsFill.getArg();
         auto height = lhsFill.getNumRows();
         auto width = lhsFill.getNumCols();
@@ -341,7 +339,7 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
     }
     // This will check for the rand operation to push down the arithmetic inside
     // of it
-    if (lhsRand && rhsIsSca && supportsPushDown && supportsPushDownLinear) {
+    if (lhsRand && rhsIsSca && supportsPushDownLinear) {
         auto max = lhsRand.getMax();
         auto min = lhsRand.getMin();
         auto height = lhsRand.getNumRows();
@@ -366,7 +364,7 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
 
     // This will check for the seq operation to push down the arithmetic inside
     // of it
-    if (lhsSeq && rhsIsSca && supportsPushDown && supportsPushDownLinear) {
+    if (lhsSeq && rhsIsSca && supportsPushDownLinear) {
         auto from = lhsSeq.getFrom();
         auto to = lhsSeq.getTo();
         auto inc = lhsSeq.getInc();

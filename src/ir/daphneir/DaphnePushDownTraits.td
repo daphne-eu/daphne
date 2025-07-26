@@ -19,7 +19,6 @@
 
 include "mlir/IR/OpBase.td"
 
-def PushDown: NativeOpTrait<"PushDown">;
 def PushDownLinear: NativeOpTrait<"PushDownLinear">;
 def PushDownWithIntervalUpdate: NativeOpTrait<"PushDownWithIntervalUpdate">;
 

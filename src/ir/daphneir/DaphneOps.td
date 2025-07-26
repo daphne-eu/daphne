@@ -260,19 +260,19 @@ def Daphne_EwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar, [ValueTypeFromFirs
    let hasFolder = 1;
    let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar, [ValueTypeFromFirstArg, PushDown]>{
+def Daphne_EwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar, [ValueTypeFromFirstArg]>{
    let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar, [ValueTypeFromFirstArg, PushDown]>{
+def Daphne_EwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar, [ValueTypeFromFirstArg]>{
    let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwExpOp : Daphne_EwUnaryOp<"ewExp", NumScalar, [ValueTypeFromArgsFP, PushDown]>{
+def Daphne_EwExpOp : Daphne_EwUnaryOp<"ewExp", NumScalar, [ValueTypeFromArgsFP]>{
    let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwLnOp : Daphne_EwUnaryOp<"ewLn", NumScalar, [ValueTypeFromArgsFP, PushDown]>{
+def Daphne_EwLnOp : Daphne_EwUnaryOp<"ewLn", NumScalar, [ValueTypeFromArgsFP]>{
    let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", NumScalar, [ValueTypeFromArgsFP, DeclareOpInterfaceMethods<VectorizableOpInterface>, PushDown]>{
+def Daphne_EwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", NumScalar, [ValueTypeFromArgsFP, DeclareOpInterfaceMethods<VectorizableOpInterface>]>{
    let hasCanonicalizeMethod = 1;
 }
 
@@ -346,25 +346,25 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
 // ----------------------------------------------------------------------------
 
 // TODO Make EwAddOp Commutative again (see #449).
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", AnyScalar, [ValueTypeFromArgs, CastArgsToResType/*, Commutative*/, EwSparseIfBoth, CUDASupport, PushDown, PushDownLinear]> {
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", AnyScalar, [ValueTypeFromArgs, CastArgsToResType/*, Commutative*/, EwSparseIfBoth, CUDASupport, PushDownLinear]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, CastArgsToResType, EwSparseIfBoth, CUDASupport, PushDown, PushDownLinear]> {
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, CastArgsToResType, EwSparseIfBoth, CUDASupport, PushDownLinear]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, EwSparseIfEither, CUDASupport, PushDown, PushDownLinear, PushDownWithIntervalUpdate]> {
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, EwSparseIfEither, CUDASupport, PushDownLinear, PushDownWithIntervalUpdate]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CastArgsToResType, CUDASupport, PushDown, PushDownLinear, PushDownWithIntervalUpdate]> {
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CastArgsToResType, CUDASupport, PushDownLinear, PushDownWithIntervalUpdate]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [ValueTypeFromArgs, CastArgsToResType, CUDASupport, PushDown]> {
+def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [ValueTypeFromArgs, CastArgsToResType, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", NumScalar, [ValueTypeFromArgs, CastArgsToResType, PushDown]> {
+def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", NumScalar, [ValueTypeFromArgs, CastArgsToResType]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", NumScalar, [ValueTypeFromArgsFP, CastArgsToResType, PushDown]> {
+def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", NumScalar, [ValueTypeFromArgsFP, CastArgsToResType]> {
     let hasCanonicalizeMethod = 1;
 }
 
@@ -372,8 +372,8 @@ def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", NumScalar, [ValueTypeFromArgs
 // Min/max
 // ----------------------------------------------------------------------------
 
-def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, PushDown]>;
-def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, CUDASupport, PushDown]>;
+def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative]>;
+def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, [ValueTypeFromArgs, CastArgsToResType, Commutative, CUDASupport]>;
 
 // ----------------------------------------------------------------------------
 // Logical
