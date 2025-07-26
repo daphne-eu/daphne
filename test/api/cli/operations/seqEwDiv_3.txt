@@ -1,0 +1,6 @@
+DenseMatrix(5x1, double)
+0.8
+2
+3.2
+4.4
+5.6

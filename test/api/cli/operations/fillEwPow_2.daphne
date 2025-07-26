@@ -1,0 +1,2 @@
+result = pow(fill(3.0,2,2),3);
+print(result);

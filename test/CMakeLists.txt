@@ -67,7 +67,9 @@ set(TEST_SOURCES
         api/cli/codegen/TransposeTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
+        ir/daphneir/PushdownArithmetics.cpp
         api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp
+        api/cli/operations/CanonicalizationPushDownTest.cpp
 
         parser/config/ConfigParserTest.cpp
 
