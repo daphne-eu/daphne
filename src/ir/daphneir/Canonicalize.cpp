@@ -375,6 +375,17 @@ template <class Operation> bool pushDownBinary(Operation op, mlir::PatternRewrit
         auto newTo = rewriter.create<Operation>(op.getLoc(), to, rhs);
 
         if (supportsPushDownWithIntervalUpdate) {
+            auto incInt = CompilerUtils::isConstant<int>(inc);
+            auto valueInt = CompilerUtils::isConstant<int>(rhs);
+            auto valueDouble = CompilerUtils::isConstant<double>(rhs);
+
+            if (incInt.first && (((valueInt.first && incInt.second % valueInt.second != 0)) || valueDouble.first)) {
+                // do not push down for integer values in increment
+                // that can not be cleanly divided or if divided by an FP
+                // value, as the results would
+                // change
+                return false;
+            }
             auto newInc = rewriter.create<Operation>(op.getLoc(), rhs, inc);
 
             auto newCombinedOpAfterPushDown =
