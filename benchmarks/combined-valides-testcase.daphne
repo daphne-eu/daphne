@@ -1,0 +1,32 @@
+# Valid function
+def add(a, b) -> f64 {
+  return a + b;
+}
+
+x = add(10, 20);
+
+# Unused variable (should warn)
+def test(a) -> f64 {
+  unusedVar = 42;
+  return a + 1;
+}
+
+result = test(5);
+
+# Return type mismatch (should error)
+def wrongReturn() -> f64 {
+  return "hello";
+}
+
+y = wrongReturn();
+
+# Syntax error (should error)
+def invalid(a b) -> f64 {
+  return a + b;
+}
+
+# Valid typed function
+def test2(x: i64, y: i64) -> f64 {
+  result = x + y;
+  return x + y;
+}

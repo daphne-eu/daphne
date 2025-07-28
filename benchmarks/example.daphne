@@ -1,5 +1,18 @@
-def add(a, b) -> f64 {
-  return a + b;
+// ✅ Valid function with variables and return
+def main() as int {
+    let x = 5;
+    let y = 10;
+    let unusedVar = 42;         // ⚠️ Should trigger "declared but never used"
+    let result = add(x, y);     // Test autocomplete + highlight
+    return result;
 }
 
-x = add(1, 2);
+// ✅ Another function with valid logic
+def add(a as int, b as int) as int {
+    return a + b;
+}
+
+// ❌ Syntax error: misspelled keyword
+iff true {                      // ❌ Should trigger "unknown keyword"
+    let z = 1;
+}
