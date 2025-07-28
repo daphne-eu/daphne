@@ -75,7 +75,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceCol - check throws", TAG_KERNELS, (DenseMatrix,
     DT *res = nullptr;
 
     SECTION("lowerIncl out of bounds - negative") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, -1, 3, nullptr)), std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, -8, -3, nullptr)), std::out_of_range);
     }
     SECTION("lowerIncl greater than upperExcl") {
         REQUIRE_THROWS_AS((sliceCol(res, arg, 3, 2, nullptr)), std::out_of_range);
@@ -123,7 +123,7 @@ TEMPLATE_TEST_CASE("SliceCol - check throws", TAG_KERNELS, (Frame)) {
     Frame *res = nullptr;
 
     SECTION("lowerIncl out of bounds - negative") {
-        REQUIRE_THROWS_AS((sliceCol(res, arg, -0.1, 3.0, nullptr)), std::out_of_range);
+        REQUIRE_THROWS_AS((sliceCol(res, arg, -6, -3, nullptr)), std::out_of_range);
     }
     SECTION("lowerIncl greater than upperExcl") {
         REQUIRE_THROWS_AS((sliceCol(res, arg, 3, 2, nullptr)), std::out_of_range);

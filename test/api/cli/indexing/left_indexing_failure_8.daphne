@@ -1,0 +1,4 @@
+// Left indexing a row with an out-of-bounds negative index must fail.
+X = fill(123, 3, 4);
+X[-4, ] = fill(456, 1, 4); // -4 is out of bounds for 3 rows
+print(X);

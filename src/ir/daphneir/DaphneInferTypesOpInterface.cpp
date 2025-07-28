@@ -519,26 +519,30 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
             // getting rid of a linter warning here)
             const auto srcNumCols = static_cast<ssize_t>(srcColTys.size());
 
+            if (loInPos < 0) {
+                loInPos += srcNumCols;
+                if (upExPos <= 0)
+                    upExPos += srcNumCols;
+            } else if (upExPos < 0)
+                upExPos += srcNumCols;
+
             // TODO Don't duplicate these checks from shape inference.
             if (loInPos < 0 || loInPos >= srcNumCols)
                 throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                                   "SliceColOp type inference: lowerIncl must be in [0, "
-                                                  "numCols), "
-                                                  "but is " +
-                                                      std::to_string(loInPos) + " with " + std::to_string(srcNumCols) +
-                                                      " cols");
+                                                  "numCols), but is " +
+                                                      std::to_string(loIn.second) + " with " +
+                                                      std::to_string(srcNumCols) + " cols");
             if (upExPos < 0 || upExPos > srcNumCols)
                 throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                                   "SliceColOp type inference: upperExcl must be in [0, "
-                                                  "numCols], "
-                                                  "but is " +
-                                                      std::to_string(upExPos) + " with " + std::to_string(srcNumCols) +
-                                                      " cols");
+                                                  "numCols], but is " +
+                                                      std::to_string(upEx.second) + " with " +
+                                                      std::to_string(srcNumCols) + " cols");
             if (loInPos > upExPos)
                 throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                                   "SliceColOp type inference: lowerIncl must not be greater "
-                                                  "than upperExcl"
-                                                  " (found " +
+                                                  "than upperExcl (found " +
                                                       std::to_string(loInPos) + " and " + std::to_string(upExPos) +
                                                       ")");
 

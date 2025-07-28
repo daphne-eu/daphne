@@ -136,9 +136,9 @@ TEMPLATE_TEST_CASE(TEST_NAME("Frame error handling"), TAG_KERNELS,
     Frame *res{};
     DTSel *sel{};
 
-    SECTION("selecting out of bounds, negative") {
+    SECTION("selecting out of bounds, too small") {
         numColExp = 2;
-        sel = genGivenVals<DTSel>(numColExp, {-1, 2});
+        sel = genGivenVals<DTSel>(numColExp, {-4, -5});
         checkExtractColThrow(res, arg, sel);
     }
     SECTION("selecting out of bounds, too high") {
@@ -187,8 +187,8 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Dense/Generic Matrix"), TAG_KERNELS, (DATA
         exp = genGivenVals<DT>(3, {2, 3, 3, 1, 2, 1, 2, 3, 5, 6, 6, 4, 5, 4, 5, 6, 8, 9, 9, 7, 8, 7, 8, 9});
         checkExtractCol(res, arg, sel, exp);
     }
-    SECTION("selecting out of bounds, negative") {
-        sel = genGivenVals<DT>(2, {-1, 2});
+    SECTION("selecting out of bounds, too small") {
+        sel = genGivenVals<DT>(2, {-4, -3});
         checkExtractColThrow(res, arg, sel);
     }
     SECTION("selecting out of bounds, too high") {
