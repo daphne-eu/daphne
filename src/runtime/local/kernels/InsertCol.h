@@ -52,11 +52,11 @@ void insertCol(DTArg *&res, const DTArg *arg, const DTIns *ins, const VTSel colL
 // ****************************************************************************
 
 template <typename VTSel>
-void validateArgsInsertCol(size_t colLowerIncl_Pos, VTSel colLowerIncl, size_t colUpperExcl_Pos, VTSel colUpperExcl,
+void validateArgsInsertCol(size_t colLowerIncl_SizeT, VTSel colLowerIncl, size_t colUpperExcl_SizeT, VTSel colUpperExcl,
                            size_t numRowsArg, size_t numColsArg, size_t numRowsIns, size_t numColsIns) {
 
-    if (colUpperExcl_Pos < colLowerIncl_Pos || numColsArg < colUpperExcl_Pos ||
-        (colLowerIncl_Pos == numColsArg && colLowerIncl_Pos != 0)) {
+    if (colUpperExcl_SizeT < colLowerIncl_SizeT || numColsArg < colUpperExcl_SizeT ||
+        (colLowerIncl_SizeT == numColsArg && colLowerIncl_SizeT != 0)) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
                << "' passed to InsertCol: it must hold 0 <= colLowerIncl <= "
@@ -67,11 +67,11 @@ void validateArgsInsertCol(size_t colLowerIncl_Pos, VTSel colLowerIncl, size_t c
         throw std::out_of_range(errMsg.str());
     }
 
-    if (numColsIns != colUpperExcl_Pos - colLowerIncl_Pos) {
+    if (numColsIns != colUpperExcl_SizeT - colLowerIncl_SizeT) {
         std::ostringstream errMsg;
         errMsg << "invalid arguments '" << colLowerIncl << ", " << colUpperExcl
                << "' passed to InsertCol: the number of addressed columns in arg '"
-               << colUpperExcl_Pos - colLowerIncl_Pos << "' and the number of columns in ins '" << numColsIns
+               << colUpperExcl_SizeT - colLowerIncl_SizeT << "' and the number of columns in ins '" << numColsIns
                << "' must match";
         throw std::out_of_range(errMsg.str());
     }
@@ -102,21 +102,21 @@ template <typename VTArg, typename VTSel> struct InsertCol<DenseMatrix<VTArg>, D
         const size_t numColsIns = ins->getNumCols();
 
         // Resolve negative indices here only
-        size_t colLowerIncl_Pos = static_cast<size_t>(colLowerIncl);
-        size_t colUpperExcl_Pos = static_cast<size_t>(colUpperExcl);
+        size_t colLowerIncl_SizeT = static_cast<size_t>(colLowerIncl);
+        size_t colUpperExcl_SizeT = static_cast<size_t>(colUpperExcl);
         if constexpr (std::is_signed<VTSel>::value) {
             if (colLowerIncl < 0)
-                colLowerIncl_Pos =
+                colLowerIncl_SizeT =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colLowerIncl));
             if (colUpperExcl < 0)
-                colUpperExcl_Pos =
+                colUpperExcl_SizeT =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colUpperExcl));
             if (colLowerIncl < 0 && colUpperExcl == 0)
-                colUpperExcl_Pos = colLowerIncl_Pos + 1;
+                colUpperExcl_SizeT = colLowerIncl_SizeT + 1;
         }
 
-        validateArgsInsertCol(colLowerIncl_Pos, colLowerIncl, colUpperExcl_Pos, colUpperExcl, numRowsArg, numColsArg,
-                              numRowsIns, numColsIns);
+        validateArgsInsertCol(colLowerIncl_SizeT, colLowerIncl, colUpperExcl_SizeT, colUpperExcl, numRowsArg,
+                              numColsArg, numRowsIns, numColsIns);
 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsArg, false);
@@ -130,9 +130,9 @@ template <typename VTArg, typename VTSel> struct InsertCol<DenseMatrix<VTArg>, D
 
         // TODO Can be simplified/more efficient in certain cases.
         for (size_t r = 0; r < numRowsArg; r++) {
-            std::copy(valuesArg, valuesArg + colLowerIncl_Pos, valuesRes);
-            std::copy(valuesIns, valuesIns + numColsIns, valuesRes + colLowerIncl_Pos);
-            std::copy(valuesArg + colUpperExcl_Pos, valuesArg + numColsArg, valuesRes + colUpperExcl_Pos);
+            std::copy(valuesArg, valuesArg + colLowerIncl_SizeT, valuesRes);
+            std::copy(valuesIns, valuesIns + numColsIns, valuesRes + colLowerIncl_SizeT);
+            std::copy(valuesArg + colUpperExcl_SizeT, valuesArg + numColsArg, valuesRes + colUpperExcl_SizeT);
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
             valuesIns += rowSkipIns;
@@ -151,32 +151,32 @@ template <typename VTArg, typename VTSel> struct InsertCol<Matrix<VTArg>, Matrix
         const size_t numColsArg = arg->getNumCols();
 
         // Resolve negative indices here only
-        size_t colLowerIncl_Pos = static_cast<size_t>(colLowerIncl);
-        size_t colUpperExcl_Pos = static_cast<size_t>(colUpperExcl);
+        size_t colLowerIncl_SizeT = static_cast<size_t>(colLowerIncl);
+        size_t colUpperExcl_SizeT = static_cast<size_t>(colUpperExcl);
         if constexpr (std::is_signed<VTSel>::value) {
             if (colLowerIncl < 0)
-                colLowerIncl_Pos =
+                colLowerIncl_SizeT =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colLowerIncl));
             if (colUpperExcl < 0)
-                colUpperExcl_Pos =
+                colUpperExcl_SizeT =
                     static_cast<size_t>(static_cast<ptrdiff_t>(numColsArg) + static_cast<ptrdiff_t>(colUpperExcl));
             if (colLowerIncl < 0 && colUpperExcl == 0)
-                colUpperExcl_Pos = colLowerIncl_Pos + 1;
+                colUpperExcl_SizeT = colLowerIncl_SizeT + 1;
         }
 
-        validateArgsInsertCol(colLowerIncl_Pos, colLowerIncl, colUpperExcl_Pos, colUpperExcl, numRowsArg, numColsArg,
-                              ins->getNumRows(), ins->getNumCols());
+        validateArgsInsertCol(colLowerIncl_SizeT, colLowerIncl, colUpperExcl_SizeT, colUpperExcl, numRowsArg,
+                              numColsArg, ins->getNumRows(), ins->getNumCols());
 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRowsArg, numColsArg, false);
 
         res->prepareAppend();
         for (size_t r = 0; r < numRowsArg; ++r) {
-            for (size_t c = 0; c < colLowerIncl_Pos; ++c)
+            for (size_t c = 0; c < colLowerIncl_SizeT; ++c)
                 res->append(r, c, arg->get(r, c));
-            for (size_t c = colLowerIncl_Pos; c < colUpperExcl_Pos; ++c)
-                res->append(r, c, ins->get(r, c - colLowerIncl_Pos));
-            for (size_t c = colUpperExcl_Pos; c < numColsArg; ++c)
+            for (size_t c = colLowerIncl_SizeT; c < colUpperExcl_SizeT; ++c)
+                res->append(r, c, ins->get(r, c - colLowerIncl_SizeT));
+            for (size_t c = colUpperExcl_SizeT; c < numColsArg; ++c)
                 res->append(r, c, arg->get(r, c));
         }
         res->finishAppend();

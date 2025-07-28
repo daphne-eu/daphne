@@ -336,13 +336,15 @@ A few remarks on positions:
 
 - Counting starts at zero.
     For instance, a 5 x 3 matrix has row positions 0, 1, 2, 3, and 4, and column positions 0, 1, and 2.
-- They must be non-negative.
+- Using negative positions starts counting from the end.
+    For instance, the rows of a 5 x 3 matrix can alternatively be addressed by -5, -4, -3, -2, and -1, while the columns can alternatively be addressed by -3, -2, -1.
 - They can be provided as integers or floating-point numbers (the latter are rounded down to integers).
 - They can be given as literals or as any expression evaluating to a suitable value.
 
 *Examples:*
 
 ```r
+X[-1, ]               # the last row of X
 X[1.2, ]              # same as X[1, ]
 X[1.9, ]              # same as X[1, ]
 X[i, (j + 2*sum(Y)):] # expressions
@@ -509,7 +511,7 @@ Furthermore, the rows/columns cannot be addressed by arbitrary positions lists o
 *Examples:*
 
 ```r
-X[5, 2]       = [123];            # insert (1 x 1)-matrix
+X[5, -2]      = [123];            # insert (1 x 1)-matrix
 X[10:20, 2:5] = fill(123, 10, 3); # insert (10 x 3)-matrix
 ```
 

@@ -1,4 +1,4 @@
-// Many ways of left indexing on matrices using positions.
+// Many ways of left indexing on matrices using negative positions.
 
 // Considered way of specifying row/col:
 // - empty (leave blank)

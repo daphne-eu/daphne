@@ -111,7 +111,7 @@ template <typename VTSel> struct ExtractRow<Frame, Frame, VTSel> {
             VTSel pos = valuesSel[r];
             if (pos < 0)
                 pos += numRowsArg;
-            if (static_cast<size_t>(pos) < 0 || static_cast<size_t>(pos) >= numRowsArg) {
+            if (pos < 0 || static_cast<size_t>(pos) >= numRowsArg) {
                 std::ostringstream errMsg;
                 errMsg << "invalid argument '" << valuesSel[r]
                        << "' passed to ExtractRow: "

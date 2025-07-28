@@ -1,4 +1,4 @@
-// Left indexing using different scalar types to specify rows/cols.
+// Left indexing using different scalar types to specify rows/cols (negative positions).
 
 // ****************************************************************************
 // Input matrix
