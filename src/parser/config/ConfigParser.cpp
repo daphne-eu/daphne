@@ -51,6 +51,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_OBJ_REF_MGNT))
         config.use_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::USE_OBJ_REF_MGNT).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_OPTIMISTIC_SPLIT))
+        config.use_optimistic_split = jf.at(DaphneConfigJsonParams::USE_OPTIMISTIC_SPLIT).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_IPA_CONST_PROPA))
         config.use_ipa_const_propa = jf.at(DaphneConfigJsonParams::USE_IPA_CONST_PROPA).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_PHY_OP_SELECTION))
