@@ -1732,6 +1732,11 @@ def Daphne_ReceiveFromNumpyOp: Daphne_Op<"receiveFromNumpy">{
     let results = (outs MatrixOrU:$res);
 }
 
+def Daphne_ReceiveFromScipyOp: Daphne_Op<"receiveFromScipy">{
+    let arguments = (ins UI64: $valuesAddr, UI64: $rowRelatedIdx, UI64: $colRelatedIdx, SI64:$numRows, SI64:$numCols, SI64:$nnz, UI64:$format);
+    let results = (outs MatrixOrU:$res);
+}
+
 def Daphne_SaveDaphneLibResultOp : Daphne_Op<"saveDaphneLibResult"> {
     let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs); // no results

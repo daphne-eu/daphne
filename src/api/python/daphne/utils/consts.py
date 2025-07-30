@@ -57,3 +57,9 @@ UI64 = 5
 F32 = 6
 F64 = 7
 STR = 8
+
+# Sparse Matrix Representations codes.
+CSR = 0
+COO = 1
+CSC = 2
+
