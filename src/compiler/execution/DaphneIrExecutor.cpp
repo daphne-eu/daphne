@@ -127,7 +127,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     if (userConfig_.use_columnar) {
         // Rewrite certain matrix/frame ops from linear/relational algebra to columnar ops from column algebra.
-        pm.addPass(mlir::daphne::createRewriteToColumnarOpsPass());
+        pm.addPass(mlir::daphne::createRewriteToColumnarOpsPass(userConfig_));
         // Infer the result types of the newly created columnar ops.
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         // Simplify the IR.
