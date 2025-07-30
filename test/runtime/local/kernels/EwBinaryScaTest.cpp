@@ -45,28 +45,6 @@ template <typename VT> void checkEwBinarySca(VT lhs, VT rhs, std::string exp) {
     CHECK(ewBinarySca<std::string, VT, VT>(BinaryOpCode::CONCAT, lhs, rhs, nullptr) == exp);
 }
 
-template <typename VT> void checkOptimisticSplitSum(VT lhs, VT rhs, size_t itr) {
-    // A test for applying the optimistic split functionality for SUM agg.
-    // Right now, only support SUM
-    using HalfTypeT = typename ValueTypeUtils::HalfType<VT>::type;
-
-    VT res = 0;
-    HalfTypeT resCom = 0;
-
-    // apply agg over lhs and rhs for itr times
-    for (size_t r = 0; r < itr; r++) {
-        resCom += ewBinarySca<HalfTypeT, VT, HalfTypeT>(BinaryOpCode::SUMOP, lhs, rhs, nullptr);
-        bool overflow = ewBinarySca<bool, VT, HalfTypeT>(BinaryOpCode::SUMOVERFLOW, lhs, resCom, nullptr);
-        if (overflow)
-            res += ewBinarySca<VT, VT, HalfTypeT>(BinaryOpCode::SUMEXP, lhs, rhs, nullptr);
-        resCom = overflow ? 0 : resCom;
-    }
-
-    VT exp = itr * (lhs + rhs);
-
-    CHECK(static_cast<VT>(resCom) + res == exp);
-}
-
 // ****************************************************************************
 // Arithmetic
 // ****************************************************************************
@@ -246,15 +224,6 @@ TEMPLATE_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, VALUE_TYPES) {
 // ****************************************************************************
 // Optimistic split
 // ****************************************************************************
-
-TEMPLATE_TEST_CASE(TEST_NAME("Optimistic split SUM"), TAG_KERNELS, int64_t) {
-    checkOptimisticSplitSum<int64_t>(2147483643, 2147483643, 10);
-    checkOptimisticSplitSum<int64_t>(-2147483643, -2147483643, 10);
-    checkOptimisticSplitSum<int64_t>(2147483643, 10, 10);
-    checkOptimisticSplitSum<int64_t>(-2147483643, -10, 10);
-    checkOptimisticSplitSum<int64_t>(-20, -10, 10);
-    checkOptimisticSplitSum<int64_t>(20, 10, 10);
-}
 
 // ****************************************************************************
 // String ops

@@ -92,10 +92,6 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         MAKE_CASE(BinaryOpCode::OR)
         // Strings.
         MAKE_CASE(BinaryOpCode::CONCAT)
-        // Optimistic agg
-        MAKE_CASE(BinaryOpCode::SUMOP)
-        MAKE_CASE(BinaryOpCode::SUMEXP)
-        MAKE_CASE(BinaryOpCode::SUMOVERFLOW)
 #undef MAKE_CASE
     default:
         throw std::runtime_error("unknown BinaryOpCode: " + std::to_string(static_cast<int>(opCode)));
@@ -186,14 +182,6 @@ template <> struct EwBinarySca<BinaryOpCode::CONCAT, const char *, const char *,
         return res;
     }
 };
-
-// Optimistic spliting
-// SUMOP EwBinarySca for common result in Optimistic spliting
-MAKE_EW_BINARY_SCA(BinaryOpCode::SUMOP, static_cast<TRhs>(lhs) + rhs)
-// if overflow, update final result directly.
-MAKE_EW_BINARY_SCA(BinaryOpCode::SUMEXP, lhs + static_cast<TLhs>(rhs))
-// overflow case
-MAKE_EW_BINARY_SCA(BinaryOpCode::SUMOVERFLOW, !((lhs >= 0) ^ (rhs < lhs)))
 
 #undef MAKE_EW_BINARY_SCA
 
