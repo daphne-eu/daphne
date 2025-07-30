@@ -29,18 +29,17 @@
 // ****************************************************************************
 
 template <class DTRes, class DTArg> struct Map {
-    // We could have a more specialized function pointer here i.e.
-    // (DTRes::VT)(*func)(DTArg::VT). The problem is that this is currently not
-    // supported by kernels.json.
-    static void apply(DTRes *&res, const DTArg *arg, void *func, DCTX(ctx)) = delete;
+    static void apply(DTRes *&res, const DTArg *arg, void *func, const int64_t axis, const bool udfReturnsScalar,
+                      DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTRes, class DTArg> void map(DTRes *&res, const DTArg *arg, void *func, DCTX(ctx)) {
-    Map<DTRes, DTArg>::apply(res, arg, func, ctx);
+template <class DTRes, class DTArg>
+void map(DTRes *&res, const DTArg *arg, void *func, const int64_t axis, const bool udfReturnsScalar, DCTX(ctx)) {
+    Map<DTRes, DTArg>::apply(res, arg, func, axis, udfReturnsScalar, ctx);
 }
 
 // ****************************************************************************
@@ -52,23 +51,95 @@ template <class DTRes, class DTArg> void map(DTRes *&res, const DTArg *arg, void
 // ----------------------------------------------------------------------------
 
 template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg, void *func, DCTX(ctx)) {
+    static void apply(DenseMatrix<VTRes> *&res, const DenseMatrix<VTArg> *arg, void *func, const int64_t axis,
+                      const bool udfReturnsScalar, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if (res == nullptr)
+        VTRes *valuesRes = nullptr;
+
+        if (axis != 0 && axis != 1) { // element-wise
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+            valuesRes = res->getValues();
+        }
 
-        auto udf = reinterpret_cast<VTRes (*)(VTArg)>(func);
+        auto udfElem = reinterpret_cast<VTRes (*)(VTArg)>(func);
+        auto udfMatMat = reinterpret_cast<DenseMatrix<VTRes> *(*)(DenseMatrix<VTArg> *)>(func);
+        auto udfMatElem = reinterpret_cast<VTRes (*)(DenseMatrix<VTArg> *)>(func);
 
-        const VTArg *valuesArg = arg->getValues();
-        VTRes *valuesRes = res->getValues();
-
-        for (size_t r = 0; r < numRows; r++) {
-            for (size_t c = 0; c < numCols; c++)
-                valuesRes[c] = udf(valuesArg[c]);
-            valuesArg += arg->getRowSkip();
-            valuesRes += res->getRowSkip();
+        if (axis == 1) { // column-wise
+            size_t resNumRows = 1;
+            for (size_t c = 0; c < numCols; ++c) {
+                // Extract current column
+                DenseMatrix<VTArg> *currentCol =
+                    DataObjectFactory::create<DenseMatrix<VTArg>>(arg, 0, numRows, c, c + 1);
+                if (!udfReturnsScalar) { // Default: Matrix -> Matrix
+                    // Apply UDF and check shape of resulting column
+                    const DenseMatrix<VTRes> *resCol = udfMatMat(currentCol);
+                    if (resCol == nullptr || resCol->getNumCols() != 1)
+                        throw std::runtime_error("Matrix returned by UDF should be a single column!");
+                    // Set result matrix size in first iteration
+                    if (c == 0) {
+                        resNumRows = resCol->getNumRows();
+                        res = DataObjectFactory::create<DenseMatrix<VTRes>>(resNumRows, numCols, false);
+                    }
+                    // Set result row-wise
+                    valuesRes = res->getValues();
+                    const VTRes *valuesResCol = resCol->getValues();
+                    for (size_t r = 0; r < resNumRows; ++r) {
+                        valuesRes[c] = valuesResCol[0];
+                        valuesResCol += resCol->getRowSkip();
+                        valuesRes += res->getRowSkip();
+                    }
+                } else { // Matrix -> Scalar
+                    // Set result matrix size in first iteration
+                    if (c == 0) {
+                        res = DataObjectFactory::create<DenseMatrix<VTRes>>(resNumRows, numCols, false);
+                        valuesRes = res->getValues();
+                    }
+                    valuesRes[c] = udfMatElem(currentCol);
+                }
+                // TODO(#XXX): Call to destroy leads to res becoming a view -> segfault in print
+                // DataObjectFactory::destroy(currentCol);
+            }
+        } else { // row-wise or element-wise
+            const VTArg *valuesArg = arg->getValues();
+            size_t resNumCols = 1;
+            for (size_t r = 0; r < numRows; ++r) {
+                if (axis == 0) {
+                    // Extract current row
+                    DenseMatrix<VTArg> *currentRow = DataObjectFactory::create<DenseMatrix<VTArg>>(arg, r, r + 1);
+                    if (!udfReturnsScalar) { // Default: Matrix -> Matrix
+                        // Apply UDF and check shape of resulting row
+                        const DenseMatrix<VTRes> *resRow = udfMatMat(currentRow);
+                        if (resRow == nullptr || resRow->getNumRows() != 1)
+                            throw std::runtime_error("Matrix returned by UDF should be a single row!");
+                        // Set result matrix size in first iteration
+                        if (r == 0) {
+                            resNumCols = resRow->getNumCols();
+                            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, resNumCols, false);
+                            valuesRes = res->getValues();
+                        }
+                        // Set result by copying values
+                        const VTRes *valuesResRow = resRow->getValues();
+                        memcpy(valuesRes, valuesResRow, resNumCols * sizeof(VTRes));
+                    } else { // Matrix -> Scalar
+                        // Set result matrix size in first iteration
+                        if (r == 0) {
+                            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, resNumCols, false);
+                            valuesRes = res->getValues();
+                        }
+                        valuesRes[0] = udfMatElem(currentRow);
+                    }
+                    // TODO(#XXX): Call to destroy leads to res becoming a view -> segfault in print
+                    // DataObjectFactory::destroy(currentRow);
+                } else {
+                    for (size_t c = 0; c < numCols; ++c)
+                        valuesRes[c] = udfElem(valuesArg[c]);
+                    valuesArg += arg->getRowSkip();
+                }
+                valuesRes += res->getRowSkip();
+            }
         }
     }
 };
@@ -78,19 +149,91 @@ template <typename VTRes, typename VTArg> struct Map<DenseMatrix<VTRes>, DenseMa
 // ----------------------------------------------------------------------------
 
 template <typename VTRes, typename VTArg> struct Map<Matrix<VTRes>, Matrix<VTArg>> {
-    static void apply(Matrix<VTRes> *&res, const Matrix<VTArg> *arg, void *func, DCTX(ctx)) {
+    static void apply(Matrix<VTRes> *&res, const Matrix<VTArg> *arg, void *func, const int64_t axis,
+                      const bool udfReturnsScalar, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if (res == nullptr)
+        if (axis != 0 && axis != 1) { // element-wise
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+            res->prepareAppend();
+        }
 
-        auto udf = reinterpret_cast<VTRes (*)(VTArg)>(func);
+        auto udfElem = reinterpret_cast<VTRes (*)(VTArg)>(func);
+        auto udfMatMat = reinterpret_cast<Matrix<VTRes> *(*)(Matrix<VTArg> *)>(func);
+        auto udfMatElem = reinterpret_cast<VTRes (*)(Matrix<VTArg> *)>(func);
 
-        res->prepareAppend();
-        for (size_t r = 0; r < numRows; ++r)
-            for (size_t c = 0; c < numCols; ++c)
-                res->append(r, c, udf(arg->get(r, c)));
+        if (axis == 1) { // column-wise
+            size_t resNumRows = 1;
+            for (size_t c = 0; c < numCols; ++c) {
+                // Extract current column
+                Matrix<VTArg> *currentCol = DataObjectFactory::create<DenseMatrix<VTArg>>(
+                    dynamic_cast<const DenseMatrix<VTArg> *>(arg), 0, numRows, c, c + 1);
+                if (!udfReturnsScalar) { // Default: Matrix -> Matrix
+                    // TODO(#XXX): Append works only on strictly
+                    // increasing coordinates, therefore not supported
+                    throw std::runtime_error("Currently not supported!");
+                    // Apply UDF and check shape of resulting column
+                    const Matrix<VTRes> *resCol = udfMatMat(currentCol);
+                    if (resCol == nullptr || resCol->getNumCols() != 1)
+                        throw std::runtime_error("Matrix returned by UDF should be a single column!");
+                    // Set result matrix size in first iteration
+                    if (c == 0) {
+                        resNumRows = resCol->getNumRows();
+                        res = DataObjectFactory::create<DenseMatrix<VTRes>>(resNumRows, numCols, false);
+                        res->prepareAppend();
+                    }
+                    // Set result row-wise
+                    for (size_t r = 0; r < resNumRows; ++r)
+                        res->append(r, c, resCol->get(r, 0));
+                } else { // Matrix -> Scalar
+                    // Set result matrix size in first iteration
+                    if (c == 0) {
+                        res = DataObjectFactory::create<DenseMatrix<VTRes>>(resNumRows, numCols, false);
+                        res->prepareAppend();
+                    }
+                    res->append(0, c, udfMatElem(currentCol));
+                }
+                // TODO(#XXX): Call to destroy leads to res becoming a view -> segfault in print
+                // DataObjectFactory::destroy(currentCol);
+            }
+        } else { // row-wise or element-wise
+            size_t resNumCols = 1;
+            for (size_t r = 0; r < numRows; ++r) {
+                if (axis == 0) {
+                    // Extract current row
+                    Matrix<VTArg> *currentRow = DataObjectFactory::create<DenseMatrix<VTArg>>(
+                        dynamic_cast<const DenseMatrix<VTArg> *>(arg), r, r + 1);
+                    if (!udfReturnsScalar) { // Default: Matrix -> Matrix
+                        // Apply UDF and check shape of resulting row
+                        const Matrix<VTRes> *resRow = udfMatMat(currentRow);
+                        if (resRow == nullptr || resRow->getNumRows() != 1)
+                            throw std::runtime_error("Matrix returned by UDF should be a single row!");
+                        // Set result matrix size in first iteration
+                        if (r == 0) {
+                            resNumCols = resRow->getNumCols();
+                            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, resNumCols, false);
+                            res->prepareAppend();
+                        }
+                        // Set result by column-wise
+                        for (size_t c = 0; c < resNumCols; ++c)
+                            res->append(r, c, resRow->get(0, c));
+                    } else { // Matrix -> Scalar
+                        // Set result matrix size in first iteration
+                        if (r == 0) {
+                            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, resNumCols, false);
+                            res->prepareAppend();
+                        }
+                        res->append(r, 0, udfMatElem(currentRow));
+                    }
+                    // TODO(#XXX): Call to destroy leads to res becoming a view -> segfault in print
+                    // DataObjectFactory::destroy(currentRow);
+                } else {
+                    for (size_t c = 0; c < numCols; ++c)
+                        res->append(r, c, udfElem(arg->get(r, c)));
+                }
+            }
+        }
         res->finishAppend();
     }
 };

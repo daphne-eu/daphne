@@ -1,0 +1,13 @@
+// UDF returns row matrix instead of column matrix and vice versa
+
+def transposeFunc(X) {
+  return transpose(X);
+}
+
+// row-wise
+X = reshape([1, 2, 3, 1, 2, 3, 1, 2, 3], 3, 3);
+print(map(X, transposeFunc, 0));
+
+// column-wise
+X = reshape([1, 2, 3, 1, 2, 3, 1, 2, 3], 3, 3);
+print(map(X, transposeFunc, 1));

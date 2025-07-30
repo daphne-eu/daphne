@@ -895,9 +895,9 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
                                           "called 'handleMapOpCall' for function " + func + " instead of 'map'");
 
-    if (ctx->expr().size() != 2) {
+    if (ctx->expr().size() < 2 || ctx->expr().size() > 4) {
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
-                                          "built-in function 'map' expects exactly 2 argument(s), but got " +
+                                          "built-in function 'map' expects 2-4 argument(s), but got " +
                                               std::to_string(ctx->expr().size()));
     }
 
@@ -920,6 +920,16 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
 
     args.push_back(
         static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, maybeUDF->getSymName().str())));
+
+    if (ctx->expr().size() >= 3) {
+        auto axis = valueOrErrorOnVisit(ctx->expr(2));
+        args.push_back(axis);
+
+        if (ctx->expr().size() == 4) {
+            auto udfReturnsScalar = utils.castBoolIf(valueOrErrorOnVisit(ctx->expr(3)));
+            args.push_back(udfReturnsScalar);
+        }
+    }
 
     // Create DaphneIR operation for the built-in function.
     return builtins.build(loc, func, args);
