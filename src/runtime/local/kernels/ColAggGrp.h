@@ -74,17 +74,14 @@ template <typename ValueType> struct HalfType {};
         using type = VTHalf;                                                                                           \
     };
 
-HalfTypeDefine(int64_t, int32_t)
-HalfTypeDefine(uint64_t, uint32_t)
-HalfTypeDefine(int32_t, int16_t)
-HalfTypeDefine(uint32_t, uint16_t)
-HalfTypeDefine(double, float)
+HalfTypeDefine(int64_t, int32_t) HalfTypeDefine(uint64_t, uint32_t) HalfTypeDefine(int32_t, int16_t)
+    HalfTypeDefine(uint32_t, uint16_t) HalfTypeDefine(double, float)
 
 #undef HalfTypeDefine
 
-// Main function for grouped aggregation with optimistic splitting
-template <typename VTData, typename VTPos>
-void applyAggOptimisticSplit(AggOpCode opCode, const VTPos *valuesGrpIds, const VTData *valuesData,
+    // Main function for grouped aggregation with optimistic splitting
+    template <typename VTData, typename VTPos>
+    void applyAggOptimisticSplit(AggOpCode opCode, const VTPos *valuesGrpIds, const VTData *valuesData,
                                  VTData *valuesRes, const size_t numData, size_t numDistinct, DCTX(ctx)) {
 
     using HalfTypeT = typename HalfType<VTData>::type;
