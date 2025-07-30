@@ -226,8 +226,10 @@ LogicalResult replaceAllAggOp(PatternRewriter &rewriter, MatAllAggOp op) {
 
 struct ColumnarOpReplacement : public RewritePattern {
 
-    ColumnarOpReplacement(MLIRContext *context, PatternBenefit benefit = 1)
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context) {}
+    const DaphneUserConfig &userConfig;
+
+    ColumnarOpReplacement(const DaphneUserConfig &cfg, MLIRContext *context, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context), userConfig(cfg) {}
 
     LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
         // Note that all unknown data/value types we introduce when creating new ops are inferred in subsequent compiler
@@ -367,6 +369,10 @@ struct ColumnarOpReplacement : public RewritePattern {
             // Get the location of the op to replace; we will use it for all newly created ops.
             Location loc = gOp->getLoc();
 
+            // Optimistic splitting flag. Set by user configs
+            mlir::Value optimisticSplitVal =
+                rewriter.create<mlir::daphne::ConstantOp>(loc, static_cast<bool>(userConfig.use_optimistic_split));
+
             Value arg = gOp.getFrame();             // input frame
             ValueRange keyLabels = gOp.getKeyCol(); // labels of the columns to group on
             ValueRange aggLabels = gOp.getAggCol(); // labels of the columns to aggregate
@@ -412,7 +418,8 @@ struct ColumnarOpReplacement : public RewritePattern {
             for (size_t i = 0; i < aggLabels.size(); i++) {
                 Value aggMat = rewriter.create<daphne::ExtractColOp>(loc, u, arg, aggLabels[i]);
                 Value aggCol = rewriter.create<daphne::CastOp>(loc, cu, aggMat);
-                Value aggedCol = rewriter.create<daphne::ColGrpAggSumOp>(loc, u, aggCol, grpIds, numDistinct);
+                Value aggedCol =
+                    rewriter.create<daphne::ColGrpAggSumOp>(loc, u, aggCol, grpIds, numDistinct, optimisticSplitVal);
                 Value aggedMat = rewriter.create<daphne::CastOp>(loc, mu, aggedCol);
                 resCols.push_back(aggedMat);
                 // TODO Don't hardcode "SUM(", do it like the group kernel on frames does it.
@@ -452,6 +459,10 @@ struct ColumnarOpReplacement : public RewritePattern {
  * subsequent passes.
  */
 struct RewriteToColumnarOpsPass : public PassWrapper<RewriteToColumnarOpsPass, OperationPass<ModuleOp>> {
+
+    const DaphneUserConfig &userConfig;
+
+    explicit RewriteToColumnarOpsPass(const DaphneUserConfig &cfg) : userConfig(cfg) {}
 
     void runOnOperation() final;
 };
@@ -540,10 +551,12 @@ void RewriteToColumnarOpsPass::runOnOperation() {
         ;
     });
 
-    patterns.add<ColumnarOpReplacement>(&getContext());
+    patterns.add<ColumnarOpReplacement>(userConfig, &getContext());
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
 }
 
-std::unique_ptr<Pass> daphne::createRewriteToColumnarOpsPass() { return std::make_unique<RewriteToColumnarOpsPass>(); }
+std::unique_ptr<Pass> daphne::createRewriteToColumnarOpsPass(const DaphneUserConfig &cfg) {
+    return std::make_unique<RewriteToColumnarOpsPass>(cfg);
+}

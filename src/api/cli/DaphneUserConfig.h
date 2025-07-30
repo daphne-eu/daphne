@@ -42,6 +42,7 @@ struct DaphneUserConfig {
     bool use_vectorized_exec = false;
     bool use_distributed = false;
     bool use_obj_ref_mgnt = true;
+    bool use_optimistic_split = false;
     bool use_ipa_const_propa = true;
     bool use_phy_op_selection = true;
     bool use_mlir_codegen = false;
