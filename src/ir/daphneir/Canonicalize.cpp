@@ -149,25 +149,17 @@ mlir::LogicalResult mlir::daphne::SliceColOp::canonicalize(mlir::daphne::SliceCo
     mlir::Value row;
     mlir::Value col;
 
-    if (isTransposedX && isTransposedY) {
-        row = rewriter.create<mlir::daphne::SliceColOp>(location, unknownType, X, row_l, row_u);
-        col = rewriter.create<mlir::daphne::SliceRowOp>(location, unknownType, Y, col_l, col_u);
-    } else if (!isTransposedX && isTransposedY) {
-        row = rewriter.create<mlir::daphne::SliceRowOp>(location, unknownType, X, row_l, row_u);
-        col = rewriter.create<mlir::daphne::SliceRowOp>(location, unknownType, Y, col_l, col_u);
-    } else if ((isTransposedX && !isTransposedY)) {
-        row = rewriter.create<mlir::daphne::SliceColOp>(location, unknownType, X, row_l, row_u);
-        col = rewriter.create<mlir::daphne::SliceColOp>(location, unknownType, Y, col_l, col_u);
-    } else if (!isTransposedX && !isTransposedY) {
+    if (!isTransposedX && !isTransposedY) {
         row = rewriter.create<mlir::daphne::SliceRowOp>(location, unknownType, X, row_l, row_u);
         col = rewriter.create<mlir::daphne::SliceColOp>(location, unknownType, Y, col_l, col_u);
+
+        auto newMatMul = rewriter.create<mlir::daphne::MatMulOp>(location, result_type, row, col, t_X, t_Y);
+        rewriter.replaceOp(op, newMatMul.getResult());
+        return mlir::success();
+
     } else {
         return mlir::failure();
     }
-
-    auto newMatMul = rewriter.create<mlir::daphne::MatMulOp>(location, result_type, row, col, t_X, t_Y);
-    rewriter.replaceOp(op, newMatMul.getResult());
-    return mlir::success();
 }
 
 /** @brief Canonicalizes:
