@@ -7536,8 +7536,8 @@
                     "name": "numDistinct"
                 },
                 {
-                    "type": "const bool",
-                    "name": "optimisticSplit"
+                    "type": "bool",
+                    "name": "allowOptimisticSplitting"
                 }
             ]
         },

@@ -68,8 +68,6 @@ template <> const std::string ValueTypeUtils::cppNameFor<int64_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<uint8_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<uint32_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<uint64_t>;
-template <> const std::string ValueTypeUtils::cppNameFor<uint16_t>;
-template <> const std::string ValueTypeUtils::cppNameFor<int16_t>;
 template <> const std::string ValueTypeUtils::cppNameFor<float>;
 template <> const std::string ValueTypeUtils::cppNameFor<double>;
 template <> const std::string ValueTypeUtils::cppNameFor<bool>;

@@ -369,10 +369,6 @@ struct ColumnarOpReplacement : public RewritePattern {
             // Get the location of the op to replace; we will use it for all newly created ops.
             Location loc = gOp->getLoc();
 
-            // Optimistic splitting flag. Set by user configs
-            mlir::Value optimisticSplitVal =
-                rewriter.create<mlir::daphne::ConstantOp>(loc, static_cast<bool>(userConfig.use_optimistic_split));
-
             Value arg = gOp.getFrame();             // input frame
             ValueRange keyLabels = gOp.getKeyCol(); // labels of the columns to group on
             ValueRange aggLabels = gOp.getAggCol(); // labels of the columns to aggregate
@@ -415,11 +411,13 @@ struct ColumnarOpReplacement : public RewritePattern {
 
             // Grouped aggregation on all aggregation columns.
             Value numDistinct = rewriter.create<daphne::NumRowsOp>(loc, u, reprPos);
+            mlir::Value allowOptimisticSplitting =
+                rewriter.create<daphne::ConstantOp>(loc, static_cast<bool>(userConfig.use_optimistic_splitting));
             for (size_t i = 0; i < aggLabels.size(); i++) {
                 Value aggMat = rewriter.create<daphne::ExtractColOp>(loc, u, arg, aggLabels[i]);
                 Value aggCol = rewriter.create<daphne::CastOp>(loc, cu, aggMat);
-                Value aggedCol =
-                    rewriter.create<daphne::ColGrpAggSumOp>(loc, u, aggCol, grpIds, numDistinct, optimisticSplitVal);
+                Value aggedCol = rewriter.create<daphne::ColGrpAggSumOp>(loc, u, aggCol, grpIds, numDistinct,
+                                                                         allowOptimisticSplitting);
                 Value aggedMat = rewriter.create<daphne::CastOp>(loc, mu, aggedCol);
                 resCols.push_back(aggedMat);
                 // TODO Don't hardcode "SUM(", do it like the group kernel on frames does it.

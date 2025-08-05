@@ -198,6 +198,7 @@ SUPPORT_STRING_RLR(std::string, std::string, std::string)
 SUPPORT_STRING_RLR(std::string, FixedStr16, FixedStr16)
 SUPPORT_STRING_RLR(const char *, const char *, const char *)
 SUPPORT_STRING_RLR(std::string, std::string, const char *)
+
 // Undefine helper macros.
 #undef SUPPORT
 #undef SUPPORT_RLR

@@ -33,9 +33,9 @@
 
 template <class DTData, class DTGrpIds, class DTRes>
 void checkColAggGrpAndDestroy(AggOpCode opCode, const DTData *data, const DTGrpIds *grpIds, size_t numDistinct,
-                              const DTRes *exp, const bool optimisticSplit = false) {
+                              const DTRes *exp, bool allowOptimisticSplitting = false) {
     DTRes *res = nullptr;
-    colAggGrp(opCode, res, data, grpIds, numDistinct, optimisticSplit, nullptr);
+    colAggGrp(opCode, res, data, grpIds, numDistinct, allowOptimisticSplitting, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(data, grpIds, exp, res);
 }
@@ -256,10 +256,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("any") ": size mismatch", TAG_KERNELS, (DAT
 }
 
 // ****************************************************************************
-// With Optimistic Spliting
+// With Optimistic Splitting
 // ****************************************************************************
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum") ": Optimistic Spliting", TAG_KERNELS, (DATA_TYPES),
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum") ": Optimistic Splitting", TAG_KERNELS, (DATA_TYPES),
                            (int64_t, uint64_t, int32_t, uint32_t)) {
     using DTData = TestType;
     using VTData = typename DTData::VT;
@@ -272,13 +272,14 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum") ": Optimistic Spliting", TAG_KERNELS
     size_t numDistinct = 0;
     DTData *exp = nullptr;
 
+    // Empty input.
     SECTION("empty input") {
         data = DataObjectFactory::create<DTData>(0, false);
         grpIds = DataObjectFactory::create<DTPos>(0, false);
         numDistinct = 0;
         exp = DataObjectFactory::create<DTData>(0, false);
     }
-
+    // Non-empty input.
     SECTION("non-empty input, 1 group") {
         data = genGivenVals<DTData>({VTData(2), VTData(1), VTData(3)});
         grpIds = genGivenVals<DTPos>({VTPos(0), VTPos(0), VTPos(0)});
@@ -301,13 +302,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum") ": Optimistic Spliting", TAG_KERNELS
     SECTION("non-empty input, k groups, boundary values") {
         // Set boundary value based on the value type
         VTData valueMax = std::numeric_limits<HalfTypeT>::max();
-        VTData valueMin;
-
-        if constexpr (std::is_same_v<VTData, uint64_t> || std::is_same_v<VTData, uint32_t>) {
-            valueMin = HalfTypeT(0);
-        } else {
-            valueMin = std::numeric_limits<HalfTypeT>::min();
-        }
+        VTData valueMin = std::numeric_limits<HalfTypeT>::min();
 
         data = genGivenVals<DTData>(
             std::vector<VTData>{VTData(valueMax), VTData(10), VTData(valueMin), VTData(-10), VTData(5)});

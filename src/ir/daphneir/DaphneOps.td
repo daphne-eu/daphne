@@ -1459,7 +1459,7 @@ class Daphne_ColGrpAggOp<string name, list<Trait> traits = []>
         (the i-th element is the aggregate for group id i).
     }];
 
-    let arguments = (ins ColumnOrU:$data, ColumnOrU:$groupIds, Size:$numDistinct, Optional<BoolScalar>:$optimisticSplit);
+    let arguments = (ins ColumnOrU:$data, ColumnOrU:$groupIds, Size:$numDistinct, BoolScalar:$allowOptimisticSplitting);
     let results = (outs ColumnOrU:$res);
 }
 def Daphne_ColGrpAggSumOp : Daphne_ColGrpAggOp<"colSumGrp">;
