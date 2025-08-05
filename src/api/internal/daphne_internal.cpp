@@ -234,6 +234,9 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     static opt<bool> useColumnar("columnar", cat(daphneOptions),
                                  desc("Use columnar operations instead of frame/matrix operations for relational query "
                                       "processing where possible"));
+    static opt<bool> useOptimisticSplitting(
+        "optimistic-splitting", cat(daphneOptions),
+        desc("Use optimistic splitting for grouped SUM aggregation; requires --columnar"));
     static opt<bool> cuda("cuda", cat(daphneOptions), desc("Use CUDA"));
     static opt<bool> fpgaopencl("fpgaopencl", cat(daphneOptions), desc("Use FPGAOPENCL"));
     static opt<string> libDir("libdir", cat(daphneOptions),
@@ -445,6 +448,10 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     user_config.prePartitionRows = prePartitionRows;
     user_config.distributedBackEndSetup = distributedBackEndSetup;
     user_config.use_columnar = useColumnar;
+    if (useOptimisticSplitting && !useColumnar)
+        throw std::runtime_error("--optimistic-splitting requires --columnar");
+    else
+        user_config.use_optimistic_splitting = useOptimisticSplitting;
     if (user_config.use_distributed) {
         if (user_config.distributedBackEndSetup != ALLOCATION_TYPE::DIST_MPI &&
             user_config.distributedBackEndSetup != ALLOCATION_TYPE::DIST_GRPC_SYNC &&

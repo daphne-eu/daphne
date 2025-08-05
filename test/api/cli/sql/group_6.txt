@@ -1,0 +1,6 @@
+Frame(2x3, [f.key:int64_t, SUM(f.val_si64):int64_t, SUM(f.val_f64):double])
+0 10000000007 11
+1 11 12.1
+Frame(2x3, [f.key:int64_t, MIN(f.val_si64):int64_t, MIN(f.val_f64):double])
+0 1 1.1
+1 5 5.5

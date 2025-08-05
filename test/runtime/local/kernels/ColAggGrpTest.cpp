@@ -33,9 +33,9 @@
 
 template <class DTData, class DTGrpIds, class DTRes>
 void checkColAggGrpAndDestroy(AggOpCode opCode, const DTData *data, const DTGrpIds *grpIds, size_t numDistinct,
-                              const DTRes *exp) {
+                              const DTRes *exp, bool allowOptimisticSplitting = false) {
     DTRes *res = nullptr;
-    colAggGrp(opCode, res, data, grpIds, numDistinct, nullptr);
+    colAggGrp(opCode, res, data, grpIds, numDistinct, allowOptimisticSplitting, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(data, grpIds, exp, res);
 }
@@ -231,7 +231,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     size_t numDistinct = 1;
 
     DTData *res = nullptr;
-    CHECK_THROWS(colAggGrp(static_cast<AggOpCode>(999), res, data, grpIds, numDistinct, nullptr));
+    CHECK_THROWS(colAggGrp(static_cast<AggOpCode>(999), res, data, grpIds, numDistinct, false, nullptr));
 
     DataObjectFactory::destroy(data);
     DataObjectFactory::destroy(grpIds);
@@ -248,9 +248,70 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("any") ": size mismatch", TAG_KERNELS, (DAT
     size_t numDistinct = 2;
 
     DTData *res = nullptr;
-    CHECK_THROWS(colAggGrp(AggOpCode::SUM, res, data, grpIds, numDistinct, nullptr));
+    CHECK_THROWS(colAggGrp(AggOpCode::SUM, res, data, grpIds, numDistinct, false, nullptr));
 
     DataObjectFactory::destroy(data, grpIds);
     if (res)
         DataObjectFactory::destroy(res);
+}
+
+// ****************************************************************************
+// With Optimistic Splitting
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum") ": Optimistic Splitting", TAG_KERNELS, (DATA_TYPES),
+                           (int64_t, uint64_t, int32_t, uint32_t)) {
+    using DTData = TestType;
+    using VTData = typename DTData::VT;
+    using HalfTypeT = typename HalfType<VTData>::type;
+    using VTPos = size_t;
+    using DTPos = typename DTData::template WithValueType<VTPos>;
+
+    DTData *data = nullptr;
+    DTPos *grpIds = nullptr;
+    size_t numDistinct = 0;
+    DTData *exp = nullptr;
+
+    // Empty input.
+    SECTION("empty input") {
+        data = DataObjectFactory::create<DTData>(0, false);
+        grpIds = DataObjectFactory::create<DTPos>(0, false);
+        numDistinct = 0;
+        exp = DataObjectFactory::create<DTData>(0, false);
+    }
+    // Non-empty input.
+    SECTION("non-empty input, 1 group") {
+        data = genGivenVals<DTData>({VTData(2), VTData(1), VTData(3)});
+        grpIds = genGivenVals<DTPos>({VTPos(0), VTPos(0), VTPos(0)});
+        numDistinct = 1;
+        exp = genGivenVals<DTData>({VTData(6)});
+    }
+    SECTION("non-empty input, k groups") {
+        data = genGivenVals<DTData>({VTData(2), VTData(1), VTData(4), VTData(1), VTData(3), VTData(2)});
+        grpIds = genGivenVals<DTPos>({VTPos(0), VTPos(0), VTPos(2), VTPos(1), VTPos(0), VTPos(1)});
+        numDistinct = 3;
+        exp = genGivenVals<DTData>({VTData(6), VTData(3), VTData(4)});
+    }
+    SECTION("non-empty input, n groups") {
+        data = genGivenVals<DTData>({VTData(2), VTData(1), VTData(3)});
+        grpIds = genGivenVals<DTPos>({VTPos(1), VTPos(2), VTPos(0)});
+        numDistinct = 3;
+        exp = genGivenVals<DTData>({VTData(3), VTData(2), VTData(1)});
+    }
+
+    SECTION("non-empty input, k groups, boundary values") {
+        // Set boundary value based on the value type
+        VTData valueMax = std::numeric_limits<HalfTypeT>::max();
+        VTData valueMin = std::numeric_limits<HalfTypeT>::min();
+
+        data = genGivenVals<DTData>(
+            std::vector<VTData>{VTData(valueMax), VTData(10), VTData(valueMin), VTData(-10), VTData(5)});
+        grpIds = genGivenVals<DTPos>({VTPos(1), VTPos(1), VTPos(0), VTPos(0), VTPos(0)});
+        numDistinct = 2;
+        VTData expVal0 = VTData(valueMin) + VTData(-5);
+        VTData expVal1 = VTData(valueMax) + VTData(10);
+        exp = genGivenVals<DTData>({expVal0, expVal1});
+    }
+
+    checkColAggGrpAndDestroy(AggOpCode::SUM, data, grpIds, numDistinct, exp, true);
 }

@@ -1,0 +1,16 @@
+// Grouped aggregation on columns of different value types, SUM aggregation function.
+
+// Particularly interesting for --optimistic-splitting, because this optimization can be applied only in some of these cases,
+// the other ones should still work correctly.
+
+f = {
+    "key": [0, 0, 0, 0, 1, 1],
+    "val_si64": [1, 2, /* will cause an intermediate overflow for optimistic splitting */ 10^10, 4, 5, 6],
+    "val_f64": [1.1, 2.2, 3.3, 4.4, 5.5, 6.6]
+};
+
+registerView("f", f);
+
+// Use two separate queries since grouping is currently only lowered to columnar ops for SUM.
+print(sql("SELECT f.key, SUM(f.val_si64), SUM(f.val_f64) FROM f GROUP BY f.key;"));
+print(sql("SELECT f.key, MIN(f.val_si64), MIN(f.val_f64) FROM f GROUP BY f.key;"));

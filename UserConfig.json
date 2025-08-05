@@ -10,6 +10,7 @@
     "use_cuda": false,
     "use_vectorized_exec": false,
     "use_obj_ref_mgnt": true,
+    "use_optimistic_splitting": false,
     "cuda_fuse_any": false,
     "use_mlir_codegen": false,
     "vectorized_single_queue": false,

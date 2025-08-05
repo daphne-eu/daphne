@@ -7534,6 +7534,10 @@
                 {
                     "type": "size_t",
                     "name": "numDistinct"
+                },
+                {
+                    "type": "bool",
+                    "name": "allowOptimisticSplitting"
                 }
             ]
         },
