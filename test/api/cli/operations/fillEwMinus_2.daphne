@@ -1,0 +1,3 @@
+result = - fill(-3,2,3);
+
+print(result);
