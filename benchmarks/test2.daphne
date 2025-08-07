@@ -1,0 +1,84 @@
+// ✅ Valid function with variables and return
+def main() as int {
+    let x = 5;
+    let y = 10;
+    let unusedVar = 42;         // ⚠️ Should trigger "declared but never used"
+
+    let result = add(x, y);     // 🧭 Go-to-definition: 'add'
+    return result;              // ✅ Correct return
+}
+
+// ✅ Another function with valid logic
+def add(a as int, b as int) as int {
+    return a + b;
+}
+
+// ❌ Return type mismatch
+def brokenFunc() as string {
+    return 123;                 // ⚠️ Should trigger type mismatch warning
+}
+
+// ❌ Duplicate function definition
+def duplicate() as int {
+    return 1;
+}
+
+def duplicate() as int {        // ⚠️ Should trigger "duplicate function" warning
+    return 2;
+}
+
+// ❌ Misspelled keyword
+iff true {                      // ❌ Should trigger "unknown keyword" warning
+    let z = 1;
+}
+
+// ❌ Duplicate function name again (should be caught)
+def brokenFunc() as string {
+    return 123;   // 123 is int → mismatch with 'string'
+}
+
+def caller() as int {
+    let x = add(3, 4);  // <--- Try Go-to-Definition on `add`
+    return x;
+}
+
+def add(a as int, b as int) as int {
+    return a + b;
+}
+
+def testUnused() as int {
+    let unused = 123;
+    return 0;
+}
+
+def dup() as int {
+    return 1;
+}
+
+def dup() as int {
+    return 2;
+}
+
+def caller() as int {
+    let x = add(3, 4);  // <--- Try Go-to-Definition on `add`
+    return x;
+}
+
+def add(a as int, b as int) as int {
+    return a + b;
+}
+
+import math
+
+def controlFlow() as int {
+    let x = 5;
+    if (x > 3) {
+        return x;
+    } else {
+        return 0;
+    }
+}
+
+while true {
+    break;
+}
