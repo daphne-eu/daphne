@@ -228,7 +228,8 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DataTypeMat, ValueTypeFromArgs,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
     DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport,
-    CastFirstTwoArgsToResType, NoMemoryEffect
+    CastFirstTwoArgsToResType, NoMemoryEffect,
+    Pure
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
@@ -491,7 +492,9 @@ class Daphne_AllAggOp<string name, Type scalarType, list<Trait> traits = []>
     let results = (outs scalarType:$res);
 }
 
-def Daphne_AllAggSumOp    : Daphne_AllAggOp<"sumAll", NumScalar, [ValueTypeFromFirstArg]>;
+def Daphne_AllAggSumOp    : Daphne_AllAggOp<"sumAll", NumScalar, [ValueTypeFromFirstArg]>{
+    let hasCanonicalizeMethod = 1;
+}
 def Daphne_AllAggMinOp    : Daphne_AllAggOp<"minAll", NumScalar, [ValueTypeFromFirstArg]>;
 def Daphne_AllAggMaxOp    : Daphne_AllAggOp<"maxAll", NumScalar, [ValueTypeFromFirstArg]>;
 def Daphne_AllAggMeanOp   : Daphne_AllAggOp<"meanAll", NumScalar, [ValueTypeFromArgsFP]>;
@@ -642,7 +645,8 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
 
 def Daphne_SliceRowOp : Daphne_Op<"sliceRow", [
     TypeFromFirstArg,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    Pure
 ]> {
     let summary = "Copies the specified rows from the argument to the result.";
 
@@ -697,6 +701,7 @@ def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
 
     let arguments = (ins MatrixOrFrame:$source, SI64:$lowerIncl, SI64:$upperExcl);
     let results = (outs MatrixOrFrame:$res);
+    let hasCanonicalizeMethod = 1;
 }
 
 // TODO Create combined InsertOp (see #238).
@@ -707,11 +712,13 @@ def Daphne_InsertRowOp : Daphne_Op<"insertRow", [
 ]> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, SI64:$rowLowerIncl, SI64:$rowUpperExcl);
     let results = (outs MatrixOrFrame:$res);
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_InsertColOp : Daphne_Op<"insertCol", [
     TypeFromFirstArg, // this is debatable
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, SI64:$colLowerIncl, SI64:$colUpperExcl);
     let results = (outs MatrixOrFrame:$res);
@@ -982,7 +989,8 @@ def Daphne_SoftmaxOp : Daphne_Op<"Softmax", [ DataTypeFromFirstArg, ValueTypeFro
 // ****************************************************************************
 
 def Daphne_DiagVectorOp : Daphne_Op<"diagVector", [
-    TypeFromFirstArg, NumRowsFromArg, OneCol
+    TypeFromFirstArg, NumRowsFromArg, OneCol,
+    Pure
 ]> {
     let arguments = (ins MatrixOrU:$arg);
     let results = (outs MatrixOrU:$res);
