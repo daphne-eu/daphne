@@ -35,6 +35,7 @@
 #include <stdexcept>
 #include <string>
 #include <sys/select.h>
+#include <vector>
 
 /**
  * @brief Reads the entire contents of a plain text file into a string.
@@ -501,6 +502,28 @@ void compareDaphneToDaphneLib(const std::string &pythonScriptFilePath, const std
     CHECK(outDaphne.str() == outDaphneLib.str());
     CHECK(errDaphne.str() == "");
     CHECK(errDaphneLib.str() == "");
+}
+
+using Flags = std::vector<const char *>;
+
+template <typename... Args>
+inline void compareDaphneToDaphneLibWithFlags(const std::string &pythonScriptFilePath,
+                                              const std::string &daphneDSLScriptFilePath, Args... args) {
+    std::stringstream outDaphne;
+    std::stringstream errDaphne;
+    std::stringstream outDaphneLib;
+    std::stringstream errDaphneLib;
+
+    int statusDaphneLib =
+        runProgram(outDaphneLib, errDaphneLib, "/bin/python3", "python3", pythonScriptFilePath.c_str(), args...);
+    int statusDaphne = runProgram(outDaphne, errDaphne, "bin/daphne", "daphne", "--select-matrix-repr",
+                                  daphneDSLScriptFilePath.c_str(), args...);
+
+    CHECK(statusDaphne == StatusCode::SUCCESS);
+    CHECK(statusDaphneLib == 0);
+    CHECK(outDaphneLib.str() == outDaphne.str());
+    CHECK(errDaphneLib.str() == "");
+    CHECK(errDaphne.str() == "");
 }
 
 /**
