@@ -51,7 +51,7 @@ class Worker {
     }
 
     virtual ~Worker() {
-        if (t->joinable())
+        if (t && t->joinable())
             t->join();
     };
 
