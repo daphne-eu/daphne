@@ -363,6 +363,7 @@ template <class Operation> bool tryPushDownUnary(Operation op, mlir::PatternRewr
  * and skips the intermediate.
  */
 template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRewriter &rewriter) {
+    mlir::Type u = mlir::daphne::UnknownType::get(rewriter.getContext());
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
     mlir::daphne::FillOp lhsFill = lhs.getDefiningOp<mlir::daphne::FillOp>();
@@ -379,8 +380,7 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
         auto fillValue = lhsFill.getArg();
         auto height = lhsFill.getNumRows();
         auto width = lhsFill.getNumCols();
-        auto newOp = rewriter.create<Operation>(op.getLoc(), CompilerUtils::getValueType(op.getResult().getType()),
-                                                fillValue, rhs);
+        auto newOp = CompilerUtils::retValWithInferredType(rewriter.create<Operation>(op.getLoc(), u, fillValue, rhs));
         rewriter.replaceOpWithNewOp<mlir::daphne::FillOp>(op, op.getResult().getType(), newOp, height, width);
         return true;
     }
@@ -401,8 +401,8 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
             // ranges not available in between the original values
             return false;
         }
-        auto newMax = rewriter.create<Operation>(op.getLoc(), max, rhs);
-        auto newMin = rewriter.create<Operation>(op.getLoc(), min, rhs);
+        auto newMax = CompilerUtils::retValWithInferredType(rewriter.create<Operation>(op.getLoc(), u, max, rhs));
+        auto newMin = CompilerUtils::retValWithInferredType(rewriter.create<Operation>(op.getLoc(), u, min, rhs));
         rewriter.replaceOpWithNewOp<mlir::daphne::RandMatrixOp>(op, op.getResult().getType(), height, width, newMin,
                                                                 newMax, sparsity, seed);
         return true;
@@ -415,8 +415,8 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
         auto to = lhsSeq.getTo();
         auto inc = lhsSeq.getInc();
 
-        auto newFrom = rewriter.create<Operation>(op.getLoc(), from, rhs);
-        auto newTo = rewriter.create<Operation>(op.getLoc(), to, rhs);
+        auto newFrom = CompilerUtils::retValWithInferredType(rewriter.create<Operation>(op.getLoc(), u, from, rhs));
+        auto newTo = CompilerUtils::retValWithInferredType(rewriter.create<Operation>(op.getLoc(), u, to, rhs));
 
         if (supportsPushDownIncrementUpdate) {
             auto incInt = CompilerUtils::isConstant<int>(inc);
@@ -430,7 +430,7 @@ template <class Operation> bool tryPushDownBinary(Operation op, mlir::PatternRew
                 // change
                 return false;
             }
-            auto newInc = rewriter.create<Operation>(op.getLoc(), rhs, inc);
+            auto newInc = CompilerUtils::retValWithInferredType(rewriter.create<Operation>(op.getLoc(), u, rhs, inc));
 
             rewriter.replaceOpWithNewOp<mlir::daphne::SeqOp>(op, op.getResult().getType(), newFrom, newTo, newInc);
             return true;
