@@ -1,0 +1,4 @@
+a = fill(8,3,3);
+result = log(a,2);
+
+print(result);
