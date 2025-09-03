@@ -68,9 +68,15 @@ template <typename VT> struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
         if (numRowsRes * numColsRes != numRowsArg * numColsArg)
             throw std::runtime_error("reshape must retain the number of cells");
 
-        if (arg->getRowSkip() == arg->getNumCols() && res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, arg->getValuesSharedPtr());
-        else {
+        if (arg->getRowSkip() == numColsArg || numRowsArg == 1) {
+            // The data in arg is contiguous in memory. The result can share the data with the argument.
+
+            if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, arg->getValuesSharedPtr());
+        } else {
+            // The data in arg is not contiguous in memory. We must copy the data row by row from the argument to the
+            // result.
+
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, false);
 
