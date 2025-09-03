@@ -2855,7 +2855,10 @@
             {
                 "name": ["CPP"],
                 "instantiations": [
-                    [["DenseMatrix", "std::string"], "const char *"]
+                    [["DenseMatrix", "std::string"], "const char *"],
+                    [["CSRMatrix", "double"], "double"],
+                    [["CSRMatrix", "float"], "float"],
+                    [["CSRMatrix", "int64_t"], "int64_t"]
                 ]
             }
         ]

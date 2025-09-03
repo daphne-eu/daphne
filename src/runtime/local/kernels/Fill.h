@@ -17,10 +17,13 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
+
+#include <numeric>
 #include <stdexcept>
 
 // ****************************************************************************
@@ -54,6 +57,39 @@ template <typename VTRes, typename VTArg> struct Fill<DenseMatrix<VTRes>, VTArg>
 
         res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
         std::fill(res->getValues(), res->getValues() + res->getNumItems(), arg);
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTArg> struct Fill<CSRMatrix<VTRes>, VTArg> {
+    static void apply(CSRMatrix<VTRes> *&res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+        if (res != nullptr)
+            throw std::invalid_argument("Trying to fill an already existing CSRMatrix.");
+
+        const size_t numItems = numRows * numCols;
+
+        res = DataObjectFactory::create<CSRMatrix<VTRes>>(numRows, numCols, (arg == 0) ? 0 : numItems, false);
+
+        if (arg == 0) { // fill the CSRMatrix with zeros (not explicitly stored)
+            // The values array is empty.
+            // The colIdxs array is empty.
+            // All rowOffsets are zero.
+            std::fill(res->getRowOffsets(), res->getRowOffsets() + numRows + 1, 0);
+        } else { // fill the CSRMatrix with the given non-zero value (explicitly stored)
+            // Set all values to the given non-zero value.
+            std::fill(res->getValues(), res->getValues() + numItems, arg);
+            // Fill the colIdxs with an increasing sequence per row and initialize the rowOffsets accordingly.
+            size_t *colIdxs = res->getColIdxs();
+            for (size_t r = 0; r < numRows; r++) {
+                std::iota(colIdxs, colIdxs + numCols, 0);
+                colIdxs += numCols;
+                res->getRowOffsets()[r] = r * numCols;
+            }
+            res->getRowOffsets()[numRows] = numRows * numCols;
+        }
     }
 };
 
