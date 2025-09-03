@@ -53,15 +53,26 @@ void reshape(DTRes *&res, const DTArg *arg, size_t numRows, size_t numCols, DCTX
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
-        if (numRows * numCols != arg->getNumRows() * arg->getNumCols())
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, size_t numRowsRes, size_t numColsRes,
+                      DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+
+        // If the result and argument shapes are the same, return the argument (no need to create a new object).
+        if (numRowsRes == numRowsArg && numColsRes == numColsArg) {
+            arg->increaseRefCounter();
+            res = const_cast<DenseMatrix<VT> *>(arg);
+            return;
+        }
+
+        if (numRowsRes * numColsRes != numRowsArg * numColsArg)
             throw std::runtime_error("reshape must retain the number of cells");
 
         if (arg->getRowSkip() == arg->getNumCols() && res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg->getValuesSharedPtr());
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, arg->getValuesSharedPtr());
         else {
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, false);
 
             auto resVals = res->getValues();
             auto argVals = arg->getValues();
@@ -84,6 +95,13 @@ template <typename VT> struct Reshape<CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const CSRMatrix<VT> *arg, size_t numRowsRes, size_t numColsRes, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
+
+        // If the result and argument shapes are the same, return the argument (no need to create a new object).
+        if (numRowsRes == numRowsArg && numColsRes == numColsArg) {
+            arg->increaseRefCounter();
+            res = const_cast<CSRMatrix<VT> *>(arg);
+            return;
+        }
 
         if (numRowsRes * numColsRes != numRowsArg * numColsArg)
             throw std::runtime_error("reshape must retain the number of cells");
@@ -147,18 +165,26 @@ template <typename VT> struct Reshape<CSRMatrix<VT>, CSRMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct Reshape<Matrix<VT>, Matrix<VT>> {
-    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, size_t numRows, size_t numCols, DCTX(ctx)) {
+    static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, size_t numRowsRes, size_t numColsRes, DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
-        if (numRows * numCols != arg->getNumRows() * numColsArg)
+        // If the result and argument shapes are the same, return the argument (no need to create a new object).
+        if (numRowsRes == numRowsArg && numColsRes == numColsArg) {
+            arg->increaseRefCounter();
+            res = const_cast<Matrix<VT> *>(arg);
+            return;
+        }
+
+        if (numRowsRes * numColsRes != numRowsArg * numColsArg)
             throw std::runtime_error("Reshape: new shape must retain the number of cells");
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numColsRes, false);
 
         res->prepareAppend();
-        for (size_t r = 0, rArg = 0, cArg = 0; r < numRows; ++r)
-            for (size_t c = 0; c < numCols; ++c) {
+        for (size_t r = 0, rArg = 0, cArg = 0; r < numRowsRes; ++r)
+            for (size_t c = 0; c < numColsRes; ++c) {
                 res->append(r, c, arg->get(rArg, cArg++));
                 cArg = (cArg != numColsArg) * cArg;
                 rArg += (cArg == 0);

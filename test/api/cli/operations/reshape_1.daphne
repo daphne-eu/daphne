@@ -1,0 +1,4 @@
+// Valid reshape to a different shape.
+
+X = seq(1, 6); # 6x1
+print(reshape(X, 2, 3)); # 2x3
