@@ -1,0 +1,34 @@
+// '@' for matrix multiplication
+// The result of multiplying a matrix by its transposed should be symmetric (there should not even be round-off errors).
+
+# Generate some random data.
+X = rand($numRows, $numCols, 0.0, 1.0, 1, 12345);
+
+# Calculate the results.
+YL = t(X) @ X;
+YR = X @ t(X);
+
+# Print the result.
+print(YL);
+print(YR);
+
+print("-----");
+
+if($checkSymmetry) {
+    # Use isSymmetric() to check symmetry.
+    print("t(X) @ X is " + (isSymmetric(YL) ? "" : "NOT ") + "symmetric");
+    print("X @ t(X) is " + (isSymmetric(YR) ? "" : "NOT ") + "symmetric");
+
+    print("-----");
+
+    # At some point, the DAPHNE compiler may be clever enough to infer at compile-time that YL and YR are symmetric.
+    # Then, it may replace the calls to isSymmetric() by constants, thereby circumventing the check at run-time.
+    # Thus, we also use the eigen() built-in function here, because it performs a check for symmetry internally.
+    evalsL, evecsL = eigen(YL);
+    evalsR, evecsR = eigen(YR);
+    # Print the eigen values and eigen vectors such that their calculation is not optimized away.
+    print(evalsL);
+    print(evecsL);
+    print(evalsR);
+    print(evecsR);
+}

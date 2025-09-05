@@ -103,6 +103,10 @@ void AdaptTypesToKernelsPass::runOnOperation() {
                 for (size_t i = 0; i < numOperands; i++)
                     operandIdxs.push_back(i);
                 targetVTy = resVTy;
+            } else if (op->hasTrait<OpTrait::CastFirstArgToResType>()) {
+                // Cast input 0 to the result value type.
+                operandIdxs = {0};
+                targetVTy = resVTy;
             } else if (op->hasTrait<OpTrait::CastFirstTwoArgsToResType>()) {
                 // Cast inputs 0 and 1 to the result value type.
                 operandIdxs = {0, 1};

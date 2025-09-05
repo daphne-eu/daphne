@@ -1021,11 +1021,10 @@ def Daphne_SyrkOp : Daphne_Op<"syrk", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromArgNumCols, NumColsFromArg, CUDASupport,FPGAOPENCLSupport, 
-    CastArgsToResType
+    CastFirstArgToResType
 ]> {
-    // TODO: support `A @ t(A)` operation
-    let summary = [{Performs the operation `t(A) @ A`}];
-    let arguments = (ins MatrixOrU:$arg);
+    let summary = [{Performs the operation `t(A) @ A` if `transLeft` is `true`; or `A @ t(A)`, otherwise.}];
+    let arguments = (ins MatrixOrU:$arg, BoolScalar:$transLeft);
     let results = (outs MatrixOrU:$res);
 }
 

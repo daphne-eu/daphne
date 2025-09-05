@@ -15,6 +15,7 @@
  */
 
 #include "run_tests.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -29,16 +30,31 @@
 #include <vector>
 
 template <class DT> void checkSyrk(const DT *arg, DCTX(dctx)) {
-    DT *resExp = nullptr;
     DT *argT = nullptr;
     transpose(argT, arg, dctx);
-    matMul(resExp, argT, arg, false, false, dctx);
+    // Check `t(arg) @ arg`.
+    {
+        DT *resExp = nullptr;
+        matMul(resExp, argT, arg, false, false, dctx);
 
-    DT *resAct = nullptr;
-    syrk(resAct, arg, nullptr);
-    CHECK(*resAct == *resExp);
-    DataObjectFactory::destroy(resAct);
-    DataObjectFactory::destroy(resExp);
+        DT *resAct = nullptr;
+        syrk(resAct, arg, true, nullptr);
+
+        CHECK(*resAct == *resExp);
+        DataObjectFactory::destroy(resAct, resExp);
+    }
+    // Check `arg @ t(arg)`.
+    {
+        DT *resExp = nullptr;
+        matMul(resExp, arg, argT, false, false, dctx);
+
+        DT *resAct = nullptr;
+        syrk(resAct, arg, false, nullptr);
+
+        CHECK(*resAct == *resExp);
+        DataObjectFactory::destroy(resAct, resExp);
+    }
+    DataObjectFactory::destroy(argT);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Syrk", TAG_KERNELS, (DenseMatrix), (float, double)) {

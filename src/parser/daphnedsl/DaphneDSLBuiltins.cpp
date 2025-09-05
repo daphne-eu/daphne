@@ -926,7 +926,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             builder.create<CTableOp>(loc, utils.unknownType, lhs, rhs, weight, resNumRows, resNumCols));
     }
     if (func == "syrk") {
-        return createSameTypeUnaryOp<SyrkOp>(loc, func, args);
+        checkNumArgsExact(loc, func, numArgs, 1);
+        mlir::Value arg = args[0];
+        mlir::Value transLeft = builder.create<mlir::daphne::ConstantOp>(loc, true);
+        return CompilerUtils::retValWithInferredType(builder.create<SyrkOp>(loc, utils.unknownType, arg, transLeft));
     }
     if (func == "gemv") {
         checkNumArgsExact(loc, func, numArgs, 2);
