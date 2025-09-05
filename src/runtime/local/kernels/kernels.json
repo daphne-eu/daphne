@@ -4895,6 +4895,10 @@
                 {
                     "type": "const DTArg *",
                     "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "transLeft"
                 }
             ]
         },
