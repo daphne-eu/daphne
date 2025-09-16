@@ -241,26 +241,91 @@ template <typename VT> class CastObj<CSRMatrix<VT>, DenseMatrix<VT>> {
         const size_t numCols = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
         size_t numNonZeros = 0;
-        VT temp;
 
+        // Step 1: Count the non-zeros in the argument DenseMatrix.
+        // Required to know how much memory to allocate for the result CSRMatrix.
+        const VT *valuesArg = arg->getValues();
         for (size_t r = 0; r < numRows; r++) {
-            for (size_t c = 0; c < numCols; c++) {
-                temp = arg->get(r, c);
-                if (temp != 0)
+            for (size_t c = 0; c < numCols; c++)
+                if (valuesArg[c] != 0)
                     numNonZeros++;
-            }
+            valuesArg += arg->getRowSkip();
         }
 
-        if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, true);
+        // Step 2: Create and populate the result CSRMatrix.
+        if (numNonZeros == 0) {
+            // Special case: There are no non-zeros in the argument.
+            // This case is handled more efficiently than the common case.
 
-        // TODO This could be done more efficiently by avoiding the get()/set()
-        // calls (use append() or direct access to the underlying arrays, then
-        // we could even avoid initializing the output CSRMatrix).
-        for (size_t r = 0; r < numRows; r++) {
-            for (size_t c = 0; c < numCols; c++) {
-                temp = arg->get(r, c);
-                res->set(r, c, temp);
+            if (res == nullptr)
+                res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+
+            // The result's values and colIdx arrays are empty.
+
+            // The result's rowOffsets array must be filled with zeros.
+            size_t *rowOffsetsRes = res->getRowOffsets();
+            std::fill(rowOffsetsRes, rowOffsetsRes + numRows + 1, 0);
+        } else if (numNonZeros == numRows * numCols) {
+            // Special case: There are no zeros in the argument.
+            // This case is handled more efficiently than the common case.
+
+            // Create the result CSRMatrix and ensure that the values array is populated.
+            if (arg->getRowSkip() == numCols || numRows == 1) {
+                // The data in arg is contiguous in memory. The result can share the data with the argument.
+                if (res == nullptr)
+                    res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros,
+                                                                   arg->getValuesSharedPtr());
+                // TODO Should we ever pass an existing data object for the result, we must make sure that either (a)
+                // the values array of the argument is copied, or (b) the values array of the result is destroyed and
+                // replaced by the argument's values array.
+            } else {
+                // The data in arg is not contiguous in memory. We must copy the data row by row from the argument to
+                // the result.
+                if (res == nullptr)
+                    res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+                const VT *valuesArg = arg->getValues();
+                VT *valuesRes = res->getValues();
+                for (size_t r = 0; r < numRows; r++) {
+                    std::copy(valuesArg, valuesArg + numCols, valuesRes);
+                    valuesArg += arg->getRowSkip();
+                    valuesRes += numCols;
+                }
+            }
+
+            // The result's colIdxs are ascending sequences per row; the rowOffsets are the multiples of the number of
+            // columns.
+            size_t *colIdxsRes = res->getColIdxs();
+            size_t *rowOffsetsRes = res->getRowOffsets();
+            for (size_t r = 0; r < numRows; r++) {
+                std::iota(colIdxsRes, colIdxsRes + numCols, 0);
+                colIdxsRes += numCols;
+                rowOffsetsRes[r] = r * numCols;
+            }
+            rowOffsetsRes[numRows] = numRows * numCols;
+        } else {
+            // Common case: There are zeros and non-zeros in the arg.
+
+            if (res == nullptr)
+                res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+
+            // Scan the argument's values again and only insert the non-zeros into the result.
+            valuesArg = arg->getValues();
+            VT *valuesRes = res->getValues();
+            size_t *colIdxsRes = res->getColIdxs();
+            size_t *rowOffsetsRes = res->getRowOffsets();
+            size_t i = 0;
+            rowOffsetsRes[0] = 0;
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++) {
+                    VT temp = valuesArg[c];
+                    if (temp != 0) {
+                        valuesRes[i] = temp;
+                        colIdxsRes[i] = c;
+                        i++;
+                    }
+                }
+                valuesArg += arg->getRowSkip();
+                rowOffsetsRes[r + 1] = i;
             }
         }
     }

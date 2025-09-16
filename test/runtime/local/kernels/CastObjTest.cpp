@@ -420,23 +420,71 @@ TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double, floa
 
     auto m0 = genGivenVals<DTArg>(4, {
                                          0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
-                                     });
+                                     }); // 6x4, zeros & non-zeros
     auto m1 = genGivenVals<DTArg>(4, {
                                          1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                     });
+                                     }); // 6x4, zeros & non-zeros
     auto m2 = genGivenVals<DTArg>(4, {
                                          2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
-                                     });
+                                     }); // 6x4, zeros & non-zeros
+    auto m3 = genGivenVals<DTArg>(4, {
+                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                     }); // 6x4, all zeros
+    auto m4 = genGivenVals<DTArg>(4, {
+                                         1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6,
+                                     });                     // 6x4, all non-zeros
+    auto m5 = m4->sliceRow(1, 3);                            // 2x6, all-non-zeros, view (row segment)
+    auto m6 = m4->sliceCol(1, 5);                            // 4x4, all-non-zeros, view (col segment)
+    auto m7 = DataObjectFactory::create<DTArg>(0, 0, false); // 0x0
 
     auto d0 = genGivenVals<DTRes>(4, {
                                          0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
-                                     });
+                                     }); // 6x4, zeros & non-zeros
     auto d1 = genGivenVals<DTRes>(4, {
                                          1, 2, 0, 0, 1, 3, 0, 1, 0, 2, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                     });
+                                     }); // 6x4, zeros & non-zeros
     auto d2 = genGivenVals<DTRes>(4, {
                                          2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
-                                     });
+                                     }); // 6x4, zeros & non-zeros
+    auto d3 = genGivenVals<DTRes>(4, {
+                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                     }); // 6x4, all zeros
+    auto d4 = genGivenVals<DTRes>(4, {
+                                         1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6,
+                                     }); // 6x4, all non-zeros
+    auto d5 = genGivenVals<DTRes>(2, {
+                                         1,
+                                         2,
+                                         3,
+                                         4,
+                                         5,
+                                         6,
+                                         1,
+                                         2,
+                                         3,
+                                         4,
+                                         5,
+                                         6,
+                                     }); // 2x6, all non-zeros
+    auto d6 = genGivenVals<DTRes>(4, {
+                                         2,
+                                         3,
+                                         4,
+                                         5,
+                                         2,
+                                         3,
+                                         4,
+                                         5,
+                                         2,
+                                         3,
+                                         4,
+                                         5,
+                                         2,
+                                         3,
+                                         4,
+                                         5,
+                                     });                       // 4x4, all non-zeros
+    auto d7 = DataObjectFactory::create<DTRes>(0, 0, 0, true); // 0x0
 
     DTRes *res0 = nullptr;
     castObj<DTRes, DTArg>(res0, m0, nullptr);
@@ -444,14 +492,34 @@ TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double, floa
     castObj<DTRes, DTArg>(res1, m1, nullptr);
     DTRes *res2 = nullptr;
     castObj<DTRes, DTArg>(res2, m2, nullptr);
+    DTRes *res3 = nullptr;
+    castObj<DTRes, DTArg>(res3, m3, nullptr);
+    DTRes *res4 = nullptr;
+    castObj<DTRes, DTArg>(res4, m4, nullptr);
+    DTRes *res5 = nullptr;
+    castObj<DTRes, DTArg>(res5, m5, nullptr);
+    DTRes *res6 = nullptr;
+    castObj<DTRes, DTArg>(res6, m6, nullptr);
+    DTRes *res7 = nullptr;
+    castObj<DTRes, DTArg>(res7, m7, nullptr);
 
     CHECK(*d0 == *res0);
     CHECK(*d1 == *res1);
     CHECK(*d2 == *res2);
+    CHECK(*d3 == *res3);
+    CHECK(*d4 == *res4);
+    CHECK(*d5 == *res5);
+    CHECK(*d6 == *res6);
+    CHECK(*d7 == *res7);
 
     DataObjectFactory::destroy(m0, d0, res0);
     DataObjectFactory::destroy(m1, d1, res1);
     DataObjectFactory::destroy(m2, d2, res2);
+    DataObjectFactory::destroy(m3, d3, res3);
+    DataObjectFactory::destroy(m4, d4, res4);
+    DataObjectFactory::destroy(m5, d5, res5);
+    DataObjectFactory::destroy(m6, d6, res6);
+    DataObjectFactory::destroy(m7, d7, res7);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("castObj, column to matrix", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
