@@ -71,6 +71,28 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
 
 // ****************************************************************************
+// DAPHNE SCF
+// ****************************************************************************
+
+def Daphne_ParForOp : Daphne_Op<"parfor"> {
+    let summary = "Parallel for loop";
+    // todo: add description for features 
+    let description = [{
+        Represents a parallel loop construct that can execute iterations in parallel.
+    }];
+    let arguments = (ins
+        Variadic<AnyType>:$args,
+        AnyInteger:$from,
+        AnyInteger:$to,
+        AnyInteger:$step,
+        Optional<DaphneContext>:$ctx
+    );
+    let results = (outs Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>>:$res);
+    let regions = (region AnyRegion:$bodyStmt);
+    let traits = [AttrSizedOperandSegments, IsolatedFromAbove];
+}
+
+// ****************************************************************************
 // DAPHNE Runtime Interoperability
 // ****************************************************************************
 
@@ -2073,7 +2095,7 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, Pure]> {
     let hasFolder = 1;
 }
 
-def Daphne_ReturnOp : Daphne_Op<"return", [Pure, Terminator, ReturnLike, ParentOneOf<["func::FuncOp", "DistributedComputeOp", "VectorizedPipelineOp"]>]> {
+def Daphne_ReturnOp : Daphne_Op<"return", [Pure, Terminator, ReturnLike, ParentOneOf<["func::FuncOp", "ParForOp", "DistributedComputeOp", "VectorizedPipelineOp"]>]> {
     let summary = "return operation";
 
     let arguments = (ins Variadic<AnyType>:$operands);

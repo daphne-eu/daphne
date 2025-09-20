@@ -38,6 +38,16 @@ set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g -O3 -fno-omit-frame-pointer")
 
+option(ENABLE_PARALLEL_PARFOR "Enable PARALLEL_PARFOR" OFF)
+if(ENABLE_PARALLEL_PARFOR)
+    add_definitions(-DPARALLEL_PARFOR)
+endif()
+
+option(ENABLE_TIME_PARFOR "Enable TIME_PARFOR" OFF)
+if(ENABLE_TIME_PARFOR )
+    add_definitions(-DTIME_PARFOR)
+endif()
+
 # silence a warning about DEPFILE path transformations (used in LLVM)
 cmake_policy(SET CMP0116 OLD)
 

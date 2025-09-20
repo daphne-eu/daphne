@@ -203,6 +203,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
 
     antlrcpp::Any visitForStatement(DaphneDSLGrammarParser::ForStatementContext *ctx) override;
 
+    antlrcpp::Any visitParForStatement(DaphneDSLGrammarParser::ParForStatementContext *ctx) override;
+
     antlrcpp::Any visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) override;
 
     antlrcpp::Any visitReturnStatement(DaphneDSLGrammarParser::ReturnStatementContext *ctx) override;

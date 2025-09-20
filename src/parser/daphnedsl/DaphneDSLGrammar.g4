@@ -37,6 +37,7 @@ statement:
     | ifStatement
     | whileStatement
     | forStatement
+    | parForStatement
     | functionStatement
     | returnStatement
     | importStatement
@@ -62,6 +63,10 @@ whileStatement:
 
 forStatement:
     KW_FOR '(' var=IDENTIFIER KW_IN from=expr ':' to=expr (':' step=expr)? ')' bodyStmt=statement ;
+
+parForStatement:
+    KW_PARFOR '(' var=IDENTIFIER KW_IN from=expr ':' to=expr (':' step=expr)? ')' bodyStmt=statement ;
+
 
 // TODO: variable tuple returns
 functionStatement:
@@ -130,6 +135,7 @@ KW_ELSE: 'else';
 KW_WHILE: 'while';
 KW_DO: 'do';
 KW_FOR: 'for';
+KW_PARFOR: 'parfor';
 KW_IN: 'in';
 KW_TRUE: 'true';
 KW_FALSE: 'false';

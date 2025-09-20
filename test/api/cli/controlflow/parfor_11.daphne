@@ -1,0 +1,8 @@
+X = rand(5, 5, 0, 1, 1, -1); 
+Y = rand(5, 5, 0, 1, 1, -1);
+parfor(i in 2:3) {
+    X[i, ] = X[i, ] * 2;
+    Y[i, ] = Y[i, ] * 3;
+}
+print(X);
+print(Y);

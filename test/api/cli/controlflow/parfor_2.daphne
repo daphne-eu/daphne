@@ -1,0 +1,3 @@
+j = 123; 
+parfor(i in 1:5)
+    print(j);

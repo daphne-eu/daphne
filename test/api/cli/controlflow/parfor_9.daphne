@@ -1,0 +1,6 @@
+parfor(i in 1:2) {
+    parfor(j in 1:2)
+        print(1);
+    print(2);
+}
+

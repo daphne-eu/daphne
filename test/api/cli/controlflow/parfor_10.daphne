@@ -1,0 +1,10 @@
+x = rand(5, 5, 0.0, 1.0, 1, -1); 
+parfor(i in 0:10) {
+    if(i == 0) {
+        print(x);
+    } else {
+        print(i);
+    }
+    x = x * i;
+}
+print(x);

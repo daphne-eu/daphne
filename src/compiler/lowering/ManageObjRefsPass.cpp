@@ -18,6 +18,7 @@
 #include <compiler/utils/LoweringUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
+#include <llvm/Support/Casting.h>
 #include <util/ErrorHandler.h>
 
 #include <mlir/Dialect/SCF/IR/SCF.h>
@@ -56,7 +57,6 @@ struct ManageObjRefsPass : public PassWrapper<ManageObjRefsPass, OperationPass<f
 
 void processMemRefInterop(OpBuilder builder, Value v) {
     Operation *lastUseOp = findLastUseOfSSAValue(v);
-
     builder.setInsertionPointAfter(lastUseOp);
     builder.create<daphne::DecRefOp>(v.getLoc(), v.getDefiningOp()->getOperand(0));
 }
@@ -210,9 +210,26 @@ void incRefArgs(Operation &op, OpBuilder &b) {
  * @param b
  */
 void processBlock(OpBuilder builder, Block *b) {
-    // Make sure that the reference counters of block arguments are decreased.
-    for (BlockArgument &arg : b->getArguments())
-        processValue(builder, arg);
+
+    // Protect parfor arg from getting garbage collected between iterations
+    auto parent = b->getParentOp();
+    if (auto parforParent = llvm::dyn_cast<daphne::ParForOp>(parent)) {
+        // Protect parfor arg from getting garbage collected immediately after
+        // the kernel call
+        if (!parforParent.getArgs().empty()) {
+            auto ip = builder.saveInsertionPoint();
+            builder.setInsertionPoint(parent);
+            for (auto outputOperand : parforParent.getArgs()) {
+                if(llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(outputOperand.getType()))
+                    builder.create<daphne::IncRefOp>(outputOperand.getLoc(), outputOperand);
+            }
+            builder.restoreInsertionPoint(ip);
+        }
+    } else {
+        // Make sure that the reference counters of block arguments are decreased.
+        for (BlockArgument &arg : b->getArguments())
+            processValue(builder, arg);
+    }
 
     // Make sure the reference counters of op results are decreased, and
     // Increase the reference counters of operands where necessary.
