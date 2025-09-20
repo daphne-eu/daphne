@@ -37,10 +37,13 @@ class DaphneLogger;
  */
 struct DaphneUserConfig {
     // Remember to update UserConfig.json accordingly!
+
+    bool use_columnar = false;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
     bool use_obj_ref_mgnt = true;
+    bool use_optimistic_splitting = false;
     bool use_ipa_const_propa = true;
     bool use_phy_op_selection = true;
     bool use_mlir_codegen = false;
@@ -63,12 +66,14 @@ struct DaphneUserConfig {
     bool enable_profiling = false;
 
     bool debug_llvm = false;
+    bool explain_columnar = false;
     bool explain_kernels = false;
     bool explain_llvm = false;
     bool explain_parsing = false;
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_select_matrix_repr = false;
+    bool explain_transfer_data_props = false;
     bool explain_sql = false;
     bool explain_phy_op_selection = false;
     bool explain_type_adaptation = false;
@@ -78,6 +83,9 @@ struct DaphneUserConfig {
     bool explain_mlir_codegen_sparsity_exploiting_op_fusion = false;
     bool explain_mlir_codegen_daphneir_to_mlir = false;
     bool explain_mlir_codegen_mlir_specific = false;
+    bool enable_property_recording = false;
+    bool enable_property_insert = false;
+    std::string properties_file_path = "properties.json";
     bool enable_statistics = false;
 
     bool force_cuda = false;

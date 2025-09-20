@@ -30,7 +30,7 @@ using namespace mlir;
  * to an available pre-compiled kernel.
  *
  * While type inference propagates types through the IR, it is not guaranteed
- * that a pre-compiled kernel for each infered type combination is available.
+ * that a pre-compiled kernel for each inferred type combination is available.
  * Thus, the task of this pass is to adapt input and output types by casts,
  * where necessary, to ensure that an existing pre-compiled kernel can be used.
  *
@@ -102,6 +102,10 @@ void AdaptTypesToKernelsPass::runOnOperation() {
                 // Cast all inputs to the result value type.
                 for (size_t i = 0; i < numOperands; i++)
                     operandIdxs.push_back(i);
+                targetVTy = resVTy;
+            } else if (op->hasTrait<OpTrait::CastFirstArgToResType>()) {
+                // Cast input 0 to the result value type.
+                operandIdxs = {0};
                 targetVTy = resVTy;
             } else if (op->hasTrait<OpTrait::CastFirstTwoArgsToResType>()) {
                 // Cast inputs 0 and 1 to the result value type.

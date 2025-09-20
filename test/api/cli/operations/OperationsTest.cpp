@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <api/cli/StatusCode.h>
 #include <api/cli/Utils.h>
 
 #include <tags.h>
@@ -22,6 +23,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 const std::string dirPath = "test/api/cli/operations/";
 
@@ -61,6 +63,7 @@ MAKE_TEST_CASE("order", 1)
 MAKE_TEST_CASE("rbind", 1)
 MAKE_TEST_CASE("recode", 4)
 MAKE_TEST_CASE("replace", 1)
+MAKE_TEST_CASE("reshape", 3)
 MAKE_TEST_CASE("reverse", 1)
 MAKE_TEST_CASE("semiJoin", 1)
 MAKE_TEST_CASE("seq", 2)
@@ -70,3 +73,81 @@ MAKE_TEST_CASE("sum", 1)
 MAKE_TEST_CASE("syrk", 1)
 MAKE_TEST_CASE("transpose", 1)
 MAKE_TEST_CASE("upper", 1)
+
+// Checks if the result of both `t(X) @ X` and `X @ t(X)`, when using physical operator selection (default args), is:
+// (1) equal to the result of the same expressions when not using physical operator selection (up to round-off errors),
+// and (2) symmetric (there should not even be round-off errors).
+TEST_CASE("operator_at_symmetry", TAG_OPERATIONS) {
+    // We use a few different shapes for the matrix X, since an incorrect implementation might still produce symmetric
+    // results for some shapes (before the commit that introduced this test case, `X @ t(X)` was lowered to the
+    // matmul-kernel, which didn't produce symmetric results for some input shapes). We ensure that the result is
+    // symmetric by lowering to the syrk-kernel. To check if the result is (not only symmetric but also) correct (up to
+    // round-off errors), we compare it to the result without the rewrite from MatMulOp to SyrkOp, by passing
+    // `--no-phy-op-selection`.
+
+    std::string scriptFilePath = dirPath + "operator_at_symmetry.daphne";
+
+    std::string checkSymArgFalse = "checkSymmetry=false";
+    std::string checkSymArgTrue = "checkSymmetry=true";
+
+    std::string sep = "-----\n";
+    std::string outExpSym = "t(X) @ X is symmetric\nX @ t(X) is symmetric\n" + sep;
+
+    std::vector<size_t> choiceSize = {1, 3, 57, 100, 256};
+    for (size_t numRows : choiceSize)
+        for (size_t numCols : choiceSize) {
+            DYNAMIC_SECTION("" << numRows << "x" << numCols) {
+                std::string numRowsArg = "numRows=" + std::to_string(numRows);
+                std::string numColsArg = "numCols=" + std::to_string(numCols);
+
+                // In all variable names:
+                // "1" stands for "with physical operator selection"
+                // "2" stands for "without physical operator selection"
+
+                // Run DAPHNE with physical operator selection (default args).
+                std::stringstream out1, err1;
+                int status1 = runDaphne(out1, err1, scriptFilePath.c_str(), numRowsArg.c_str(), numColsArg.c_str(),
+                                        checkSymArgTrue.c_str());
+
+                // Run DAPHNE without physical operator selection.
+                std::stringstream out2, err2;
+                int status2 = runDaphne(out2, err2, "--no-phy-op-selection", scriptFilePath.c_str(), numRowsArg.c_str(),
+                                        numColsArg.c_str(), checkSymArgFalse.c_str());
+
+                // Both runs of DAPHNE must succeed.
+                // Just CHECK (don't REQUIRE) success, such that in case of a failure, the following checks run and
+                // provide useful messages.
+                CHECK(status1 == StatusCode::SUCCESS);
+                CHECK(status2 == StatusCode::SUCCESS);
+
+                std::string outStr1 = out1.str();
+                std::string outStr2 = out2.str();
+
+                // Extract the first section of the output, which contains the results of the two expressions.
+                size_t pos1 = outStr1.find(sep);
+                size_t pos2 = outStr2.find(sep);
+                REQUIRE(pos1 > 0);                  // results output must no be empty
+                REQUIRE(pos2 > 0);                  // results output must no be empty
+                REQUIRE(pos1 != std::string::npos); // separator must be present
+                REQUIRE(pos2 != std::string::npos); // separator must be present
+                // The result of `t(X) @ X` must be the same (up to round-off errors) with and without physical operator
+                // selection. The same must hold for `X @ t(X)`. An approximate check is achieved through the limited
+                // precision when printing the matrices in DaphneDSL.
+                CHECK(outStr1.substr(0, pos1) == outStr2.substr(0, pos2));
+
+                // Only for the results with physical operator selection:
+                // - Extract the second section of the output, which contains the results of the symmetry check.
+                // - The results of both `t(X) @ X` and `X @ t(X)` must be symmetric.
+                CHECK(outStr1.substr(pos1 + sep.size(), outExpSym.size()) == outExpSym);
+
+                // We don't check the contents of the third section of the output, which contains the eigen values and
+                // eigen vectors, since we are not interested in the concrete data; we just want to see if their
+                // calculation succeeds.
+
+                // The error output of both runs of DAPHNE must be empty.
+                // Don't check empty(), because then catch2 doesn't display the error output.
+                CHECK(err1.str() == "");
+                CHECK(err2.str() == "");
+            }
+        }
+}

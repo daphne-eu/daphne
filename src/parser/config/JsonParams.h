@@ -27,9 +27,11 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_CUDA_ = "use_cuda";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
+    inline static const std::string USE_OPTIMISTIC_SPLITTING = "use_optimistic_splitting";
     inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
     inline static const std::string USE_PHY_OP_SELECTION = "use_phy_op_selection";
     inline static const std::string USE_MLIR_CODEGEN = "use_mlir_codegen";
+    inline static const std::string USE_COLUMNAR = "use_columnar";
     inline static const std::string MATMUL_VEC_SIZE_BITS = "matmul_vec_size_bits";
     inline static const std::string MATMUL_TILE = "matmul_tile";
     inline static const std::string MATMUL_FIXED_TILE_SIZES = "matmul_fixed_tile_sizes";
@@ -42,12 +44,14 @@ struct DaphneConfigJsonParams {
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
     inline static const std::string DEBUG_LLVM = "debug_llvm";
+    inline static const std::string EXPLAIN_COLUMNAR = "explain_columnar";
     inline static const std::string EXPLAIN_KERNELS = "explain_kernels";
     inline static const std::string EXPLAIN_LLVM = "explain_llvm";
     inline static const std::string EXPLAIN_PARSING = "explain_parsing";
     inline static const std::string EXPLAIN_PARSING_SIMPLIFIED = "explain_parsing_simplified";
     inline static const std::string EXPLAIN_PROPERTY_INFERENCE = "explain_property_inference";
     inline static const std::string EXPLAIN_SELECT_MATRIX_REPR = "explain_select_matrix_repr";
+    inline static const std::string EXPLAIN_TRANSFER_DATA_PROPS = "explain_transfer_data_props";
     inline static const std::string EXPLAIN_SQL = "explain_sql";
     inline static const std::string EXPLAIN_PHY_OP_SELECTION = "explain_phy_op_selection";
     inline static const std::string EXPLAIN_TYPE_ADAPTATION = "explain_type_adaptation";
@@ -70,6 +74,9 @@ struct DaphneConfigJsonParams {
     inline static const std::string LOGGING = "logging";
     inline static const std::string FORCE_CUDA = "force_cuda";
     inline static const std::string SPARSITY_THRESHOLD = "sparsity_threshold";
+    inline static const std::string ENABLE_PROPERTY_RECORDING = "enable_property_recording";
+    inline static const std::string ENABLE_PROPERTY_INSERT = "enable_property_insert";
+    inline static const std::string PROPERTIES_FILE_PATH = "properties_file_path";
 
     inline static const std::string JSON_PARAMS[] = {MATMUL_VEC_SIZE_BITS,
                                                      MATMUL_TILE,
@@ -82,18 +89,22 @@ struct DaphneConfigJsonParams {
                                                      USE_CUDA_,
                                                      USE_VECTORIZED_EXEC,
                                                      USE_OBJ_REF_MGNT,
+                                                     USE_OPTIMISTIC_SPLITTING,
                                                      USE_IPA_CONST_PROPA,
                                                      USE_PHY_OP_SELECTION,
                                                      USE_MLIR_CODEGEN,
+                                                     USE_COLUMNAR,
                                                      CUDA_FUSE_ANY,
                                                      VECTORIZED_SINGLE_QUEUE,
                                                      DEBUG_LLVM,
+                                                     EXPLAIN_COLUMNAR,
                                                      EXPLAIN_KERNELS,
                                                      EXPLAIN_LLVM,
                                                      EXPLAIN_PARSING,
                                                      EXPLAIN_PARSING_SIMPLIFIED,
                                                      EXPLAIN_PROPERTY_INFERENCE,
                                                      EXPLAIN_SELECT_MATRIX_REPR,
+                                                     EXPLAIN_TRANSFER_DATA_PROPS,
                                                      EXPLAIN_SQL,
                                                      EXPLAIN_PHY_OP_SELECTION,
                                                      EXPLAIN_TYPE_ADAPTATION,
@@ -103,6 +114,9 @@ struct DaphneConfigJsonParams {
                                                      EXPLAIN_MLIR_CODEGEN_DAPHNEIR_TO_MLIR,
                                                      EXPLAIN_MLIR_CODEGEN_MLIR_SPECIFIC,
                                                      EXPLAIN_OBJ_REF_MGNT,
+                                                     ENABLE_PROPERTY_INSERT,
+                                                     ENABLE_PROPERTY_RECORDING,
+                                                     PROPERTIES_FILE_PATH,
                                                      TASK_PARTITIONING_SCHEME,
                                                      NUMBER_OF_THREADS,
                                                      MINIMUM_TASK_SIZE,

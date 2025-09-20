@@ -1,0 +1,12 @@
+// One table, full aggregation.
+
+r = {
+    "a": [1.1, 2.2, 3.3],
+    "b": [ 10,   5,  20]
+};
+
+registerView("r", r);
+
+res = sql("SELECT sum(r.b) AS foo FROM r;");
+
+print(res);

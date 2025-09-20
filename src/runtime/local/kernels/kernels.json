@@ -423,7 +423,26 @@
             ["Frame", ["DenseMatrix", "double"]],
             ["Frame", ["DenseMatrix", "int64_t"]],
             ["Frame", ["DenseMatrix", "uint64_t"]],
-
+            [["Column", "double"], ["DenseMatrix", "double"]],
+            [["Column", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["Column", "uint64_t"], ["DenseMatrix", "uint64_t"]],
+            [["Column", "size_t"], ["DenseMatrix", "size_t"]],
+            [["Column", "std::string"], ["DenseMatrix", "std::string"]],
+            [["DenseMatrix", "double"], ["Column", "double"]],
+            [["DenseMatrix", "int64_t"], ["Column", "int64_t"]],
+            [["DenseMatrix", "uint64_t"], ["Column", "uint64_t"]],
+            [["DenseMatrix", "size_t"], ["Column", "size_t"]],
+            [["DenseMatrix", "std::string"], ["Column", "std::string"]],
+            [["Column", "double"], "Frame"],
+            [["Column", "int64_t"], "Frame"],
+            [["Column", "uint64_t"], "Frame"],
+            [["Column", "size_t"], "Frame"],
+            [["Column", "std::string"], "Frame"],
+            ["Frame", ["Column", "double"]],
+            ["Frame", ["Column", "int64_t"]],
+            ["Frame", ["Column", "uint64_t"]],
+            ["Frame", ["Column", "size_t"]],
+            ["Frame", ["Column", "std::string"]],
             [
                 ["DenseMatrix", "double"],
                 ["DenseMatrix", "double"]
@@ -889,6 +908,16 @@
             ]
         },
         "instantiations": [
+            ["bool", ["DenseMatrix", "double"]],
+            ["bool", ["DenseMatrix", "float"]],
+            ["bool", ["DenseMatrix", "int64_t"]],
+            ["bool", ["DenseMatrix", "int32_t"]],
+            ["bool", ["DenseMatrix", "int8_t"]],
+            ["bool", ["DenseMatrix", "uint64_t"]],
+            ["bool", ["DenseMatrix", "uint32_t"]],
+            ["bool", ["DenseMatrix", "uint8_t"]],
+            ["bool", ["DenseMatrix", "size_t"]],
+
             ["double", ["DenseMatrix", "double"]],
             ["double", ["DenseMatrix", "float"]],
             ["double", ["DenseMatrix", "int64_t"]],
@@ -980,7 +1009,11 @@
             ["size_t", ["DenseMatrix", "size_t"]],
 
             ["double", "Frame"],
-            ["int64_t", "Frame"]
+            ["int64_t", "Frame"],
+
+            ["double", ["Column", "double"]],
+            ["int64_t", ["Column", "int64_t"]],
+            ["uint64_t", ["Column", "uint64_t"]]
         ]
     },
     {
@@ -1398,6 +1431,10 @@
                 {
                     "type": "uint64_t",
                     "name": "statisticsPtr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "propertyLoggerPtr"
                 },
                 {
                     "type": "uint64_t",
@@ -2818,7 +2855,10 @@
             {
                 "name": ["CPP"],
                 "instantiations": [
-                    [["DenseMatrix", "std::string"], "const char *"]
+                    [["DenseMatrix", "std::string"], "const char *"],
+                    [["CSRMatrix", "double"], "double"],
+                    [["CSRMatrix", "float"], "float"],
+                    [["CSRMatrix", "int64_t"], "int64_t"]
                 ]
             }
         ]
@@ -3427,6 +3467,49 @@
                 ["DenseMatrix", "uint8_t"],
                 ["DenseMatrix", "uint8_t"]
             ]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "RecordProperties.h",
+            "opName": "recordProperties",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "uint32_t",
+                    "name": "valueId"
+                }
+            ]
+        },
+        "instantiations":[
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "size_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "size_t"]]
         ]
     },
     {
@@ -4328,7 +4411,16 @@
             [
                 ["DenseMatrix", "std::string"],
                 ["DenseMatrix", "std::string"]
-            ]
+            ],
+
+            [["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"], ["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"], ["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"], ["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"], ["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"], ["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"], ["CSRMatrix", "uint8_t"]]
         ]
     },
     {
@@ -4811,6 +4903,10 @@
                 {
                     "type": "const DTArg *",
                     "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "transLeft"
                 }
             ]
         },
@@ -6989,6 +7085,609 @@
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "int64_t"]]
         ]
-    }
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColSelectCmp.h",
+            "opName": "colSelectCmp",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTRhsData",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "CmpOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTResPos *&",
+                    "name": "resPos"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "VTRhsData",
+                    "name": "rhsData"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "double"], "double"],
+            [["Column", "size_t"], ["Column", "int64_t"], "int64_t"],
+            [["Column", "size_t"], ["Column", "uint64_t"], "uint64_t"],
+            [["Column", "size_t"], ["Column", "std::string"], "const char *"]
+        ],
+        "opCodes": ["EQ", "NEQ", "GT", "GE", "LT", "LE"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColProject.h",
+            "opName": "colProject",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResData *&",
+                    "name": "resData"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsPos *",
+                    "name": "rhsPos"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"], ["Column", "size_t"]],
+            [["Column", "int64_t"], ["Column", "int64_t"], ["Column", "size_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"], ["Column", "size_t"]],
+            [["Column", "std::string"], ["Column", "std::string"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColIntersect.h",
+            "opName": "colIntersect",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResPos *&",
+                    "name": "resPos"
+                },
+                {
+                    "type": "const DTLhsPos *",
+                    "name": "lhsPos"
+                },
+                {
+                    "type": "const DTRhsPos *",
+                    "name": "rhsPos"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColMerge.h",
+            "opName": "colMerge",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResPos *&",
+                    "name": "resPos"
+                },
+                {
+                    "type": "const DTLhsPos *",
+                    "name": "lhsPos"
+                },
+                {
+                    "type": "const DTRhsPos *",
+                    "name": "rhsPos"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColJoin.h",
+            "opName": "colJoin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTResRhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResLhsPos *&",
+                    "name": "resLhsPos"
+                },
+                {
+                    "type": "DTResRhsPos *&",
+                    "name": "resRhsPos"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsData *",
+                    "name": "rhsData"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRes"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "double"], ["Column", "double"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "uint64_t"], ["Column", "uint64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "std::string"], ["Column", "std::string"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColSemiJoin.h",
+            "opName": "colSemiJoin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResLhsPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResLhsPos *&",
+                    "name": "resLhsPos"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsData *",
+                    "name": "rhsData"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRes"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "double"], ["Column", "double"]],
+            [["Column", "size_t"], ["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "size_t"], ["Column", "uint64_t"], ["Column", "uint64_t"]],
+            [["Column", "size_t"], ["Column", "std::string"], ["Column", "std::string"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColGroupFirst.h",
+            "opName": "colGroupFirst",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResGrpIds",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTResReprPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResGrpIds *&",
+                    "name": "resGrpIds"
+                },
+                {
+                    "type": "DTResReprPos *&",
+                    "name": "resReprPos"
+                },
+                {
+                    "type": "const DTArgData *",
+                    "name": "argData"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "double"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "int64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "uint64_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "std::string"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColGroupNext.h",
+            "opName": "colGroupNext",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResGrpIds",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTResReprPos",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgGrpIds",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResGrpIds *&",
+                    "name": "resGrpIds"
+                },
+                {
+                    "type": "DTResReprPos *&",
+                    "name": "resReprPos"
+                },
+                {
+                    "type": "const DTArgData *",
+                    "name": "argData"
+                },
+                {
+                    "type": "const DTArgGrpIds *",
+                    "name": "argGrpIds"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "double"], ["Column", "size_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "int64_t"], ["Column", "size_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "uint64_t"], ["Column", "size_t"]],
+            [["Column", "size_t"], ["Column", "size_t"], ["Column", "std::string"], ["Column", "size_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColCalcBinary.h",
+            "opName": "colCalcBinary",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhsData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhsData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "BinaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTResData *&",
+                    "name": "resData"
+                },
+                {
+                    "type": "const DTLhsData *",
+                    "name": "lhsData"
+                },
+                {
+                    "type": "const DTRhsData *",
+                    "name": "rhsData"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"], ["Column", "double"]],
+            [["Column", "int64_t"], ["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"], ["Column", "uint64_t"]]
+        ],
+        "opCodes": ["SUB", "MUL"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColAggAll.h",
+            "opName": "colAggAll",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"]],
+            [["Column", "int64_t"], ["Column", "int64_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"]]
+        ],
+        "opCodes": ["SUM"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ColAggGrp.h",
+            "opName": "colAggGrp",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTGrpIds",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTData *",
+                    "name": "data"
+                },
+                {
+                    "type": "const DTGrpIds *",
+                    "name": "grpIds"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numDistinct"
+                },
+                {
+                    "type": "bool",
+                    "name": "allowOptimisticSplitting"
+                }
+            ]
+        },
+        "instantiations": [
+            [["Column", "double"], ["Column", "double"], ["Column", "size_t"]],
+            [["Column", "int64_t"], ["Column", "int64_t"], ["Column", "size_t"]],
+            [["Column", "uint64_t"], ["Column", "uint64_t"], ["Column", "size_t"]]
+        ],
+        "opCodes": ["SUM"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertPosListToBitmap.h",
+            "opName": "convertPosListToBitmap",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numRowsRes"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ConvertBitmapToPosList.h",
+            "opName": "convertBitmapToPosList",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "TransferProperties.h",
+            "opName": "transferProperties",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                },
+                {
+                    "type": "double",
+                    "name": "sparsity"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "symmetric"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "std::string"]],
 
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "size_t"]],
+            [["CSRMatrix", "bool"]],
+            [["CSRMatrix", "std::string"]]
+        ]
+    }
 ]

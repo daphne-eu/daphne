@@ -1,0 +1,18 @@
+// Join of two tables (both with filters), full aggregation.
+
+f = {
+    "a"  : [ 1,  1,  4,  3,  2,  1,  1,  0,  1,  2,  0,  4],
+    "b"  : [10, 30, 20, 10, 20, 30, 30, 20, 10, 20, 30, 10],
+    "did": [ 3,  0,  2,  1,  4,  3,  2,  2,  0,  1,  2,  1]
+};
+d = {
+    "id": [ 0,  1,  2,  3,  4],
+    "x" : [10, 20, 10, 20, 30]
+};
+
+registerView("f", f);
+registerView("d", d);
+
+res = sql("SELECT sum(f.b) AS foo FROM f INNER JOIN d ON f.did = d.id WHERE d.x = 10 AND f.a < 3;");
+
+print(res);

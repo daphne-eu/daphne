@@ -20,7 +20,7 @@ This document is a hand-crafted reference of the DaphneLib API.
 A general introduction to [DaphneLib (DAPHNE's Python API)](/doc/DaphneLib/Overview.md) can be found in a separate document.
 DaphneLib offers numerous methods for *obtaining DAPHNE matrices and frames* as well as for *building complex computations* based on them, including complex control flow with if-then-else, loops, and user-defined functions.
 Ultimately, DaphneLib will support all [DaphneDSL built-in functions](/doc/DaphneDSL/Builtins.md) on matrices and frames.
-Futhermore, **we also plan to create a library of higher-level primitives** allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.
+Furthermore, **we also plan to create a library of higher-level primitives** allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.
 
 At the moment, the documentation is still rather incomplete.
 However, as the methods largely map to DaphneDSL built-in functions, you can find some more information in the [List of DaphneDSL built-in functions](/doc/DaphneDSL/Builtins.md), for the time being.
@@ -28,6 +28,10 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 ## Obtaining DAPHNE Matrices and Frames
 
 ### `DaphneContext` API Reference
+
+**Importing data from Python lists:**
+
+- **`from_python`**`(mat: [], shared_memory=True, verbose=False, return_shape=False) -> Matrix`
 
 **Importing data from other Python libraries:**
 
@@ -254,7 +258,7 @@ Logical *and* (`&&`) and *or* (`||`) operators can be used for the conditions fo
 ## Building Complex Control Structures
 
 Complex control structures like if-then-else, for-loops, while-loops and do-while-loops can be built using methods of the `DaphneContext`.
-These control structures can be used to manipulate matrices, frames, and scalars, and are lazily evaluated. Futhermore, user-defined functions can be created to build reusable code which can then be again lazily evaluated.
+These control structures can be used to manipulate matrices, frames, and scalars, and are lazily evaluated. Furthermore, user-defined functions can be created to build reusable code which can then be again lazily evaluated.
 User-defined functions can manipulate matrices, frames, and scalars, too.
 
 ### `DaphneContext` API Reference
@@ -293,7 +297,7 @@ User-defined functions can manipulate matrices, frames, and scalars, too.
 - **`@function`**, **`function`**`(callback)`
     * callback: Callable
         - This function requires adding typing hints in case the arguments are supposed to be handled as `Scalar` or `Frame`, all arguments without hints are handled as `Matrix` objects.
-          Hinting `Matrix` is optional.
-          Wrong or missing typing hints can trigger errors before and during computing (lazy evaluation).
+            Hinting `Matrix` is optional.
+            Wrong or missing typing hints can trigger errors before and during computing (lazy evaluation).
     * returns: Tuple[VALID_COMPUTED_TYPES]  *(length equals the return values of callback)*
     * if the decorator `@function` is used the *callback* is defined right below it like regular Python method

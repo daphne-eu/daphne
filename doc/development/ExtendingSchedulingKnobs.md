@@ -16,14 +16,14 @@ limitations under the License.
 
 # Extending DAPHNE with More Scheduling Knobs
 
-This document focuses on how a daphne developer may extend the DAPHNE system by adding new scheduling techniques
+This document focuses on how a DAPHNE developer may extend DAPHNE by adding new scheduling techniques.
 
 ## Guidelines
 
-The daphne developer should consider the following files for adding a new scheduling technique
+The DAPHNE developer should consider the following files for adding a new scheduling technique:
 
-1. src/runtime/local/vectorized/LoadPartitioning.h
-1. src/api/cli/daphne.cpp
+1. `src/runtime/local/vectorized/LoadPartitioning.h`
+1. `src/api/internal/daphne_internal.cpp`
 
 **Adding the actual code of the technique:**
 
@@ -32,34 +32,34 @@ For more details, please visit [Scheduler design for tasks and pipelines](https:
 
 In this file, the developer should change two things:
 
-1. The enumeration that is called `SelfSchedulingScheme`. The developer will have to add a name for the new technique, e.g., `MYTECH`
+1. The enumeration `SelfSchedulingScheme`. The developer will have to add a name for the new technique, e.g., `MYTECH`
 
     ```cpp
     enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, PLS, MSTATIC, MFSC, PSS, MYTECH };
     ```
 
-1. The function that is called `getNextChunk()`. This function has a switch case that selects the mathematical formula that corresponds to the chosen scheduling method. The developer has to add a new case to handle the new technique.
+1. The function `getNextChunk()`. This function has a switch-case-statement that selects the mathematical formula that corresponds to the chosen scheduling method. The developer has to add a new case to handle the new technique.
 
     ```cpp
     uint64_t getNextChunk(){
-       //...
+       // ...
        switch (schedulingMethod){
-           //...
-           //Only the following part is what the developer has to add. The rest remains the same
+           // ...
+           // only the following part is what the developer has to add. The rest remains the same
            case MYTECH:{ // the new technique
-               chunkSize= FORMULA;//Some Formula to calculate the chunksize (partition size)
+               chunkSize= FORMULA; // some formula to calculate the chunk size (partition size)
                break; 
            }
-           //...
+           // ...
        }
-       //...
+       // ...
        return chunkSize;
     }
     ```
 
 **Enabling the selection of the newly added technique:**
 
-The second file `daphne.cpp` contains the code that parses the command line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a vaild option. Otherwise, the developer will not be able to use the newly added technique.
+The second file `daphne_internal.cpp` contains the code that parses the command-line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a valid option. Otherwise, the developer will not be able to use the newly added technique.
 There is a variable called `taskPartitioningScheme` and it is of type `opt<SelfSchedulingScheme>`.
 The developer should extend the declaration of `opt<SelfSchedulingScheme>` as follows:
 
@@ -86,13 +86,13 @@ opt<SelfSchedulingScheme> taskPartitioningScheme(
 
 **Usage of the new technique:**
 
-Daphne developers may now pass the new technique as an option when they execute a DaphneDSL script.
+DAPHNE developers may now pass the new technique as an option when they execute a DaphneDSL script.
 
 ```bash
 daphne --vec --MYTECH --grain-size 10 --num-threads 4 --PERCPU --SEQPRI --hyperthreading --debug-mt my_script.daphne
 ```
 
-In this example, the daphne system will execute `my_script.daphne`  with the following configuration:
+In this example, DAPHNE will execute `my_script.daphne`  with the following configuration:
 
 1. the vectorized engine is enabled due to `--vec`
 1. the DAPHNE runtime will use MYTECH for task partitioning due to `--MYTECH`

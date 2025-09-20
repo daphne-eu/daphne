@@ -16,32 +16,30 @@ limitations under the License.
 
 # Read and Write Data
 
-Reading and writing (meta) data in Daphne.
-
-When loading data with ``read()`` in a DaphneDSL script, the system expects a file with the same file name in the same
-directory as the data file with an additional extension ``.meta``. This file contains a description of meta data stored
+When loading data with `readMatrix()`/`readFrame()` in a DaphneDSL script, the system expects a file with the same file name in the same
+directory as the data file with an *additional* extension `.meta`. This file contains a description of meta data stored
 in JSON format.
 
 There are two slightly varying ways of specifying meta data depending on whether there is a schema for the columns (e.g.,
-a data frame - the corresponding C++ type is the Frame class) or not (this data can currently (as of version 0.1) be
+a data frame - the corresponding C++ type is the `Frame` class) or not (this data can currently be
 loaded as `DenseMatrix<VT>` or `CSRMatrix<VT>` where `VT` is the value type template parameter).
 
-If data is written from a DaphneDSL script via ``write()``, the meta data file will be written to the corresponding ``filename.meta``.
+If data is written from a DaphneDSL script via `write()`/`writeMatrix()`/`writeFrame()`, the meta data file will be written to the corresponding `filename.meta`.
 
-## Currently supported JSON fields
+## Currently Supported JSON Fields
 
 | Name        | Expected Data | Allowed values                                                                                                                                                                                                                                                                                                                               |
 |-------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| numRows     | Integer       | # number of rows                                                                                                                                                                                                                                                                                                                             |
-| numCols     | Integer       | # number of columns                                                                                                                                                                                                                                                                                                                          |
-| valueType   | String        | ``si8, si32, si64, // signed integers (intX_t)``<br />``ui8, ui32, ui64, // unsigned integers (uintx_t)``<br />``f32, f64, // floating point (float, double)``<br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field |
-| numNonZeros | Integer       | # number of non-zeros (optional)                                                                                                                                                                                                                                                                                                             |
+| numRows     | Integer       | number of rows                                                                                                                                                                                                                                                                                                                             |
+| numCols     | Integer       | number of columns                                                                                                                                                                                                                                                                                                                          |
+| valueType   | String        | `si8, si32, si64, // signed integers (intX_t)`<br />`ui8, ui32, ui64, // unsigned integers (uintX_t)`<br />`f32, f64, // floating point (float, double)`<br />`str // string`<br /><br/>Contained within schema this may be an empty string. In this case all columns of a data frame will have the same valueType defined outside of the schema data field |
+| numNonZeros | Integer       | number of non-zeros (optional)                                                                                                                                                                                                                                                                                                             |
 | schema      | JSON          | nested elements of "label" and "valueType" fields                                                                                                                                                                                                                                                                                            |
 | label       | String        | column name/header (optional, may be empty string "")                                                                                                                                                                                                                                                                                        |
 
 ## Matrix Example
 
-The example below describes a 2 by 4 dense matrix of double precision values.
+The example below describes a *2x4* matrix of double-precision values.
 
 ### Matrix CSV
 
@@ -63,7 +61,7 @@ The example below describes a 2 by 4 dense matrix of double precision values.
 
 ## Data Frame Example
 
-The example below describes a 2 by 2 Frame with signed integers in the first columns named foo and double precision 
+The example below describes a *2x2* frame with signed integers in the first column named foo and double-precision 
 values in the second column named bar.
 
 ### Data Frame CSV

@@ -57,7 +57,7 @@ def Matrix : Daphne_Type<"Matrix"> {
     // TODO Maybe we should rename "element type" to "value type" everywhere.
     let parameters = (ins
         "::mlir::Type":$elementType,
-        "ssize_t":$numRows, "ssize_t":$numCols, "double":$sparsity, "MatrixRepresentation":$representation
+        "ssize_t":$numRows, "ssize_t":$numCols, "double":$sparsity, "MatrixRepresentation":$representation, "BoolOrUnknown":$symmetric
     );
     let genVerifyDecl = 1;
     // NOTE: float needs special treatment for equality check and hashing (epsilon)
@@ -67,7 +67,7 @@ def Matrix : Daphne_Type<"Matrix"> {
         // Creates a MatrixType from mere element type information, with all
         // other parameters reset.
         TypeBuilder<(ins "::mlir::Type":$elementType), [{
-            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Default);
+            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Default, BoolOrUnknown::Unknown);
         }]>,
     ];
 
@@ -77,19 +77,23 @@ def Matrix : Daphne_Type<"Matrix"> {
         // new value.
 
         ::mlir::daphne::MatrixType withElementType(::mlir::Type elementType) {
-            return get(getContext(), elementType, getNumRows(), getNumCols(), getSparsity(), getRepresentation());
+            return get(getContext(), elementType, getNumRows(), getNumCols(), getSparsity(), getRepresentation(), getSymmetric());
         }
 
         ::mlir::daphne::MatrixType withShape(ssize_t numRows, ssize_t numCols) {
-            return get(getContext(), getElementType(), numRows, numCols, getSparsity(), getRepresentation());
+            return get(getContext(), getElementType(), numRows, numCols, getSparsity(), getRepresentation(), getSymmetric());
         }
 
         ::mlir::daphne::MatrixType withSparsity(double sparsity) {
-            return get(getContext(), getElementType(), getNumRows(), getNumCols(), sparsity, getRepresentation());
+            return get(getContext(), getElementType(), getNumRows(), getNumCols(), sparsity, getRepresentation(), getSymmetric());
         }
 
         ::mlir::daphne::MatrixType withRepresentation(::mlir::daphne::MatrixRepresentation rep) {
-            return get(getContext(), getElementType(), getNumRows(), getNumCols(), getSparsity(), rep);
+            return get(getContext(), getElementType(), getNumRows(), getNumCols(), getSparsity(), rep, getSymmetric());
+        }
+
+        ::mlir::daphne::MatrixType withSymmetric(BoolOrUnknown symmetric) {
+            return get(getContext(), getElementType(), getNumRows(), getNumCols(), getSparsity(), getRepresentation(), symmetric);
         }
 
         // The following methods return a MatrixType preserving the specified
@@ -100,7 +104,7 @@ def Matrix : Daphne_Type<"Matrix"> {
         }
 
         ::mlir::daphne::MatrixType withSameElementTypeAndRepr() {
-            return get(getContext(), getElementType(), -1, -1, -1.0, getRepresentation());
+            return get(getContext(), getElementType(), -1, -1, -1.0, getRepresentation(), BoolOrUnknown::Unknown);
         }
 
         /**
@@ -123,6 +127,10 @@ def Matrix : Daphne_Type<"Matrix"> {
 
             if(other.getRepresentation() != ::mlir::daphne::MatrixRepresentation::Default
                 && getRepresentation() != other.getRepresentation())
+                return false;
+
+            if (other.getSymmetric() != BoolOrUnknown::Unknown
+                && getSymmetric() != other.getSymmetric())
                 return false;
 
             return true;
@@ -225,6 +233,74 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame, Unknown]>;
 // would like to allow unknown without explicitly specifying it.
 def MatrixOrU : AnyTypeOf<[Matrix, Unknown]>;
 def FrameOrU : AnyTypeOf<[Frame, Unknown]>;
+
+def Column : Daphne_Type<"Column"> {
+    let summary = "column";
+
+    let parameters = (ins "::mlir::Type":$valueType, "ssize_t":$numRows);
+
+    let genVerifyDecl = 1;
+
+    let builders = [
+        // Creates a ColumnType from mere value type information, with all other parameters reset.
+        TypeBuilder<(ins "::mlir::Type":$valueType), [{
+            return Base::get($_ctxt, valueType, -1);
+        }]>,
+    ];
+
+    let extraClassDeclaration =  [{
+        // The following methods return a ColumnType with the same parameters
+        // as this ColumnType, except for one parameter, which is replaced by a
+        // new value.
+
+        ::mlir::daphne::ColumnType withValueType(::mlir::Type valueType) {
+            return get(getContext(), valueType, getNumRows());
+        }
+
+        ::mlir::daphne::ColumnType withShape(ssize_t numRows) {
+            return get(getContext(), getValueType(), numRows);
+        }
+
+        // The following method returns a ColumnType with the same value type
+        // as this ColumnType, but all other parameters reset.
+
+        ::mlir::daphne::ColumnType withSameValueType() {
+            return get(getContext(), getValueType());
+        }
+
+        /**
+         * @brief Check if `other` has strictly less information than this column type.
+         * @param other the other column type to compare to
+         * @return true if this type has more information, false otherwise
+         */
+        bool isSpecializationOf(::mlir::daphne::ColumnType other) {
+            auto valueType = getValueType();
+            auto otherValueType = other.getValueType();
+            if(!otherValueType.isa<mlir::daphne::UnknownType>() && valueType != otherValueType)
+                return false;
+
+            if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())
+                return false;
+
+            return true;
+        }
+    }];
+}
+def ColumnOrU : AnyTypeOf<[Column, Unknown]>;
+
+// TODO We could omit the "Of" and have it default to ScalarType.
+// A type constraint checking if a type is a column whose value type is one of
+// the given types (whereby Unknown is always allowed automatically).
+// Reuses MLIR's ContainerType constraint in a way inspired by MLIR's VectorOf.
+class ColumnOf<list<Type> allowedTypes> : AnyTypeOf<[
+        ContainerType<
+                AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
+                Column.predicate,
+                "$_self.dyn_cast<::mlir::daphne::ColumnType>().getValueType()",
+                "column"
+        >,
+        Unknown
+]>;
 
 def List : Daphne_Type<"List"> {
     let summary = "list";

@@ -107,15 +107,17 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
     if (ax.is<mlir::Value>()) { // indexing with a single SSA value (no ':')
         mlir::Value axVal = ax.as<mlir::Value>();
         if (CompilerUtils::hasObjType(axVal)) // data object
-            return utils.retValWithInferedType(builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal));
+            return CompilerUtils::retValWithInferredType(
+                builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal));
         else if (llvm::isa<mlir::daphne::StringType>(axVal.getType())) { // string
             if (allowLabel)
-                return utils.retValWithInferedType(builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal));
+                return CompilerUtils::retValWithInferredType(
+                    builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal));
             else
                 throw ErrorHandler::compilerError(loc, "DSLVisitor (applyRightIndexing)",
                                                   "cannot use right indexing with label in this case");
         } else // scalar
-            return utils.retValWithInferedType(builder.create<SliceAxOp>(
+            return CompilerUtils::retValWithInferredType(builder.create<SliceAxOp>(
                 loc, utils.unknownType, arg, utils.castSI64If(axVal),
                 utils.castSI64If(builder.create<mlir::daphne::EwAddOp>(
                     loc, builder.getIntegerType(64, false), utils.castSI64If(axVal),
@@ -132,7 +134,7 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         if (axUpperExcl == nullptr)
             axUpperExcl = builder.create<NumAxOp>(loc, utils.sizeType, arg);
 
-        return utils.retValWithInferedType(builder.create<SliceAxOp>(
+        return CompilerUtils::retValWithInferredType(builder.create<SliceAxOp>(
             loc, utils.unknownType, arg, utils.castSI64If(axLowerIncl), utils.castSI64If(axUpperExcl)));
     } else
         throw ErrorHandler::compilerError(loc, "DSLVisitor (applyRightIndexing)",
@@ -606,19 +608,19 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         // If the step is not given, derive it as `-1 + 2 * (to >= from)`,
         // which always results in -1 or +1, even if to equals from.
         step = builder.create<mlir::daphne::EwAddOp>(
-            loc, builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, -1)),
+            loc, t, builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, -1)),
             builder.create<mlir::daphne::EwMulOp>(
-                loc, builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 2)),
-                utils.castIf(t, builder.create<mlir::daphne::EwGeOp>(loc, to, from))));
+                loc, t, builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 2)),
+                utils.castIf(t, builder.create<mlir::daphne::EwGeOp>(loc, t, to, from))));
         direction = step;
     }
     // Compensate for the fact that the upper bound of SCF's ForOp is exclusive,
     // while we want it to be inclusive.
-    to = builder.create<mlir::daphne::EwAddOp>(loc, to, direction);
+    to = builder.create<mlir::daphne::EwAddOp>(loc, t, to, direction);
     // Compensate for the fact that SCF's ForOp can only count upwards.
-    from = builder.create<mlir::daphne::EwMulOp>(loc, from, direction);
-    to = builder.create<mlir::daphne::EwMulOp>(loc, to, direction);
-    step = builder.create<mlir::daphne::EwMulOp>(loc, step, direction);
+    from = builder.create<mlir::daphne::EwMulOp>(loc, t, from, direction);
+    to = builder.create<mlir::daphne::EwMulOp>(loc, t, to, direction);
+    step = builder.create<mlir::daphne::EwMulOp>(loc, t, step, direction);
     // Compensate for the fact that SCF's ForOp expects its parameters to be of
     // MLIR's IndexType.
     mlir::Type idxType = builder.getIndexType();
@@ -637,11 +639,12 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     // yet; will be replaced later.
     mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(123));
     // Make the induction variable available by the specified name.
-    symbolTable.put(ctx->var->getText(), ScopedSymbolTable::SymbolInfo(
-                                             // Un-compensate for counting direction.
-                                             builder.create<mlir::daphne::EwMulOp>(loc, utils.castIf(t, ph), direction),
-                                             true // the for-loop's induction variable is read-only
-                                             ));
+    symbolTable.put(ctx->var->getText(),
+                    ScopedSymbolTable::SymbolInfo(
+                        // Un-compensate for counting direction.
+                        builder.create<mlir::daphne::EwMulOp>(loc, t, utils.castIf(t, ph), direction),
+                        true // the for-loop's induction variable is read-only
+                        ));
 
     // Parse the loop's body.
     visit(ctx->bodyStmt);
@@ -743,7 +746,7 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
     if (!hasMinus)
         return lit;
     else
-        return utils.retValWithInferedType(
+        return CompilerUtils::retValWithInferredType(
             builder.create<mlir::daphne::EwMinusOp>(utils.getLoc(ctx->start), utils.unknownType, lit));
 }
 
@@ -1147,7 +1150,8 @@ antlrcpp::Any DaphneDSLVisitor::visitMinusExpr(DaphneDSLGrammarParser::MinusExpr
     mlir::Value arg = valueOrErrorOnVisit(ctx->arg);
 
     if (op == "-")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwMinusOp>(loc, utils.unknownType, arg));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwMinusOp>(loc, utils.unknownType, arg));
     if (op == "+")
         return arg;
 
@@ -1162,7 +1166,8 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
 
     if (op == "@") {
         mlir::Value f = builder.create<mlir::daphne::ConstantOp>(loc, false);
-        return utils.retValWithInferedType(builder.create<mlir::daphne::MatMulOp>(loc, lhs.getType(), lhs, rhs, f, f));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::MatMulOp>(loc, lhs.getType(), lhs, rhs, f, f));
     }
 
     throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
@@ -1175,7 +1180,8 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
     mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if (op == "^")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwPowOp>(loc, utils.unknownType, lhs, rhs));
 
     throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
@@ -1187,7 +1193,8 @@ antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprCont
     mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if (op == "%")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwModOp>(loc, utils.unknownType, lhs, rhs));
 
     throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
@@ -1201,9 +1208,11 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
 
     mlir::Value res = nullptr;
     if (op == "*")
-        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
+        res = CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwMulOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "/")
-        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
+        res = CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwDivOp>(loc, utils.unknownType, lhs, rhs));
 
     if (hasKernelHint) {
         std::string kernel = ctx->kernel->getText();
@@ -1238,9 +1247,11 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
         // types might not be known at this point in time. Thus, we always
         // create an EwAddOp here. Note that EwAddOp has a canonicalize method
         // rewriting it to EwConcatOp if necessary.
-        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+        res = CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwAddOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "-")
-        res = utils.retValWithInferedType(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
+        res = CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwSubOp>(loc, utils.unknownType, lhs, rhs));
 
     if (hasKernelHint) {
         std::string kernel = ctx->kernel->getText();
@@ -1269,17 +1280,23 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
     mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if (op == "==")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwEqOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "!=")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwNeqOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "<")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwLtOp>(loc, utils.unknownType, lhs, rhs));
     if (op == "<=")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwLeOp>(loc, utils.unknownType, lhs, rhs));
     if (op == ">")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwGtOp>(loc, utils.unknownType, lhs, rhs));
     if (op == ">=")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwGeOp>(loc, utils.unknownType, lhs, rhs));
 
     throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
@@ -1291,7 +1308,8 @@ antlrcpp::Any DaphneDSLVisitor::visitConjExpr(DaphneDSLGrammarParser::ConjExprCo
     mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if (op == "&&")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwAndOp>(loc, utils.unknownType, lhs, rhs));
 
     throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
@@ -1303,7 +1321,8 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     mlir::Value rhs = valueOrErrorOnVisit(ctx->rhs);
 
     if (op == "||")
-        return utils.retValWithInferedType(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
+        return CompilerUtils::retValWithInferredType(
+            builder.create<mlir::daphne::EwOrOp>(loc, utils.unknownType, lhs, rhs));
 
     throw ErrorHandler::compilerError(utils.getLoc(ctx->start), "DSLVisitor", "unexpected op symbol");
 }
@@ -1439,12 +1458,14 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             rows = valueOrErrorOnVisit(ctx->rows);
         } else if (ctx->cols) {
             cols = valueOrErrorOnVisit(ctx->cols);
-            rows = builder.create<mlir::daphne::EwDivOp>(
-                loc, builder.create<mlir::daphne::ConstantOp>(loc, numMatElems), cols);
+            rows =
+                builder.create<mlir::daphne::EwDivOp>(loc, builder.getIntegerType(64, false),
+                                                      builder.create<mlir::daphne::ConstantOp>(loc, numMatElems), cols);
         } else {
             rows = valueOrErrorOnVisit(ctx->rows);
-            cols = builder.create<mlir::daphne::EwDivOp>(
-                loc, builder.create<mlir::daphne::ConstantOp>(loc, numMatElems), rows);
+            cols =
+                builder.create<mlir::daphne::EwDivOp>(loc, builder.getIntegerType(64, false),
+                                                      builder.create<mlir::daphne::ConstantOp>(loc, numMatElems), rows);
         }
     }
     cols = utils.castSizeIf(cols);

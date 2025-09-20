@@ -16,44 +16,52 @@ limitations under the License.
 
 # FPGA Configuration
 
-FPGA configuration for usage in DAPHNE
+## System Requirements
 
-## System requirments
+Using DAPHNE's build script with FPGA kernels support requires the additional `QUARTUSDIR` environment variable to be defined.
+An example command is presented in `fpga-build-env.sh` or in the following command:
 
-Daphne build script for FPGA kernels support requires additional QUARTUSDIR system variable definition.
-Example command is presented in fpga-build-env.sh or in the following command:
+```bash
+export QUARTUSDIR=/opt/intel/intelFPGA_pro/21.4
+```
 
-`export QUARTUSDIR=/opt/intel/intelFPGA_pro/21.4`
+To build DAPHNE with FPGA kernels support, the flag `--fpgaopencl` has to be used:
 
-To build the Daphne with the FPGA support `-fpgaopencl` flag has to be used:
+```bash
+./build.sh --fpgaopencl
+```
 
-`./build.sh --fpgaopenc`
+To run the pre-compiled FPGA OpenCL kernels included in the DAPHNE repository, an installed and configured FPGA device is required.
+Our example kernels have been tested using an [Intel(R) PAC D5005 card](https://www.intel.com/content/www/us/en/products/sku/193921/intel-fpga-pac-d5005/specifications.html).
 
-To run developed or precompiled, included in Daphne repository FPGA OpenCL kernels an installedand configured  FPGA device is required.
-Our example kernels have been tested using [Intel(R) PAC D5005 card](https://www.intel.com/content/www/us/en/products/sku/193921/intel-fpga-pac-d5005/specifications.html)
-
-DAPHNE contains some example linear algebra kernels developed using [T2SP framework](https://github.com/IntelLabs/t2sp/blob/master/README.md).
-Example precompiled FPGA kernels can be usedon  DAPHNE DSL description level.
-To prepare the system for the precompiled FPGA kernels some FPGA and OpenCL system variables are required.
-The easiest way to set up required varables is to use the init_opencl.sh script from installed Intel(R) Quartus sowtware or from the
+DAPHNE contains some example linear algebra kernels developed using the [T2SP framework](https://github.com/IntelLabs/t2sp/blob/master/README.md).
+The example pre-compiled FPGA kernels can be used at DaphneDSL level.
+To prepare the system for the pre-compiled FPGA kernels, some FPGA and OpenCL environment variables are required.
+The easiest way to set up the required variables is to use the `init_opencl.sh` script from installed Intel(R) Quartus software or from the
 Intel(R) OpenCL RTE or Intel(R) OpenCL SDK packages.
 
 Example script usage:
-`source /opt/intel/intelFPGA_pro/21.4/hld/init_opencl.sh`
 
-For additional details please look into the [Intel guide](https://www.intel.com/content/www/us/en/docs/programmable/683550/18-1/standard-edition-getting-started-guide.html)
-or [SDK for openCL](https://www.intel.com/content/www/us/en/software/programmable/sdk-for-opencl/overview.html).
+```bash
+source /opt/intel/intelFPGA_pro/21.4/hld/init_opencl.sh
+```
 
-### Precompiled FPGA Kernels
+For additional details, see the [Intel guide](https://www.intel.com/content/www/us/en/docs/programmable/683550/18-1/standard-edition-getting-started-guide.html)
+or the [SDK for OpenCL](https://www.intel.com/content/www/us/en/software/programmable/sdk-for-opencl/overview.html).
 
-To use a precompiled FPGA kernel a FPGA image is required (*.aocx). FPGA device has to programmed with particular image which contains required kernel implementation.
-Example FPGA programming command using example FPGA image:
+### Pre-compiled FPGA Kernels
 
-`aocl program acl0 src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx`
+To use a pre-compiled FPGA kernel, an FPGA image is required (`*.aocx`). The FPGA device has to be programmed with a particular image which contains the required kernel implementation.
+An example FPGA programming command using example FPGA image:
 
-Additionally the BITSTREAM variable has to be defind in the system.
-Please look into the following example:
+```bash
+aocl program acl0 src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx
+```
 
-`export BITSTREAM=src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx`
+Additionally, the `BITSTREAM` environment variable has to be defind in the system as follows:
 
-When another FPGA image contains implementation for another required computational kernel then FPGA device has to be reprogrammed and BITSTREAM variable value has to be changed.
+```bash
+export BITSTREAM=src/runtime/local/kernels/FPGAOPENCL/bitstreams/sgemm.aocx
+```
+
+When another FPGA image contains an implementation for another required computational kernel, then the FPGA device has to be reprogrammed and the `BITSTREAM` environment variable has to be changed.

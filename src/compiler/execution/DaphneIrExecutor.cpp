@@ -117,13 +117,40 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
     pm.addPass(mlir::createCanonicalizerPass());
 
+    if (userConfig_.enable_property_recording)
+        pm.addPass(mlir::daphne::createRecordPropertiesPass());
+    if (userConfig_.enable_property_insert) {
+        pm.addPass(mlir::daphne::createInsertPropertiesPass(userConfig_.properties_file_path));
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
+    }
+
+    if (userConfig_.use_columnar) {
+        // Rewrite certain matrix/frame ops from linear/relational algebra to columnar ops from column algebra.
+        pm.addPass(mlir::daphne::createRewriteToColumnarOpsPass(userConfig_));
+        // Infer the result types of the newly created columnar ops.
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+        // Simplify the IR.
+        pm.addPass(mlir::createCanonicalizerPass());
+        // Remove unused ops after simplifications.
+        // TODO The CSE pass seems to eliminate only "one row" of dead code at a time, so we need it as many times as
+        // the longest chain of ops we reduce; how to apply CSE until a fixpoint?
+        for (size_t i = 0; i < 5; i++)
+            pm.addPass(mlir::createCSEPass());
+    }
+    if (userConfig_.explain_columnar)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after lowering to columnar ops:"));
+
     if (selectMatrixRepresentations_) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass(userConfig_));
         pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
     }
-
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
+
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createTransferDataPropertiesPass());
+    if (userConfig_.explain_transfer_data_props)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR afters transferring data properties:"));
 
     if (userConfig_.use_phy_op_selection) {
         pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());

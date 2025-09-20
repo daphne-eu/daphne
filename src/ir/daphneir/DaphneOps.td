@@ -23,14 +23,15 @@ include "ir/daphneir/DaphneDialect.td"
 include "ir/daphneir/DaphneTypes.td"
 include "ir/daphneir/DaphneDistributableOpInterface.td"
 include "ir/daphneir/DaphneInferFrameLabelsOpInterface.td"
+include "ir/daphneir/DaphneInferSymmetricOpInterface.td"
 include "ir/daphneir/DaphneInferShapeOpInterface.td"
+include "ir/daphneir/DaphneInferShapeTraits.td"
 include "ir/daphneir/DaphneInferSparsityOpInterface.td"
 include "ir/daphneir/DaphneInferSparsityTraits.td"
 include "ir/daphneir/DaphneInferTypesOpInterface.td"
+include "ir/daphneir/DaphneInferTypesTraits.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
-include "ir/daphneir/DaphneShapeInferenceTraits.td"
 include "ir/daphneir/DaphneTypeAdaptationTraits.td"
-include "ir/daphneir/DaphneTypeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
 
@@ -118,7 +119,8 @@ def Daphne_ConvertCSRMatrixToRowOffsetsMemRef : Daphne_Op<"convertCSRMatrixToRow
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport,
+    DeclareOpInterfaceMethods<InferSymmetricOpInterface>
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
     let results = (outs MatrixOrU:$res);
@@ -136,7 +138,8 @@ def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
     SameVariadicOperandSize,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    Pure
 ]> {
     let arguments = (ins Variadic<MatrixOrU>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs FrameOrU:$res);
@@ -200,7 +203,7 @@ def Daphne_NumRowsOp : Daphne_NumOp<"numRows">;
 def Daphne_NumColsOp : Daphne_NumOp<"numCols">;
 def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 
-def SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
+def Daphne_SparsityOp : Daphne_Op<"sparsity", [DataTypeSca]> {
   let arguments = (ins MatrixOf<[AnyScalar]>:$arg);
   let results = (outs FloatScalar:$res);
 
@@ -323,13 +326,6 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
 
-    let builders = [
-        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
-            // TODO This is wrong if lhs is a scalar and rhs is a matrix.
-            $_state.addTypes(lhs.getType());
-            $_state.addOperands({lhs, rhs});
-        }]>
-    ];
     let hasFolder = 1;
 }
 
@@ -663,7 +659,7 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>, CUDASupport
+    DeclareOpInterfaceMethods<InferShapeOpInterface>, CUDASupport, Pure
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -684,6 +680,8 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
 
     let arguments = (ins MatrixOrFrame:$source, AnyTypeOf<[Selection, StrScalar, Unknown]>:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
@@ -735,6 +733,7 @@ def Daphne_TransposeOp : Daphne_Op<"transpose", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg, CUDASupport,
+    DeclareOpInterfaceMethods<InferSymmetricOpInterface>,
     Pure
 ]> {
     let arguments = (ins MatrixOrU:$arg);
@@ -760,7 +759,8 @@ def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     ValueTypesConcat,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport
+    NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport,
+    Pure
 ]>;
 
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
@@ -1021,11 +1021,10 @@ def Daphne_SyrkOp : Daphne_Op<"syrk", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromArgNumCols, NumColsFromArg, CUDASupport,FPGAOPENCLSupport, 
-    CastArgsToResType
+    CastFirstArgToResType
 ]> {
-    // TODO: support `A @ t(A)` operation
-    let summary = [{Performs the operation `t(A) @ A`}];
-    let arguments = (ins MatrixOrU:$arg);
+    let summary = [{Performs the operation `t(A) @ A` if `transLeft` is `true`; or `A @ t(A)`, otherwise.}];
+    let arguments = (ins MatrixOrU:$arg, BoolScalar:$transLeft);
     let results = (outs MatrixOrU:$res);
 }
 
@@ -1206,7 +1205,7 @@ def Daphne_QueryOp : Daphne_Op<"query", [
 def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-    NumColsFromArg
+    NumColsFromArg, Pure
 ]> {
     let summary = "Filters the rows of a data object according to a bit vector";
 
@@ -1285,16 +1284,199 @@ def Daphne_GroupOp : Daphne_Op<"group", [
 }
 
 // ****************************************************************************
+// Columnar algebra
+// ****************************************************************************
+// TODO These columnar operations (plus the Column type) could become a separate dialect.
+
+class Daphne_ColSelectCmpOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeSize
+])> {
+    let summary = "Selection on columnar data; input: data; output: sorted positions.";
+    let description = [{
+        Compares each value of the left-hand-side input column to the right-hand-side input scalar using the concrete
+        comparison operation. The output column contains the positions (counting starts at zero) of the matching
+        values in the left-hand-side input column. The output column is sorted.
+
+        Note that this operation can only compare a column to a scalar. To compare two columns, consider using
+        `ColCalcBinaryOp`.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, AnyTypeOf<[AnyScalar, Unknown]>:$rhsData);
+    let results = (outs ColumnOrU:$resPos);
+}
+def Daphne_ColSelectEqOp : Daphne_ColSelectCmpOp<"colSelectEq">;
+def Daphne_ColSelectNeqOp : Daphne_ColSelectCmpOp<"colSelectNeq">;
+def Daphne_ColSelectGtOp : Daphne_ColSelectCmpOp<"colSelectGt">;
+def Daphne_ColSelectGeOp : Daphne_ColSelectCmpOp<"colSelectGe">;
+def Daphne_ColSelectLtOp : Daphne_ColSelectCmpOp<"colSelectLt">;
+def Daphne_ColSelectLeOp : Daphne_ColSelectCmpOp<"colSelectLe">;
+
+def Daphne_ColProjectOp : Daphne_Op<"colProject", [
+    DataTypeCol, ValueTypeFromFirstArg
+]> {
+    let summary = "Projection on columnar data; input: data, positions; output: data.";
+    let description = [{
+        Extracts the data elements addressed by the positions in the right-hand-side input column from the
+        left-hand-side input column. The input positions must be valid positions in the input data column (not out of
+        bounds); other than that, there are no restrictions, i.e., the positions do not need to be sorted and may
+        contain duplicates. The elements in the output data column correspond to the input positions, i.e., are in the
+        same order.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsPos);
+    let results = (outs ColumnOrU:$resData);
+}
+
+class Daphne_ColSetOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeSize
+])> {
+    let arguments = (ins ColumnOrU:$lhsPos, ColumnOrU:$rhsPos);
+    let results = (outs ColumnOrU:$resPos);
+}
+def Daphne_ColIntersectOp : Daphne_ColSetOp<"colIntersect"> {
+    let summary = "Set intersection of columnar positions lists; input: sorted and unique positions; output: sorted and unique positions.";
+    let description = [{
+        Intersects the two given position list columns, i.e., returns a column containing the positions present in both
+        inputs. Both inputs must be sorted and unique (i.e., must not contain duplicates). The output positions are
+        sorted and unique, too.
+    }];
+}
+def Daphne_ColMergeOp : Daphne_ColSetOp<"colMerge"> {
+    let summary = "Set union of columnar positions lists; input: sorted and unique positions; output: sorted and unique positions.";
+    let description = [{
+        Merges the two given position list columns, i.e., returns a column containing the positions present in any
+        input. Both inputs must be sorted and unique (i.e., must not contain duplicates). The output positions are
+        sorted and unique, too.
+    }];
+}
+
+def Daphne_ColJoinOp : Daphne_Op<"colJoin", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "N:1 equi-join on columnar data; input: data, unique data; output: sorted positions, positions.";
+    let description = [{
+        Compares each element in the left-hand-side input column to each element in the right-hand-side input column.
+        For each match, outputs the pair of positions of the matching elements in the left-hand-side input and
+        right-hand-side input. The values the in right-hand-side input must be unique (no duplicates). The two output
+        positions lists have the same length. When used for a primary-key foreign-key join, the left-hand-side input
+        is the foreign key column and the right-hand-side input is the primary key column.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData, Size:$numRes);
+    let results = (outs ColumnOrU:$resLhsPos, ColumnOrU:$resRhsPos);
+}
+
+def Daphne_ColSemiJoinOp : Daphne_Op<"colSemiJoin", [
+    DataTypeCol, ValueTypeSize
+]> {
+    let summary = "Semi-join on columnar data; input: data, data, output: sorted positions.";
+    let description = [{
+        Outputs the position of each element in the left-hand-side input column for which there is a matching element
+        in the right-hand-side input column. The output positions are sorted.
+    }];
+
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData, Size:$numRes);
+    let results = (outs ColumnOrU:$resLhsPos);
+}
+
+def Daphne_ColGroupFirstOp : Daphne_Op<"colGroupFirst", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Initial grouping step on columnar data; input: data; output: positions (group ids), positions (of representatives).";
+    let description = [{
+        Maps each distinct value in the input data column to a unique group id. Group ids are consecutive integers
+        starting at zero. Outputs (1) a column of group ids for each element in the input data column (same length as
+        the input data column), and (2) a column of positions of one representative data element per group (the i-th
+        element is the position of any input data element belonging to group id i). This operation is the first step
+        when grouping by one or multiple columns.
+    }];
+
+    let arguments = (ins ColumnOrU:$argData);
+    let results = (outs ColumnOrU:$resGrpIds, ColumnOrU:$resReprPos);
+}
+
+def Daphne_ColGroupNextOp : Daphne_Op<"colGroupNext", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Subsequent grouping step on columnar data; input: data, positions (group ids); output: positions (group ids), positions (of representatives).";
+    let description = [{
+        Maps each distinct combination of a value in the left-hand-side input data column and the right-hand-side group
+        id column to a unique group id. The two input columns must have the same length. Group ids are consecutive
+        integers starting at zero. Outputs (1) a column of group ids for each element in the input data column (same
+        length as the input data column), and (2) a column of positions of one representative data element per group
+        (the i-th element is the position of any input data element belonging to group id i). When grouping by multiple
+        columns, this operation is applied after `colGroupFirst` to add one more key column to the grouping.
+    }];
+
+    let arguments = (ins ColumnOrU:$argData, ColumnOrU:$argGrpIds);
+    let results = (outs ColumnOrU:$resGrpIds, ColumnOrU:$resReprPos);
+}
+
+class Daphne_ColCalcBinaryOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromArgs
+])> {
+    let summary = "Elementwise binary operation on columnar data; input: data; output: data.";
+    let description = [{
+        Applies the given binary operation to all corresponding pairs in the two input data columns. The two input data
+        columns must have the same length. The output data column has the same length as the inputs.
+    }];
+
+    // TODO Support scalars as arguments.
+    let arguments = (ins ColumnOrU:$lhsData, ColumnOrU:$rhsData);
+    let results = (outs ColumnOrU:$resData);
+}
+def Daphne_ColCalcSubOp : Daphne_ColCalcBinaryOp<"colCalcSub">;
+def Daphne_ColCalcMulOp : Daphne_ColCalcBinaryOp<"colCalcMul">;
+
+class Daphne_ColAllAggOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromFirstArg
+])> {
+    let summary = "Full aggregation of columnar data; input: data; output: data.";
+    let description = [{
+        Aggregates all elements in the input data column using the given aggregation function. The result is a column
+        containing a single data element.
+    }];
+
+    let arguments = (ins ColumnOrU:$arg);
+    let results = (outs ColumnOrU:$res);
+}
+def Daphne_ColAllAggSumOp : Daphne_ColAllAggOp<"colSumAll">;
+
+class Daphne_ColGrpAggOp<string name, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeCol, ValueTypeFromFirstArg
+])> {
+    let summary = "Grouped aggregation of columnar data; input: data, positions (group ids); output: data.";
+    let description = [{
+        Aggregates all elements in the input data column according to the input group ids using the specified
+        aggregation function. The two input columns must have the same length. The input group ids are typically the
+        output of the `colGroupFirst` or `colGroupNext` operation. The output column has one element per input group
+        (the i-th element is the aggregate for group id i).
+    }];
+
+    let arguments = (ins ColumnOrU:$data, ColumnOrU:$groupIds, Size:$numDistinct, BoolScalar:$allowOptimisticSplitting);
+    let results = (outs ColumnOrU:$res);
+}
+def Daphne_ColGrpAggSumOp : Daphne_ColGrpAggOp<"colSumGrp">;
+
+// ****************************************************************************
 // Frame label manipulation
 // ****************************************************************************
 
 def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let arguments = (ins FrameOrU:$arg, Variadic<StrScalar>:$labels);
     let results = (outs FrameOrU:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
@@ -1319,18 +1501,41 @@ def Daphne_ToStringOp : Daphne_Op<"toString", [DataTypeSca, ValueTypeStr]> {
 
 def Daphne_CastOp : Daphne_Op<"cast", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     // Note that the requested result type is not an argument, but should be
     // specified as the output type when creating a CastOp.
-    let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar, Unknown]>:$arg);
-    let results = (outs AnyTypeOf<[MatrixOrFrame, AnyScalar, Unknown]>:$res);
+    let arguments = (ins AnyTypeOf<[MatrixOrFrame, ColumnOrU, AnyScalar, Unknown]>:$arg);
+    let results = (outs AnyTypeOf<[MatrixOrFrame, ColumnOrU, AnyScalar, Unknown]>:$res);
     let hasFolder = 1;
 
     let extraClassDeclaration = [{
         bool isTrivialCast() {
-            return getArg().getType() == getRes().getType();
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+            auto argFrmTy = argTy.dyn_cast<FrameType>();
+            auto resFrmTy = resTy.dyn_cast<FrameType>();
+            if(argFrmTy && resFrmTy) {
+                // TODO avoid such a special case for frames, represent the optionality of labels in a different
+                // way than a pointer (maybe llvm::Option/std::optional), sth that supports op== to be true on different instances
+                if(argFrmTy.getColumnTypes() != resFrmTy.getColumnTypes())
+                    return false;
+                if(argFrmTy.getNumRows() != resFrmTy.getNumRows())
+                    return false;
+                if(argFrmTy.getNumCols() != resFrmTy.getNumCols())
+                    return false;
+                std::vector<std::string> *argLabels = argFrmTy.getLabels();
+                std::vector<std::string> *resLabels = resFrmTy.getLabels();
+                if((argLabels == nullptr) != (resLabels == nullptr))
+                    return false;
+                if(argLabels && *argLabels != *resLabels)
+                    return false;
+                return true;
+            } else
+                return argTy == resTy;
         }
+
         /**
          * @brief Checks if this cast just removes detailed properties from a matrix/frame type,
          * to make them unknown instead.
@@ -1348,7 +1553,60 @@ def Daphne_CastOp : Daphne_Op<"cast", [
             return (argMatTy && resMatTy && argMatTy.isSpecializationOf(resMatTy))
                 || (argFrmTy && resFrmTy && argFrmTy.isSpecializationOf(resFrmTy));
         }
+
+        bool mightLoseInformation() {
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+
+            auto argMatTy = argTy.dyn_cast<daphne::MatrixType>();
+            auto argFrmTy = argTy.dyn_cast<daphne::FrameType>();
+            auto argColTy = argTy.dyn_cast<daphne::ColumnType>();
+
+            auto resMatTy = resTy.dyn_cast<daphne::MatrixType>();
+            auto resFrmTy = resTy.dyn_cast<daphne::FrameType>();
+            auto resColTy = resTy.dyn_cast<daphne::ColumnType>();
+
+            // Note: We only consider data/value types, but not the properties.
+            // TODO What if "b" has more property info that would be important for further inference (is that possible)?
+
+            // If we cast from a matrix to a frame and all columns of the frame have the value type of the matrix, then we certainly do not lose information.
+            if(argMatTy && resFrmTy) {
+                Type argMatValTy = argMatTy.getElementType();
+                std::vector resFrmColTys = resFrmTy.getColumnTypes();
+                for (Type resFrmColTy : resFrmColTys)
+                    // TODO It would be okay if resFrmColTy can represent all values of argMatValTy.
+                    if (argMatValTy != resFrmColTy)
+                        return true;
+                return false;
+            }
+            // If we cast from a frame to a matrix and all columns of the frame have the value type of the matrix, then we certainly do not lose information.
+            if(argFrmTy && resMatTy) {
+                std::vector argFrmColTys = argFrmTy.getColumnTypes();
+                Type resMatValTy = resMatTy.getElementType();
+                for (Type argFrmColTy : argFrmColTys)
+                    // TODO It would be okay if resMatValTy can represent all values of argFrmColTy.
+                    if (argFrmColTy != resMatValTy)
+                        return true;
+                return false;
+            }
+            // If we cast from a matrix to a column and both have the same value type, then we certainly do not lose information.
+            if (argMatTy && resColTy && argMatTy.getElementType() == resColTy.getValueType())
+                return false;
+            // If we cast from a column to a matrix and both have the same value type, then we certainly do not lose information.
+            if (argColTy && resMatTy && argColTy.getValueType() == resMatTy.getElementType())
+                return false;
+            // If we cast from a column to a single-column frame and both have the same value type, then we certainly do not lose information.
+            if (argColTy && resFrmTy && argColTy.getValueType() == resFrmTy.getColumnTypes()[0])
+                return false;
+            // If we cast from a single-column frame to a column and both have the same value type, then we certainly do not lose information.
+            if (argFrmTy && resColTy && argFrmTy.getColumnTypes()[0] == resColTy.getValueType())
+                return false;
+
+            return true;
+        }
     }];
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_RenameOp : Daphne_Op<"rename", [
@@ -1370,6 +1628,31 @@ def Daphne_GetColIdxOp : Daphne_Op<"getColIdx", [DataTypeSca, ValueTypeSize]>{
     let arguments = (ins Frame:$frame, StrScalar:$columnName);
     let results = (outs Size:$res);
 }
+
+def Daphne_ConvertPosListToBitmapOp : Daphne_Op<"convertPosListToBitmap", [
+    TypeFromFirstArg,
+    ShapeFromArg,
+    Pure
+]> {
+    let summary = "Creates a single-column matrix of zero/one entries (bit vector), where the entries addressed by the numbers in the single-column input matrix (position list) are set to one.";
+
+    let arguments = (ins MatrixOrU:$arg, Size:$numRowsRes);
+    let results = (outs MatrixOrU:$res);
+}
+
+def Daphne_ConvertBitmapToPosListOp : Daphne_Op<"convertBitmapToPosList", [
+    DataTypeMat, ValueTypeSize,
+    ShapeFromArg,
+    Pure
+]> {
+    let summary = "Given a single-column matrix with only zero/one entries (bit vector), creates a sorted single-column matrix of the positions of ones in the input (position list).";
+
+    let arguments = (ins MatrixOrU:$arg);
+    let results = (outs MatrixOrU:$res);
+
+    let hasCanonicalizeMethod = 1;
+}
+
 // ****************************************************************************
 // Distributed Operations
 // ****************************************************************************
@@ -1555,7 +1838,9 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
                     UI64 : $userConfigPtr,
                     UI64 : $dispatchMappingPtr,
                     UI64 : $statisticsPtr,
-                    UI64 : $stringRefCountPtr);
+                    UI64 : $propertyLoggerPtr,
+                    UI64 : $stringRefCountPtr
+                    );
     let results = (outs DaphneContext : $ctx);
 }
 
@@ -1724,6 +2009,24 @@ def Daphne_RemoveOp : Daphne_Op<"remove", [
 }
 
 // ****************************************************************************
+// Handling of data properties
+// ****************************************************************************
+
+def Daphne_RecordPropertiesOp : Daphne_Op<"recordProperties"> {
+    let arguments = (ins MatrixOrU:$arg, UI32:$valueId);
+    let results = (outs);
+
+    let summary = "Records the data properties of the given matrix.";
+}
+
+def Daphne_TransferPropertiesOp : Daphne_Op<"transferProperties"> {
+    let summary = "Transfers compile-time information on data properties to the runtime data objects";
+
+    let arguments = (ins MatrixOrU:$arg, F64:$sparsity, SI64:$symmetric);
+    let results = (outs);
+}
+
+// ****************************************************************************
 // Old operations
 // ****************************************************************************
 // These are currently still need for the prototype to work. They will be
@@ -1744,6 +2047,10 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, Pure]> {
         }]>,
         OpBuilder<(ins "int64_t":$value), [{
             Type t = $_builder.getIntegerType(64, true);
+            build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
+        }]>,
+        OpBuilder<(ins "uint32_t":$value), [{
+            Type t = $_builder.getIntegerType(32, false);
             build($_builder, $_state, t, $_builder.getIntegerAttr(t, value));
         }]>,
         OpBuilder<(ins "uint64_t":$value), [{

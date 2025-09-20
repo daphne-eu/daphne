@@ -182,6 +182,18 @@ struct CompilerUtils {
             if (generalizeToStructure)
                 return "Structure";
             return "Frame";
+        } else if (auto colTy = t.dyn_cast<mlir::daphne::ColumnType>()) {
+            if (generalizeToStructure)
+                return "Structure";
+            // For columns of strings we use `std::string` as the value type, while for string scalars we use
+            // `const char *` as the value type. Thus, we need this special case here. Maybe we can do it without a
+            // special case in the future.
+            std::string vtName;
+            if (colTy.getValueType().isa<mlir::daphne::StringType>())
+                vtName = "std::string";
+            else
+                vtName = mlirTypeToCppTypeName(colTy.getValueType(), angleBrackets, false);
+            return angleBrackets ? ("Column<" + vtName + ">") : ("Column_" + vtName);
         } else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
             if (generalizeToStructure)
                 return "Structure";
@@ -248,13 +260,22 @@ struct CompilerUtils {
      * @brief Returns `true` if the given type is a DAPHNE data object type; or `false`, otherwise.
      */
     [[maybe_unused]] static bool isObjType(mlir::Type t) {
-        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ListType>(t);
+        return llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType, mlir::daphne::ColumnType,
+                         mlir::daphne::ListType>(t);
     }
 
     /**
      * @brief Returns `true` if the given value is a DAPHNE data object; or `false`, otherwise.
      */
     [[maybe_unused]] static bool hasObjType(mlir::Value v) { return isObjType(v.getType()); }
+
+    /**
+     * @brief Returns `true` if the given type is a DAPHNE matrix that has exactly one column; or `false`, otherwise.
+     */
+    static bool isMatTypeWithSingleCol(mlir::Type t) {
+        auto mt = t.dyn_cast<mlir::daphne::MatrixType>();
+        return mt && mt.getNumCols() == 1;
+    }
 
     /**
      * @brief Returns `true` if the given type is a DAPHNE scalar type (or: value type); or `false`, otherwise.
@@ -286,6 +307,7 @@ struct CompilerUtils {
      * - For the unknown type, the unknown type is returned.
      * - For matrices, the value type is extracted.
      * - For frames, an error is thrown.
+     * - For columns, the value type is extracted.
      * - For lists, this function is called recursively on the element type.
      * - For scalars, the type itself is returned.
      * - For anything else, an error is thrown.
@@ -301,6 +323,8 @@ struct CompilerUtils {
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error(
                 "getValueType() doesn't support frames yet"); // TODO maybe use the most general value type
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.getValueType();
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return getValueType(lt.getElementType());
         if (isScaType(t))
@@ -318,6 +342,7 @@ struct CompilerUtils {
      * - For the unknown type, the unknown type is returned (single-element sequence).
      * - For matrices, the value type is extracted (single-element sequence).
      * - For frames, the sequence of column types is returned.
+     * - For columns, the value type is extracted (single-element sequence).
      * - For lists, this function is called recursively on the element type.
      * - For scalars, the type itself is returned (single-element sequence).
      * - For anything else, an error is thrown.
@@ -332,6 +357,8 @@ struct CompilerUtils {
             return {mt.getElementType()};
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             return ft.getColumnTypes();
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return {ct.getValueType()};
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return getValueTypes(lt.getElementType());
         if (isScaType(t))
@@ -350,6 +377,7 @@ struct CompilerUtils {
      * - For the unknown type, an error is thrown.
      * - For matrices, the value type is set to the given value type.
      * - For frames, an error is thrown.
+     * - For columns, the value type is set to the given value type.
      * - For lists, this function is called recursively on the element type.
      * - For scalars, the given value type is returned.
      * - For anything else, an error is thrown.
@@ -365,6 +393,8 @@ struct CompilerUtils {
             return mt.withElementType(vt);
         if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
             throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
+        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+            return ct.withValueType(vt);
         if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
             return setValueType(lt.getElementType(), vt);
         if (isScaType(t))
@@ -407,5 +437,27 @@ struct CompilerUtils {
                 // has an unknown value type
                 (matT1 && matT2 &&
                  (llvm::isa<UnknownType>(matT1.getElementType()) || llvm::isa<UnknownType>(matT2.getElementType())))));
+    }
+
+    /**
+     * @brief Infers and sets the result type of the given operation and returns the result as an `mlir::Value`.
+     *
+     * Works only for operations with exactly one result. For operations with more than one result, use
+     * `retValsWithInferredTypes()`.
+     */
+    template <class Op> static mlir::Value retValWithInferredType(Op op) {
+        mlir::daphne::setInferredTypes(op.getOperation());
+        return static_cast<mlir::Value>(op);
+    }
+
+    /**
+     * @brief Infers and sets the result types of the given operation and returns the results as an `mlir::ResultRange`.
+     *
+     * Works for operations with any number of results. For operations with exactly one result, using
+     * `retValWithInferredType()` can be more convenient.
+     */
+    template <class Op> static mlir::ResultRange retValsWithInferredTypes(Op op) {
+        mlir::daphne::setInferredTypes(op.getOperation());
+        return op.getResults();
     }
 };

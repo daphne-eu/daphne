@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/inference/TypeInferenceUtils.h>
 #include <compiler/utils/CompilerUtils.h>
 #include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
@@ -43,6 +44,8 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
         return std::make_pair(mt.getNumRows(), mt.getNumCols());
     if (auto ft = t.dyn_cast<daphne::FrameType>())
         return std::make_pair(ft.getNumRows(), ft.getNumCols());
+    if (auto ct = t.dyn_cast<daphne::ColumnType>())
+        return std::make_pair(ct.getNumRows(), 1);
     if (CompilerUtils::isScaType(t))
         return std::make_pair(1, 1);
 
@@ -79,9 +82,9 @@ ssize_t inferNumRowsFromArgs(Operation *op, ValueRange vs) {
 
 ssize_t inferNumColsFromArgs(Operation *op, ValueRange vs) {
     // If the #cols of all arguments is known and matches, then this is the
-    // infered #cols. If the known #cols of any two arguments mismatch, an
+    // inferred #cols. If the known #cols of any two arguments mismatch, an
     // exception is thrown. Otherwise, if the #cols of any argument is unknown,
-    // the infered #cols is unknown.
+    // the inferred #cols is unknown.
     ssize_t numCols = getShape(vs[0]).second;
     bool someUnknown = false;
     if (numCols == -1)
@@ -429,19 +432,26 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
     if (srcNumRows != -1 && loIn.first && upEx.first) {
         ssize_t loInPos = loIn.second;
         ssize_t upExPos = upEx.second;
+        if (loInPos < 0) {
+            loInPos += srcNumRows;
+            if (upExPos <= 0)
+                upExPos += srcNumRows;
+        } else if (upExPos < 0)
+            upExPos += srcNumRows;
+
         if (loInPos < 0 || loInPos >= srcNumRows)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
                                               "SliceRowOp shape inference: lowerIncl must be in [0, "
                                               "numRows), "
                                               "but is " +
-                                                  std::to_string(loInPos) + " with " + std::to_string(srcNumRows) +
+                                                  std::to_string(loIn.second) + " with " + std::to_string(srcNumRows) +
                                                   " rows");
         if (upExPos < 0 || upExPos > srcNumRows)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
                                               "SliceRowOp shape inference: upperExcl must be in [0, "
                                               "numRows], "
                                               "but is " +
-                                                  std::to_string(upExPos) + " with " + std::to_string(srcNumRows) +
+                                                  std::to_string(upEx.second) + " with " + std::to_string(srcNumRows) +
                                                   " rows");
         if (loInPos > upExPos)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceRowOp::inferShape)",
@@ -459,7 +469,10 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     Type srcTy = getSource().getType();
     ssize_t srcNumRows;
     ssize_t srcNumCols;
-    if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
+    if (llvm::isa<daphne::UnknownType>(srcTy)) {
+        srcNumRows = -1;
+        srcNumCols = -1;
+    } else if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
         srcNumRows = srcMatTy.getNumRows();
         srcNumCols = srcMatTy.getNumCols();
     } else if (auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
@@ -468,8 +481,8 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     } else
         // If this is the case, shape inference shouldn't have been called.
         throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
-                                          "SliceColOp shape inference does only support matrix and frame "
-                                          "inputs");
+                                          "SliceColOp shape inference does only support unknown, matrix, and "
+                                          "frame inputs");
 
     auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
     auto upEx = CompilerUtils::isConstant<int64_t>(getUpperExcl());
@@ -478,19 +491,26 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     if (srcNumCols != -1 && loIn.first && upEx.first) {
         ssize_t loInPos = loIn.second;
         ssize_t upExPos = upEx.second;
+        if (loInPos < 0) {
+            loInPos += srcNumCols;
+            if (upExPos <= 0)
+                upExPos += srcNumCols;
+        } else if (upExPos < 0)
+            upExPos += srcNumCols;
+
         if (loInPos < 0 || loInPos >= srcNumCols)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
                                               "SliceColOp shape inference: lowerIncl must be in [0, "
                                               "numCols), "
                                               "but is " +
-                                                  std::to_string(loInPos) + " with " + std::to_string(srcNumCols) +
+                                                  std::to_string(loIn.second) + " with " + std::to_string(srcNumCols) +
                                                   " cols");
         if (upExPos < 0 || upExPos > srcNumCols)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
                                               "SliceColOp shape inference: upperExcl must be in [0, "
                                               "numCols], "
                                               "but is " +
-                                                  std::to_string(upExPos) + " with " + std::to_string(srcNumCols) +
+                                                  std::to_string(upEx.second) + " with " + std::to_string(srcNumCols) +
                                                   " cols");
         if (loInPos > upExPos)
             throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::SliceColOp::inferShape)",
@@ -498,7 +518,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
                                               "than upperExcl"
                                               " (found " +
                                                   std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")");
-        resNumCols = upEx.second - loIn.second;
+        resNumCols = upExPos - loInPos;
     }
 
     return {{srcNumRows, resNumCols}};
@@ -527,7 +547,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::ExtractColOp::inferShape() {
         }
     }
     // Default case except when the selectedCols ends in a wildcard
-    return {{srcNumRows, getShape(getOperand(1)).second}};
+    return {{srcNumRows, getShape(getOperand(1)).first}};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::EigenOp::inferShape() {
@@ -570,70 +590,74 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::RecodeOp::inferShape() {
 // Shape inference trait implementations
 // ****************************************************************************
 
-/**
- * @brief Utility for trying a parametric trait for all values of the parameter
- * from 0 to some upper bound.
- */
-template <size_t upper, template <size_t> class tryParametricTrait> struct tryParamTraitUntil {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        tryParametricTrait<upper>::apply(numRows, numCols, op);
-        tryParamTraitUntil<upper - 1, tryParametricTrait>::apply(numRows, numCols, op);
-    }
-};
-template <template <size_t> class tryParametricTrait> struct tryParamTraitUntil<0, tryParametricTrait> {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        tryParametricTrait<0>::apply(numRows, numCols, op);
-    }
-};
-
 template <size_t i> struct tryNumRowsFromIthScalar {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
+    using T = std::pair<ssize_t, ssize_t>;
+    static void apply(T &shape, Operation *op) {
         if (op->hasTrait<NumRowsFromIthScalar<i>::template Impl>()) {
-            numRows = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+            ssize_t numRows = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+            ssize_t numCols = shape.second;
+            shape = {numRows, numCols};
         }
     }
 };
 template <size_t i> struct tryNumColsFromIthScalar {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
+    using T = std::pair<ssize_t, ssize_t>;
+    static void apply(T &shape, Operation *op) {
         if (op->hasTrait<NumColsFromIthScalar<i>::template Impl>()) {
-            numCols = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+            ssize_t numRows = shape.first;
+            ssize_t numCols = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
+            shape = {numRows, numCols};
         }
     }
 };
 
 template <size_t i> struct tryNumRowsFromIthArg {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumRowsFromIthArg<i>::template Impl>())
-            numRows = getShape(op->getOperand(i)).first;
+    using T = std::pair<ssize_t, ssize_t>;
+    static void apply(T &shape, Operation *op) {
+        if (op->hasTrait<NumRowsFromIthArg<i>::template Impl>()) {
+            ssize_t numRows = getShape(op->getOperand(i)).first;
+            ssize_t numCols = shape.second;
+            shape = {numRows, numCols};
+        }
     }
 };
 template <size_t i> struct tryNumColsFromIthArg {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumColsFromIthArg<i>::template Impl>())
-            numCols = getShape(op->getOperand(i)).second;
+    using T = std::pair<ssize_t, ssize_t>;
+    static void apply(T &shape, Operation *op) {
+        if (op->hasTrait<NumColsFromIthArg<i>::template Impl>()) {
+            ssize_t numRows = shape.first;
+            ssize_t numCols = getShape(op->getOperand(i)).second;
+            shape = {numRows, numCols};
+        }
     }
 };
 
 template <size_t i> struct tryNumRowsFromIthArgNumCols {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumRowsFromIthArgNumCols<i>::template Impl>())
-            numRows = getShape(op->getOperand(i)).second;
+    using T = std::pair<ssize_t, ssize_t>;
+    static void apply(T &shape, Operation *op) {
+        if (op->hasTrait<NumRowsFromIthArgNumCols<i>::template Impl>()) {
+            ssize_t numRows = getShape(op->getOperand(i)).second;
+            ssize_t numCols = shape.second;
+            shape = {numRows, numCols};
+        }
     }
 };
 template <size_t i> struct tryNumColsFromIthArgNumRows {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<NumColsFromIthArgNumRows<i>::template Impl>())
-            numCols = getShape(op->getOperand(i)).first;
+    using T = std::pair<ssize_t, ssize_t>;
+    static void apply(T &shape, Operation *op) {
+        if (op->hasTrait<NumColsFromIthArgNumRows<i>::template Impl>()) {
+            ssize_t numRows = shape.first;
+            ssize_t numCols = getShape(op->getOperand(i)).first;
+            shape = {numRows, numCols};
+        }
     }
 };
 
 template <size_t i> struct tryShapeFromIthArg {
-    static void apply(ssize_t &numRows, ssize_t &numCols, Operation *op) {
-        if (op->hasTrait<ShapeFromIthArg<i>::template Impl>()) {
-            auto shape = getShape(op->getOperand(i));
-            numRows = shape.first;
-            numCols = shape.second;
-        }
+    using T = std::pair<ssize_t, ssize_t>;
+    static void apply(T &shape, Operation *op) {
+        if (op->hasTrait<ShapeFromIthArg<i>::template Impl>())
+            shape = getShape(op->getOperand(i));
     }
 };
 
@@ -652,33 +676,32 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation *op) {
         // or the inference interfaces for the number of rows and columns
         // (separately).
 
-        ssize_t numRows = -1;
-        ssize_t numCols = -1;
+        std::pair<ssize_t, ssize_t> shape = {-1, -1};
 
         if (op->hasTrait<OneRow>())
-            numRows = 1;
+            shape = {1, shape.second};
         if (op->hasTrait<OneCol>())
-            numCols = 1;
+            shape = {shape.first, 1};
         // Our parametric traits addressing a certain argument are supported
         // for up to 10 arguments (this can easily be changed here).
         // There does not seem to be a way in MLIR do it more generically,
         // since the parameters of parametric traits are template parameters.
         const size_t u = 9;
-        tryParamTraitUntil<u, tryNumRowsFromIthScalar>::apply(numRows, numCols, op);
-        tryParamTraitUntil<u, tryNumColsFromIthScalar>::apply(numRows, numCols, op);
-        tryParamTraitUntil<u, tryNumRowsFromIthArg>::apply(numRows, numCols, op);
-        tryParamTraitUntil<u, tryNumColsFromIthArg>::apply(numRows, numCols, op);
-        tryParamTraitUntil<u, tryNumRowsFromIthArgNumCols>::apply(numRows, numCols, op);
-        tryParamTraitUntil<u, tryNumColsFromIthArgNumRows>::apply(numRows, numCols, op);
+        tryParamTraitUntil<u, tryNumRowsFromIthScalar>::apply(shape, op);
+        tryParamTraitUntil<u, tryNumColsFromIthScalar>::apply(shape, op);
+        tryParamTraitUntil<u, tryNumRowsFromIthArg>::apply(shape, op);
+        tryParamTraitUntil<u, tryNumColsFromIthArg>::apply(shape, op);
+        tryParamTraitUntil<u, tryNumRowsFromIthArgNumCols>::apply(shape, op);
+        tryParamTraitUntil<u, tryNumColsFromIthArgNumRows>::apply(shape, op);
         if (op->hasTrait<NumRowsFromAllArgs>())
-            numRows = inferNumRowsFromArgs(op, op->getOperands());
+            shape = {inferNumRowsFromArgs(op, op->getOperands()), shape.second};
         if (op->hasTrait<NumColsFromAllArgs>())
-            numCols = inferNumColsFromArgs(op, op->getOperands());
+            shape = {shape.first, inferNumColsFromArgs(op, op->getOperands())};
         if (op->hasTrait<NumRowsFromSumOfAllArgs>())
-            numRows = inferNumRowsFromSumOfArgs(op->getOperands());
+            shape = {inferNumRowsFromSumOfArgs(op->getOperands()), shape.second};
         if (op->hasTrait<NumColsFromSumOfAllArgs>())
-            numCols = inferNumColsFromSumOfArgs(op->getOperands());
-        tryParamTraitUntil<u, tryShapeFromIthArg>::apply(numRows, numCols, op);
+            shape = {shape.first, inferNumColsFromSumOfArgs(op->getOperands())};
+        tryParamTraitUntil<u, tryShapeFromIthArg>::apply(shape, op);
         if (op->hasTrait<ShapeEwBinary>()) {
             // The output has the shape of the left-hand-side operand. This is
             // consistent with the kernel, but in the future, we should extend
@@ -688,27 +711,23 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation *op) {
             auto shapeRhs = getShape(op->getOperand(1));
             // This first case is just a workaround, we should decide later how
             // to treat incomplete knowledge of the shapes.
-            if (shapeLhs.first == -1 && shapeLhs.second == 1 && shapeRhs.first == -1 && shapeRhs.second == 1) {
-                numRows = -1;
-                numCols = 1;
-            } else if (shapeRhs.first == -1 || shapeRhs.second == -1) {
-                numRows = -1;
-                numCols = -1;
-            } else {
-                numRows = shapeLhs.first;
-                numCols = shapeLhs.second;
-            }
+            if (shapeLhs.first == -1 && shapeLhs.second == 1 && shapeRhs.first == -1 && shapeRhs.second == 1)
+                shape = {-1, 1};
+            else if (shapeRhs.first == -1 || shapeRhs.second == -1)
+                shape = {-1, -1};
+            else
+                shape = {shapeLhs.first, shapeLhs.second};
             // TODO Throw if lhs and rhs don't agree.
         }
 
         if (auto inferNumRowsOp = llvm::dyn_cast<daphne::InferNumRows>(op))
-            numRows = inferNumRowsOp.inferNumRows();
+            shape = {inferNumRowsOp.inferNumRows(), shape.second};
         if (auto inferNumColsOp = llvm::dyn_cast<daphne::InferNumCols>(op))
-            numCols = inferNumColsOp.inferNumCols();
+            shape = {shape.first, inferNumColsOp.inferNumCols()};
 
         // Note that all our shape inference traits assume that the operation
         // has exactly one result (which is the case for most DaphneIR ops).
-        return {{numRows, numCols}};
+        return {shape};
     } else {
         // If the operation does not implement the shape inference interface
         // and has zero or more than one results, we return unknown.

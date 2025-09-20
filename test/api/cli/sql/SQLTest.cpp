@@ -81,7 +81,7 @@ MAKE_SUCCESS_TEST_CASE("join", 1);
 MAKE_SUCCESS_TEST_CASE("group", 3);
 MAKE_PASS_FAILURE_TEST_CASE("group", 1);
 
-MAKE_TEST_CASE("group", 5)
+MAKE_TEST_CASE("group", 6)
 
 MAKE_TEST_CASE("thetaJoin_equal", 4)
 MAKE_TEST_CASE("thetaJoin_greaterThan", 2)
@@ -108,3 +108,14 @@ MAKE_TEST_CASE("strings", 6)
 
 MAKE_TEST_CASE("between", 4)
 // TODO Use the scripts testing failure cases.
+
+MAKE_TEST_CASE("arithmetics", 2);
+
+TEST_CASE("grouped aggregation, without/with optimistic splitting", TAG_SQL) {
+    const std::string refFilePath = dirPath + "group_6.txt";
+    const std::string scriptFilePath = dirPath + "group_6.daphne";
+
+    compareDaphneToRef(refFilePath.c_str(), scriptFilePath.c_str());
+    compareDaphneToRef(refFilePath.c_str(), scriptFilePath.c_str(), "--columnar");
+    compareDaphneToRef(refFilePath.c_str(), scriptFilePath.c_str(), "--columnar", "--optimistic-splitting");
+}

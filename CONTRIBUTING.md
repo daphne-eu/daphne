@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Contributing to the DAPHNE System
+# Contributing to DAPHNE
 
-*Thank you* for your interest in contributing to the DAPHNE system.
+*Thank you* for your interest in contributing to DAPHNE.
 Our goal is to build an **open and inclusive community of developers** around the system.
 Thus, **contributions are highly welcome**, both from *within the DAPHNE project consortium* and from *external researchers/developers*.
 
@@ -25,6 +25,7 @@ In the following, you find some rough **guidelines on contributing**, which will
 ## Ways of Contributing
 
 There are **various ways of contributing** including (but not limited to):
+
 - actual implementation
 - writing test cases
 - writing documentation
@@ -36,7 +37,7 @@ That way, discussions are made *accessible and transparent* to everyone interest
 This is important to *involve people* and to *avoid repetition* in case multiple people have the same question/comment or encounter the same problem.
 So feel free to create an issue to start a discussion on a particular topic (including these contribution guidelines) or to report a bug or other problem.
 
-## Issue tracking
+## Issue Tracking
 
 All open/ongoing/completed **work is tracked as issues** on GitHub.
 These could be anything from precisely defined small tasks to requests for complex components.
@@ -65,31 +66,41 @@ That is, please try your best to make a good-quality contribution and we will he
 **The procedure is roughly as follows:**
 
 1. **Get assigned to the issue** to let others know you are going to work on it and to avoid duplicate work. Please leave a comment on the issue stating that you are going to work on it. After that, a collaborator will formally assign you.
+
 2. **Fork the repository** on GitHub and **clone your fork** (see [GitHub docs](https://docs.github.com/en/get-started/quickstart/fork-a-repo)).
-   We recommend cloning by `git clone --recursive https://github.com/<USERNAME>/daphne.git` (note the `--recursive`), as specified in [Getting Started](/doc/GettingStarted.md).
-   
-   *You may skip this step and reuse your existing fork if you have contributed before. Simply update your fork with the recent changes from the original DAPHNE repository (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).*
+    <!-- TODO with containers, we don't recommend that anymore -->
+    We recommend cloning by `git clone --recursive https://github.com/<USERNAME>/daphne.git` (note the `--recursive`), as specified in [Getting Started](/doc/GettingStarted.md).
+    
+    *You may skip this step and reuse your existing fork if you have contributed before. Simply update your fork with the recent changes from the original DAPHNE repository (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).*
+
 3. **Create your own local branch**: `git checkout -b BRANCH_NAME`.
-   `BRANCH_NAME` should clearly indicate what the branch is about; the recommended pattern is `123-some-short-title` (where `123` is the issue number).
+    `BRANCH_NAME` should clearly indicate what the branch is about; the recommended pattern is `123-some-short-title` (where `123` is the issue number).
+
 4. **Add as many commits as you like** to your branch, and `git push` them to your fork.
-   Use `git push --set-upstream origin BRANCH_NAME` when you push the first time.
-5. If you work longer on your contribution, make sure to **get the most recent changes from the upstream** (original DAPHNE system repository) from time to time (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).
+    Use `git push --set-upstream origin BRANCH_NAME` when you push the first time.
+
+5. If you work longer on your contribution, make sure to **get the most recent changes from the upstream** (original DAPHNE repository) from time to time (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).
+
 6. Once you feel ready (for integration or for discussion/feedback), **create a pull request** on GitHub (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
-   Normally, you'll want to ask for integration into `base:main`, the repo's default branch.
-   Please choose an expressive title and provide a short description of your changes.
-   Feel free to mark your pull request "WIP: " or "Draft: " in the title.
-   Note that you can add more commits to your pull request after you created it.
-   Ideally, the changes in the PR contain only the changes you made for that PR,
-   e.g, by rebasing your branch on top of the target branch. This makes it easier for others to
-   review your PR.
+    Normally, you'll want to ask for integration into `base:main`, the repo's default branch.
+    Please choose an expressive title and provide a short description of your changes.
+    Feel free to mark your pull request "WIP: " or "Draft: " in the title.
+    Note that you can add more commits to your pull request after you created it.
+    Ideally, the changes in the PR contain only the changes you made for that PR,
+    e.g, by rebasing your branch on top of the target branch. This makes it easier for others to
+    review your PR.
+    <!-- TODO link to reviewing guidelines -->
+
 7. [Resolve any open conflicts](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/addressing-merge-conflicts/about-merge-conflicts) to the target branch of the PR.
+
 8. You **receive feedback** on your proposed contribution.
-   You may be asked to apply certain changes, or we might apply straightforward adjustments ourselves before the integration.
+    You may be asked to apply certain changes, or we might apply straightforward adjustments ourselves before the integration.
+
 9. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
 
 ### Experienced DAPHNE Contributors (Collaborators)
 
-We appreciate *continued commitment* to the DAPHNE system.
+We appreciate *continued commitment* to DAPHNE.
 Thus, **frequent contributors can become collaborators** on GitHub.
 Currently, this requires **at least three non-trivial contributions** to the system.
 Collaborators have *direct write access* to all branches of the repository, including the main branch.
@@ -99,25 +110,26 @@ Collaborators do not need to create a fork, and do not need to go through pull r
 At the same time, this freedom comes with certain responsibilities, which are roughly sketched here:
 
 1. Please **follow some simple guidelines when changing the code**:
-   - Feel free to directly push to the main branch, but *be mindful of what you commit*, since it will affect everyone.
-     As a guideline, commits fundamentally changing how certain things work should be announced and discussed first, whereas small changes or changes local to "your" component are not critical.
-   - But **never force push to the main branch**, since it can lead to severe inconsistencies in the Git history.
-   - Even *collaborators may still use pull requests* (just like new contributors) to suggest larger changes.
-     This is also suitable whenever you feel unsure about a change or want to get feedback first.
+    - Feel free to directly push to the main branch, but *be mindful of what you commit*, since it will affect everyone.
+      As a guideline, commits fundamentally changing how certain things work should be announced and discussed first, whereas small changes or changes local to "your" component are not critical.
+    - But **never force push to the main branch**, since it can lead to severe inconsistencies in the Git history.
+    - Even *collaborators may still use pull requests* (just like new contributors) to suggest larger changes.
+      This is also suitable whenever you feel unsure about a change or want to get feedback first.
 2. Please **engage in the [handling of pull requests](/doc/development/HandlingPRs.md)**; especially those affecting the components you are working on.
-   This includes:
-   - reading the code others suggest for integration
-   - trying if it works
-   - providing constructive and *actionable* feedback on improving the contribution prior to the integration
-   - actually merging a pull request in
-   
-   Balancing the handling of pull requests is important to *keep the development process scalable*.
+    This includes:
+    
+    - reading the code others suggest for integration
+    - trying if it works
+    - providing constructive and *actionable* feedback on improving the contribution prior to the integration
+    - actually merging a pull request in
+    
+    Balancing the handling of pull requests is important to *keep the development process scalable*.
 
 
 ### Code Style
 
 Before contributing, please make sure to run `clang-format` on your C++ (.h and
-.cpp) files. The codebase is currently formatted with `clang-format` version
+.cpp) files. The code base is currently formatted with `clang-format` version
 `18.1.3`. This is the default `clang-format` version when installing via `apt`
 on Ubuntu 24.04, and can easily be installed via `python -mpip install clang-format==18.1.3`
 on other systems.

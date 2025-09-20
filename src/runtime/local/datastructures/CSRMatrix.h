@@ -43,7 +43,7 @@
  * Each instance of this class might represent a sub-matrix of another
  * `CSRMatrix`. Thus, to traverse the matrix by row, you can safely go via the
  * `rowOffsets`, but for traversing the matrix by non-zero value, you must
- * start at `values[rowOffsets[0]`.
+ * start at `values[rowOffsets[0]]`.
  */
 template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     // `using`, so that we do not need to prefix each occurrence of these
@@ -99,6 +99,23 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
             memset(rowOffsets.get(), 0, (numRows + 1) * sizeof(size_t));
         }
     }
+
+    /**
+     * @brief Creates a `CSRMatrix` sharing the given values array and allocates enough memory for the specified size in
+     * the `colIdxs` and `rowOffsets` arrays.
+     *
+     * @param numRows The exact number of rows.
+     * @param numCols The exact number of columns.
+     * @param numNonZeros The exact number of non-zeros.
+     * @param values The values array to share. This should not be taken from a view into a larger `CSRMatrix`.
+     */
+    // TODO Support sharing the values array of a view into a CSRMatrix. This is a bit involved, since the matrix would
+    // have a view for its values, but originals for its colIdxs and rowOffsets. So far, we don't support this case.
+    CSRMatrix(size_t numRows, size_t numCols, size_t numNonZeros, std::shared_ptr<ValueType[]> &values)
+        : Matrix<ValueType>(numRows, numCols), numRowsAllocated(numRows), isRowAllocatedBefore(false),
+          maxNumNonZeros(numNonZeros), values(values),
+          colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
+          rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()), lastAppendedRowIdx(0) {}
 
     /**
      * @brief Creates a `CSRMatrix` around a sub-matrix of another `CSRMatrix`

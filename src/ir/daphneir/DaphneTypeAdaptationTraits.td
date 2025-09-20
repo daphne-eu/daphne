@@ -20,6 +20,7 @@
 include "mlir/IR/OpBase.td"
 
 def CastArgsToResType: NativeOpTrait<"CastArgsToResType">;
+def CastFirstArgToResType: NativeOpTrait<"CastFirstArgToResType">;
 def CastFirstTwoArgsToResType: NativeOpTrait<"CastFirstTwoArgsToResType">;
 def CastArgsToResTypeRandMatrixOp: NativeOpTrait<"CastArgsToResTypeRandMatrixOp">;
 def CastArgsToMostGeneralArgType: NativeOpTrait<"CastArgsToMostGeneralArgType">;

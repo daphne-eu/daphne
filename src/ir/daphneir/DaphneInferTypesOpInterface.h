@@ -79,6 +79,13 @@ template <class ConcreteOp> class DataTypeSca : public TraitBase<ConcreteOp, Dat
 template <class ConcreteOp> class DataTypeMat : public TraitBase<ConcreteOp, DataTypeMat> {};
 
 /**
+ * @brief The data type (of the single result) is always `Column`.
+ *
+ * Assumes that the operation has always exactly one result.
+ */
+template <class ConcreteOp> class DataTypeCol : public TraitBase<ConcreteOp, DataTypeCol> {};
+
+/**
  * @brief The data type (of the single result) is always `Frame`.
  *
  * Assumes that the operation has always exactly one result.
@@ -236,11 +243,11 @@ namespace mlir::daphne {
  * If any type inference traits are attached to the given operation, these are
  * applied to infer the result type. If the operation implements the type
  * inference interface, that implementation is invoked. If the types cannot be
- * infered based on the available information, or if the operation does not
+ * inferred based on the available information, or if the operation does not
  * have any relevant traits or interfaces, `mlir::daphne::UnknownType` will be
  * returned.
  *
- * @param op The operation whose results' types shall be infered.
+ * @param op The operation whose results' types shall be inferred.
  * @return A vector of `Type`s. The i-th pair in this vector represents the
  * type of the i-th result of the given operation. A value of
  * `mlir::daphne::UnknownType` indicates that this type is not known (yet).
@@ -250,11 +257,11 @@ std::vector<mlir::Type> tryInferType(mlir::Operation *op);
 /**
  * @brief Infers and sets the types of all results of the given operation.
  *
- * @param op The operation whose results' types shall be infered and set.
+ * @param op The operation whose results' types shall be inferred and set.
  * @param partialInferenceAllowed If `true`, unknown will be allowed as an
- * infered type; if `false`, infering unknown will throw an exception.
+ * inferred type; if `false`, inferring unknown will throw an exception.
  */
-void setInferedTypes(mlir::Operation *op, bool partialInferenceAllowed = true);
+void setInferredTypes(mlir::Operation *op, bool partialInferenceAllowed = true);
 } // namespace mlir::daphne
 
 #endif // SRC_IR_DAPHNEIR_DAPHNEINFERTYPESOPINTERFACE_H

@@ -15,6 +15,8 @@
  */
 
 #include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/Fill.h>
@@ -25,39 +27,63 @@
 
 #include <cstdint>
 
-#define TEST_NAME(opName) "Fill (" opName ")"
-#define DATA_TYPES DenseMatrix, Matrix
-#define VALUE_TYPES int64_t, double
+#define DATA_TYPES DenseMatrix, Matrix, CSRMatrix
+#define VALUE_TYPES int64_t, double, uint32_t
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("Matrix"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Fill", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
-    VT arg;
-    size_t numRows, numCols;
-    DT *exp = nullptr;
+    // Consider different matrix shapes.
+    std::vector<std::pair<size_t, size_t>> choiceShape = {
+        // empty matrices
+        {0, 0},
+        {0, 1},
+        {0, 5},
+        {1, 0},
+        {5, 0},
+        // non-empty matrices
+        {1, 1},      // point
+        {1, 5},      // row (tiny)
+        {1, 1000},   // row (not tiny)
+        {5, 1},      // column (tiny)
+        {1000, 1},   // column (not tiny)
+        {3, 4},      // rectangle (tiny)
+        {1000, 1000} // rectangle (not tiny)
+    };
+    // Consider different fill values. We focus on zero and one non-zero value here, because these make a difference for
+    // sparse matrices; for dense matrices, the fill value should not matter much.
+    std::vector<VT> choiceArg = {/* zero */ VT(0), /* non-zero */ VT(2.5)};
 
-    SECTION("2x2 matrix") {
-        arg = VT(1.5);
-        numRows = 2;
-        numCols = 2;
+    // Systematically try all combinations of matrix shapes and values.
+    for (auto shape : choiceShape) {
+        for (VT arg : choiceArg) {
+            DYNAMIC_SECTION("fill " << shape.first << 'x' << shape.second << " matrix with value " << arg) {
+                // Create the expected result.
+                DT *exp = nullptr;
+                if (shape.first == 0 || shape.second == 0) {
+                    // Use the right constructor depending on the data type.
+                    if constexpr (std::is_same<DT, DenseMatrix<VT>>::value || std::is_same<DT, Matrix<VT>>::value)
+                        exp = DataObjectFactory::create<DenseMatrix<VT>>(shape.first, shape.second, true);
+                    else if constexpr (std::is_same<DT, CSRMatrix<VT>>::value)
+                        exp = DataObjectFactory::create<CSRMatrix<VT>>(shape.first, shape.second, 0, true);
+                    else
+                        throw std::runtime_error("unexpected data type");
+                } else
+                    exp = genGivenVals<DT>(shape.first, std::vector<VT>(shape.first * shape.second, arg));
 
-        exp = genGivenVals<DT>(2, {VT(1.5), VT(1.5), VT(1.5), VT(1.5)});
+                // Apply the fill-kernel.
+                DT *res = nullptr;
+                fill(res, arg, shape.first, shape.second, nullptr);
+
+                // Check the result.
+                REQUIRE(res != nullptr);
+                CHECK(*res == *exp);
+
+                DataObjectFactory::destroy(exp, res);
+            }
+        }
     }
-    SECTION("1x5 matrix") {
-        arg = VT(2.5);
-        numRows = 1;
-        numCols = 5;
-
-        exp = genGivenVals<DT>(1, {VT(2.5), VT(2.5), VT(2.5), VT(2.5), VT(2.5)});
-    }
-
-    DT *res = nullptr;
-    fill(res, arg, numRows, numCols, nullptr);
-
-    CHECK(*res == *exp);
-
-    DataObjectFactory::destroy(exp, res);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Fill-existing", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -69,7 +95,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Fill-existing", TAG_KERNELS, (DATA_TYPES), (VALUE_TY
     CHECK_THROWS(fill(res, arg, numRows, numCols, nullptr));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("FillString", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Fill", TAG_KERNELS, (DenseMatrix), (ALL_STRING_VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
 

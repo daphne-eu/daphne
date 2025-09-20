@@ -99,7 +99,7 @@ class SelectMatrixRepresentationsPass
                 // Continue the walk on the body block of the ForOp. We trigger
                 // this explicitly, since we need to do something afterwards.
                 block.walk<WalkOrder::PreOrder>(walkOp);
-                // Check if the infered matrix representations match the
+                // Check if the inferred matrix representations match the
                 // required result representations. This is not the case if, for
                 // instance, the representation of some variable written in the
                 // loop changes. The ForOp would also check this later during

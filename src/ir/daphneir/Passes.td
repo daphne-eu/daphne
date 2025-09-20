@@ -43,6 +43,19 @@ def PrintIR : Pass<"print-ir", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createPrintIRPass()";
 }
 
+def RecordPropertiesPass : Pass<"record-properties", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createRecordPropertiesPass()";
+}
+
+def InsertPropertiesPass : Pass<"insert-properties", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createInsertPropertiesPass()";
+    let options = [
+        Option<"properties_file_path", "properties_file_path", "std::string", 
+               /*default=*/"\"properties.json\"",
+               "The path to the JSON file storing the data properties.">
+    ];
+}
+
 def RewriteSqlOpPass : Pass<"rewrite-sqlop", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
 }
@@ -258,6 +271,10 @@ def LowerEwOpPass: Pass<"lower-ew", "::mlir::func::FuncOp"> {
 
 def SparsityExploitationPass: Pass<"lower-sparse-exploit", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createSparsityExploitationPass()";
+}
+
+def TransferDataPropertiesPass: Pass<"transfer-data-props", "::mlir::func::FuncOp"> {
+    let constructor = "mlir::daphne::createTransferDataPropertiesPass()";
 }
 
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

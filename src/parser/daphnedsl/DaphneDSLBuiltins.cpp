@@ -19,6 +19,7 @@
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/FileMetaData.h>
+#include <util/ErrorHandler.h>
 
 #include "antlr4-runtime.h"
 
@@ -100,14 +101,14 @@ template <class UnaryOp>
 mlir::Value DaphneDSLBuiltins::createUnaryOp(mlir::Location loc, const std::string &func,
                                              const std::vector<mlir::Value> &args) {
     checkNumArgsExact(loc, func, args.size(), 1);
-    return utils.retValWithInferedType(builder.create<UnaryOp>(loc, utils.unknownType, args[0]));
+    return CompilerUtils::retValWithInferredType(builder.create<UnaryOp>(loc, utils.unknownType, args[0]));
 }
 
 template <class BinaryOp>
 mlir::Value DaphneDSLBuiltins::createBinaryOp(mlir::Location loc, const std::string &func,
                                               const std::vector<mlir::Value> &args) {
     checkNumArgsExact(loc, func, args.size(), 2);
-    return utils.retValWithInferedType(builder.create<BinaryOp>(loc, utils.unknownType, args[0], args[1]));
+    return CompilerUtils::retValWithInferredType(builder.create<BinaryOp>(loc, utils.unknownType, args[0], args[1]));
 }
 
 template <class RowAggOp, class ColAggOp>
@@ -117,9 +118,9 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
     int64_t axis =
         CompilerUtils::constantOrThrow<int64_t>(args[1], "second argument of aggregation must be a constant");
     if (axis == 0)
-        return utils.retValWithInferedType(builder.create<RowAggOp>(loc, utils.unknownType, args[0]));
+        return CompilerUtils::retValWithInferredType(builder.create<RowAggOp>(loc, utils.unknownType, args[0]));
     else if (axis == 1)
-        return utils.retValWithInferedType(builder.create<ColAggOp>(loc, utils.unknownType, args[0]));
+        return CompilerUtils::retValWithInferredType(builder.create<ColAggOp>(loc, utils.unknownType, args[0]));
     else
         throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
 }
@@ -140,7 +141,7 @@ mlir::Value DaphneDSLBuiltins::createAnyAggOp(mlir::Location loc, const std::str
     const size_t numArgs = args.size();
     checkNumArgsBetween(loc, func, numArgs, 1, 3);
     if (args.size() == 1)
-        return utils.retValWithInferedType(builder.create<AllAggOp>(loc, utils.unknownType, args[0]));
+        return CompilerUtils::retValWithInferredType(builder.create<AllAggOp>(loc, utils.unknownType, args[0]));
     else if (numArgs == 2)
         return createRowOrColAggOp<RowAggOp, ColAggOp>(loc, func, args);
     else // numArgs == 3
@@ -158,14 +159,14 @@ template <class BindOp>
 mlir::Value DaphneDSLBuiltins::createBindOp(mlir::Location loc, const std::string &func,
                                             const std::vector<mlir::Value> &args) {
     checkNumArgsExact(loc, func, args.size(), 2);
-    return utils.retValWithInferedType(builder.create<BindOp>(loc, utils.unknownType, args[0], args[1]));
+    return CompilerUtils::retValWithInferredType(builder.create<BindOp>(loc, utils.unknownType, args[0], args[1]));
 }
 
 template <class TheOp>
 mlir::Value DaphneDSLBuiltins::createSameTypeUnaryOp(mlir::Location loc, const std::string &func,
                                                      const std::vector<mlir::Value> &args) {
     checkNumArgsExact(loc, func, args.size(), 1);
-    return utils.retValWithInferedType(builder.create<TheOp>(loc, utils.unknownType, args[0]));
+    return CompilerUtils::retValWithInferredType(builder.create<TheOp>(loc, utils.unknownType, args[0]));
 }
 
 mlir::Value DaphneDSLBuiltins::createTriOp(mlir::Location loc, const std::string &func,
@@ -417,7 +418,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             throw ErrorHandler::compilerError(loc, "DSLBuiltins", "seq(): unexpected number of arguments");
         }
 
-        return utils.retValWithInferedType(builder.create<SeqOp>(loc, utils.unknownType, from, to, inc));
+        return CompilerUtils::retValWithInferredType(builder.create<SeqOp>(loc, utils.unknownType, from, to, inc));
     }
 
     // ********************************************************************
@@ -871,14 +872,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value a = args[0];
         mlir::Value b = args[1];
-        return utils.retValWithInferedType(builder.create<SolveOp>(loc, utils.unknownType, a, b));
+        return CompilerUtils::retValWithInferredType(builder.create<SolveOp>(loc, utils.unknownType, a, b));
     }
     if (func == "replace") {
         checkNumArgsExact(loc, func, numArgs, 3);
         mlir::Value arg = args[0];
         mlir::Value pattern = args[1];
         mlir::Value replacement = args[2];
-        return utils.retValWithInferedType(
+        return CompilerUtils::retValWithInferredType(
             builder.create<ReplaceOp>(loc, utils.unknownType, arg, pattern, replacement));
     }
     if (func == "ctable") {
@@ -925,13 +926,16 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             builder.create<CTableOp>(loc, utils.unknownType, lhs, rhs, weight, resNumRows, resNumCols));
     }
     if (func == "syrk") {
-        return createSameTypeUnaryOp<SyrkOp>(loc, func, args);
+        checkNumArgsExact(loc, func, numArgs, 1);
+        mlir::Value arg = args[0];
+        mlir::Value transLeft = builder.create<mlir::daphne::ConstantOp>(loc, true);
+        return CompilerUtils::retValWithInferredType(builder.create<SyrkOp>(loc, utils.unknownType, arg, transLeft));
     }
     if (func == "gemv") {
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value mat = args[0];
         mlir::Value vec = args[1];
-        return utils.retValWithInferedType(builder.create<GemvOp>(loc, utils.unknownType, mat, vec));
+        return CompilerUtils::retValWithInferredType(builder.create<GemvOp>(loc, utils.unknownType, mat, vec));
     }
     if (func == "isSymmetric") {
         // Check the function receives exactly one argument
@@ -1352,13 +1356,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value arg = args[0];
         mlir::Value info = args[1];
-        return utils.retValWithInferedType(builder.create<OneHotOp>(loc, utils.unknownType, arg, info));
+        return CompilerUtils::retValWithInferredType(builder.create<OneHotOp>(loc, utils.unknownType, arg, info));
     }
     if (func == "recode") {
         checkNumArgsExact(loc, func, numArgs, 2);
         mlir::Value arg = args[0];
         mlir::Value orderPreserving = args[1];
-        return utils.retValsWithInferedTypes(
+        return CompilerUtils::retValsWithInferredTypes(
             builder.create<RecodeOp>(loc, utils.unknownType, utils.unknownType, arg, orderPreserving));
     }
     if (func == "bin") {
@@ -1368,13 +1372,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Value min;
         mlir::Value max;
         if (numArgs == 2) {
-            min = utils.retValWithInferedType(builder.create<AllAggMinOp>(loc, utils.unknownType, arg));
-            max = utils.retValWithInferedType(builder.create<AllAggMaxOp>(loc, utils.unknownType, arg));
+            min = CompilerUtils::retValWithInferredType(builder.create<AllAggMinOp>(loc, utils.unknownType, arg));
+            max = CompilerUtils::retValWithInferredType(builder.create<AllAggMaxOp>(loc, utils.unknownType, arg));
         } else {
             min = args[2];
             max = args[3];
         }
-        return utils.retValWithInferedType(
+        return CompilerUtils::retValWithInferredType(
             builder.create<BinOp>(loc, utils.unknownType, arg, utils.castSI64If(numBins), min, max));
     }
 

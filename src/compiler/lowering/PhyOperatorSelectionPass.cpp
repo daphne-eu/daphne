@@ -45,20 +45,29 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
                                   ConversionPatternRewriter &rewriter) const override {
         Value lhs = op.getLhs();
         Value rhs = op.getRhs();
-        if (auto to = lhs.getDefiningOp<daphne::TransposeOp>()) {
-            bool rhsTransposed = CompilerUtils::constantOrThrow<bool>(
-                op.getTransb(), "MatMulOp.getTransb() is expected to be a constant");
-            if (to.getArg() == rhs && !rhsTransposed) {
-                // `t(M) @ M` -> `syrk(M)`
-                rewriter.replaceOpWithNewOp<daphne::SyrkOp>(op, op.getResult().getType(), rhs);
-                return success();
-            }
-            auto rhsMatTy = rhs.getType().dyn_cast<daphne::MatrixType>();
-            if ((!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1)) {
-                // `t(M) @ v` -> `gemv(M, v)`
-                rewriter.replaceOpWithNewOp<daphne::GemvOp>(op, op.getResult().getType(), to.getArg(), rhs);
-                return success();
-            }
+        auto toLhs = lhs.getDefiningOp<daphne::TransposeOp>();
+        auto toRhs = rhs.getDefiningOp<daphne::TransposeOp>();
+        bool rhsTransposed =
+            CompilerUtils::constantOrThrow<bool>(op.getTransb(), "MatMulOp.getTransb() is expected to be a constant");
+        auto rhsMatTy = rhs.getType().dyn_cast<daphne::MatrixType>();
+
+        // `t(M) @ M` -> `syrk(M, true)`
+        if (toLhs && toLhs.getArg() == rhs && !rhsTransposed) {
+            Value coTrue = rewriter.create<daphne::ConstantOp>(op.getLoc(), true);
+            rewriter.replaceOpWithNewOp<daphne::SyrkOp>(op, op.getResult().getType(), rhs, coTrue);
+            return success();
+        }
+        // `M @ t(M)` -> `syrk(M, false)`
+        else if ((!rhsTransposed && toRhs && toRhs.getArg() == lhs) || (rhsTransposed && rhs == lhs)) {
+            Value coFalse = rewriter.create<daphne::ConstantOp>(op.getLoc(), false);
+            rewriter.replaceOpWithNewOp<daphne::SyrkOp>(op, op.getResult().getType(), lhs, coFalse);
+            return success();
+        }
+        // `t(M) @ v` -> `gemv(M, v)`
+        else if (toLhs &&
+                 ((!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1))) {
+            rewriter.replaceOpWithNewOp<daphne::GemvOp>(op, op.getResult().getType(), toLhs.getArg(), rhs);
+            return success();
         }
         return failure();
     }
@@ -81,6 +90,8 @@ void PhyOperatorSelectionPass::runOnOperation() {
     target.addLegalDialect<func::FuncDialect>();
     target.addLegalDialect<scf::SCFDialect>();
     target.addDynamicallyLegalOp<daphne::MatMulOp>([](daphne::MatMulOp op) {
+        Value lhs = op.getLhs();
+        Value rhs = op.getRhs();
         // Note: The canonicalization of MatMulOp factors in transposed inputs:
         // - `t(X) @_ta_tb Y` to `X @_!ta_tb Y`
         // - `X @_ta_tb t(Y)` to `X @_ta_!tb Y`
@@ -89,16 +100,20 @@ void PhyOperatorSelectionPass::runOnOperation() {
         // However, we currently don't do this for the left-hand-side argument
         // (see MatMulOp::canonicalize()), once we do it there again, we need
         // to account for it here (and above in MatMulOpLowering).
-        auto to = op.getLhs().getDefiningOp<daphne::TransposeOp>();
+        auto toLhs = lhs.getDefiningOp<daphne::TransposeOp>();
+        auto toRhs = rhs.getDefiningOp<daphne::TransposeOp>();
         bool rhsTransposed =
             CompilerUtils::constantOrThrow<bool>(op.getTransb(), "MatMulOp.getTransb() is expected to be a constant");
-        auto rhsMatTy = op.getRhs().getType().dyn_cast<daphne::MatrixType>();
-        return !(to &&
-                 (
-                     // `t(M) @ M` -> `syrk(M)`
-                     (to.getArg() == op.getRhs() && !rhsTransposed) ||
-                     // `t(M) @ v` -> `gemv(M, v)`
-                     (!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1)));
+        auto rhsMatTy = rhs.getType().dyn_cast<daphne::MatrixType>();
+        return !(
+            // `t(M) @ M` -> `syrk(M, true)`
+            (toLhs && toLhs.getArg() == rhs && !rhsTransposed) ||
+            // `M @ t(M)` -> `syrk(M, false)`
+            (!rhsTransposed && toRhs && toRhs.getArg() == lhs) || (rhsTransposed && rhs == lhs) ||
+            // `t(M) @ v` -> `gemv(M, v)`
+            (toLhs && ((!rhsTransposed && rhsMatTy.getNumCols() == 1) || (rhsTransposed && rhsMatTy.getNumRows() == 1)))
+            //
+        );
     });
 
     RewritePatternSet patterns(&getContext());

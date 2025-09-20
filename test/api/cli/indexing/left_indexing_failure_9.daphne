@@ -1,0 +1,4 @@
+// Left indexing a column with an out-of-bounds negative index must fail.
+X = fill(123, 3, 4);
+X[, -5] = fill(456, 3, 1); // -5 is out of bounds for 4 columns
+print(X);

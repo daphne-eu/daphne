@@ -18,30 +18,29 @@ limitations under the License.
 
 About employing MPI as a distributed runtime backend.
 
-The DAPHNE runtime system is designed with the goal of supporting various distributed runtime that relies on various technologies, e.g. MPI and RPC.
+The DAPHNE runtime is designed with the goal of supporting various distributed backends that rely on various technologies, e.g. MPI and RPC.
 
-This document shows how a DAPHNE user can execute DAPHNE scripts on a distributed computing environment with the MPI backend implementation of the DAPHNE runtime system.
-This document assumes that the DAPHNE was build with the `--mpi` options, if this is not the case please rebuild DAPHNE with the `--mpi` option
-```./build.sh --mpi```
+This document shows how a DAPHNE user can execute DaphneDSL scripts on a distributed computing environment with the MPI backend of the DAPHNE runtime.
+This document assumes that DAPHNE was built with the `--mpi` option, i.e., by `./build.sh --mpi`.
 
-The DAPHNE build script uses [Open MPI](https://www.open-mpi.org/).
-The DAPHNE build script does not configure the Open MPI installation with the SLURM support option.
-For users who want to add the SLURM, please visit the [Open MPI](https://www.open-mpi.org/) documentation (adding ```--with-slurm``` to the build command of the Open MPI libbrary) and edit the DAPHNE build script.
-Also, users who wants to use other MPI implementations e.g., Intel MPI may edit the corresponding part in the DAPHNE build script.
+DAPHNE's build script uses [Open MPI](https://www.open-mpi.org/).
+It does not configure the Open MPI installation with the Slurm support option.
+For users who want to add Slurm, please visit the [Open MPI](https://www.open-mpi.org/) documentation (adding `--with-slurm` to the build command of the Open MPI library) and edit the DAPHNE build script.
+Also, users who want to use other MPI implementations, e.g., Intel MPI may edit the corresponding part in the DAPHNE build script.
 
 ## When DAPHNE is Installed Natively (w/o Container)
 
-1. Ensure that your system knows about the installed MPI  
-    -- The ```PATH``` and ```LD_LIBRARY_PATH```environment variable has to be updated as follows  
+1. Ensure that your system knows about the installed MPI: The `PATH` and `LD_LIBRARY_PATH`environment variables have to be updated as follows:
 
     ```bash
     export PATH=$PATH:<DAPHNE_INSTALLATION>/thirdparty/installed/bin/
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<DAPHNE_INSTALLATION>//thirdparty/installed/lib/ 
     ```
 
-    Please do not forget to replace `<DAPHNE_INSTALLATION>` with the actual path
+    Please do not forget to replace `<DAPHNE_INSTALLATION>` with the actual path.
 
-1. Run basic example @ ```/examples/matrix_addition_for_mpi.daph``` as follows
+1. Run the basic example `scripts/examples/matrix_addition_for_mpi.daph` as follows:
+    <!-- TODO This file does not exist in the repo. By what script could we replace it? -->
 
     ```bash
     mpirun -np 10 ./bin/daphne --distributed --dist_backend=MPI scripts/examples/matrix_addition_for_mpi.daph
@@ -49,25 +48,25 @@ Also, users who wants to use other MPI implementations e.g., Intel MPI may edit 
 
 The command above executes 10 processes **locally** on one machine.
 
-In order to run on **a distributed system**, you need to provide the machine names or the machinefile which contains the machine names.
-For instance assuming that ```my_hostfile``` is a text file that contains machine names
+In order to run on **a distributed system**, you need to provide the machine names or the file which contains the machine names.
+For instance, assuming that `my_hostfile` is a text file that contains machine names, execute the following command:
 
 ```bash
-mpirun -np 10 --hostfile my_hostfile  ./bin/daphne --distributed --dist_backend=MPI scripts/examples/matrix_addition_for_mpi.daph
+mpirun -np 10 --hostfile my_hostfile ./bin/daphne --distributed --dist_backend=MPI scripts/examples/matrix_addition_for_mpi.daph
 ```
 
-The command above starts 10 processes distributed on following the hosts in the my_hostfile.
-For more options, please check the [Open MPI documentation](https://www.open-mpi.org/faq/?category=running#mpirun-hostfile).
+The command above starts 10 processes distributed on the hosts specified in the file `my_hostfile`.
+For more options, please see the [Open MPI documentation](https://www.open-mpi.org/faq/?category=running#mpirun-hostfile).
 
-From a DAPHNE runtime point of view, the ```--distributed``` option tells the DAPHNE runtime system to utilize the distributed backend, while the ```--dist_backend=MPI```
-indicate the type of the backend implementation.
+From a DAPHNE runtime point of view, the `--distributed` option tells the DAPHNE runtime to utilize the distributed backend, while the option `--dist_backend=MPI`
+indicates the type of the backend implementation.
 
-## When DAPHNE is Installed with Containers (e.g. singularity)
+## When DAPHNE is Installed with Containers (e.g. Singularity)
 
-The main difference is that the mpirun command is called at the level of the container as follows
+The main difference is that the `mpirun` command is called at the level of the container as follows:
 
 ```bash
-mpirun -np 10 singularity exec <singularity-image> daphne/bin/daphne --distributed   --dist_backend=MPI --vec --num-threads=2 daphne/scripts/examples/matrix_addition_for_mpi.daph
+mpirun -np 10 singularity exec <singularity-image> daphne/bin/daphne --distributed --dist_backend=MPI --vec --num-threads=2 daphne/scripts/examples/matrix_addition_for_mpi.daph
 ```
 
-Please do not forget to replace `<singularity-image>` with the actual singularity image.
+Please do not forget to replace `<singularity-image>` with the actual Singularity image.

@@ -135,8 +135,8 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)
     }
 
     SECTION("out of bounds - negative") {
-        VT lowerIncl = -1;
-        VT upperExcl = 1;
+        VT lowerIncl = -5;
+        VT upperExcl = -3;
 
         checkInsertColThrow(arg, ins, lowerIncl, upperExcl);
     }
@@ -188,8 +188,8 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol - string specific", TAG_KERNELS, (DATA_TYP
     }
 
     SECTION("out of bounds - negative") {
-        size_t lowerIncl = -1;
-        size_t upperExcl = 1;
+        size_t lowerIncl = -5;
+        size_t upperExcl = -3;
 
         checkInsertColThrow(arg, ins, lowerIncl, upperExcl);
     }

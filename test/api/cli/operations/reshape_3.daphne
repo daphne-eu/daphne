@@ -1,0 +1,7 @@
+// Valid reshape to the same shape.
+// Result shape is (hopefully) unknown at compile-time, reshape kernel should run.
+
+X = seq(1, 6); # 6x1
+nr = as.scalar(fill(6, 1, 1));
+nc = as.scalar(fill(1, 1, 1));
+print(reshape(X, nr, nc)); # 6x1

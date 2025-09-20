@@ -17,7 +17,7 @@ limitations under the License.
 # Binary Data Format
 
 DAPHNE defines its own binary representation for the serialization of in-memory data objects (matrices/frames).
-This representation is intended to be used by default whenever we need to transfer or persistently store these in-memory objects, e.g., for
+This representation is intended to be used by default whenever we need to transfer or persistently store these in-memory objects, e.g., for:
 
 - the data transfer in the distributed runtime
 - a custom binary file format
@@ -32,7 +32,7 @@ At the moment, we focus on the case of a single block per data object.
 
 ## Binary Representation of a Whole Data Object
 
-The binary representation of a data object (matrix/frame) starts with a header containing general and data type-specific information.
+The binary representation of a data object (matrix/frame) starts with a header containing general and data-type-specific information.
 The data object is partitioned into rectangular blocks (in the extreme case, this can mean a single block).
 All blocks are represented individually (see binary representation of a single block below) and stored along with their position in the data object.
 
@@ -76,7 +76,7 @@ We currently support the following **value types**:
 | 9 | `float` |
 | 10 | `double` |
 
-Depending on the data type, there are more information in the header:
+Depending on the data type, there is more information in the header:
 
 *For `DenseMatrix` and `CSRMatrix`*:
 
@@ -108,8 +108,8 @@ size[B]   1    1    8    8      1               1         2     len[0]          
 The body consists of a sequence of:
 
 - a pair of
-  - row index `rx` (uint64)
-  - column index `cx` (uint64)
+    - row index `rx` (uint64)
+    - column index `cx` (uint64)
 - a binary block representation
 
 For the special case of a single block, this looks as follows:
@@ -128,7 +128,7 @@ size[B]
 A single data block is a rectangular partition of a data object.
 In the extreme case, a single block can span the entire data object in both dimensions (one block per data object).
 
-General block header
+General block header:
 
 - number of rows `#r` (uint32)
 - number of columns `#c` (uint32)
@@ -143,7 +143,7 @@ addr[B]  0  3 4  7 8  8 9                        *
 size[B]    4    4    1               *
 ```
 
-## Block types
+## Block Types
 
 We define different block types to allow for a space-efficient representation depending on the data.
 When serializing a data object, the block types are not required to match the in-memory representation (e.g., the blocks of a `DenseMatrix` could use the *sparse* binary representation).
@@ -161,7 +161,7 @@ Most block types store their value type as part of the block type-specific infor
 Note that the value type used for the binary representation is not required to match the value type of the in-memory object (e.g., `DenseMatrix<uint64_t>` may be represented as a *dense* block with value type `uint8_t`, if the value range permits).
 Furthermore, each block may be represented using its individual value type.
 
-### Empty block
+### Empty Block
 
 This block type is used to represent blocks that contain only zeros of the respective value type very space-efficiently.
 
@@ -175,7 +175,7 @@ addr[B]  0  3 4  7 8 8
 size[B]    4    4   1
 ```
   
-### Dense block
+### Dense Block
 
 Block type-specific information:
 
@@ -192,17 +192,17 @@ addr[B]  0  3 4  7 8 8 9  9 10                             10+#r*#c*S
 size[B]    4    4   1    1      S         S                  S
 ```
 
-### Sparse block (compressed sparse row, CSR)
+### Sparse Block (Compressed Sparse Row, CSR)
 
 Block type-specific information:
 
 - value type `vt`  (uint8)
 - number of non-zeros in the block `#nzb` (uint64)
 - for each row
-  - number of non-zeros in the row `#nzr` (uint32)
-  - for each non-zero in the row
-    - column index `cx` (uint32)
-    - value `v` (value type `vt`)
+    - number of non-zeros in the row `#nzr` (uint32)
+    - for each non-zero in the row
+        - column index `cx` (uint32)
+        - value `v` (value type `vt`)
 
 Note that both a row and the entire block might contain no non-zeros.
 
@@ -233,20 +233,20 @@ size[B]    4    4   1    1     8              4+#nzr[i]*(4+S)
                                        4             S
 ```
 
-### Ultra-sparse block (coordinate, COO)
+### Ultra-Sparse Block (Coordinate, COO)
 
 Ultra-sparse blocks contain almost no non-zeros, so we want to keep the overhead of the meta data low.
 Thus, we distinguish blocks with a single column (where we don't need to store the column index) and blocks with more than one column.
 
-### Blocks with a single column
+### Blocks with a Single Column
 
 Block type-specific information:
 
 - value type `vt` (uint8)
 - number of non-zeros in the block `#nzb` (uint32)
 - for each non-zero
-  - row index `rx` (uint32)
-  - value `v` (value type `vt`)
+    - row index `rx` (uint32)
+    - value `v` (value type `vt`)
 
 Below, `S` denotes the size (in bytes) of a single value of type `vt`.
   
@@ -266,16 +266,16 @@ size[B]    4    4   1    1     4     4+S           4+S              4+S
                                              4          S
 ```
 
-### Blocks with more than one column
+### Blocks with More than One Column
 
 Block type-specific information:
 
 - value type `vt` (uint8)
 - number of non-zeros in the block `#nzb` (uint32)
 - for each non-zero
-  - row index `rx` (uint32)
-  - column index `cx` (uint32)
-  - value `v` (value type `vt`)
+    - row index `rx` (uint32)
+    - column index `cx` (uint32)
+    - value `v` (value type `vt`)
 
 Below, `S` denotes the size (in bytes) of a single value of type `vt`.
   

@@ -21,6 +21,8 @@ namespace mlir::OpTrait {
 
 template <class ConcreteOp> class CastArgsToResType : public TraitBase<ConcreteOp, CastArgsToResType> {};
 
+template <class ConcreteOp> class CastFirstArgToResType : public TraitBase<ConcreteOp, CastFirstArgToResType> {};
+
 template <class ConcreteOp>
 class CastFirstTwoArgsToResType : public TraitBase<ConcreteOp, CastFirstTwoArgsToResType> {};
 

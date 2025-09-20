@@ -13,7 +13,9 @@
 # limitations under the License.
 
 add_mlir_dialect_library(MLIRDaphneExplain
+    InsertPropertiesPass.cpp
     PrintIRPass.cpp
+    RecordPropertiesPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

@@ -1,0 +1,5 @@
+// Valid reshape to the same shape.
+// Result shape is known at compile-time, reshape might be optimized away by the DAPHNE compiler.
+
+X = seq(1, 6); # 6x1
+print(reshape(X, 6, 1)); # 6x1

@@ -257,21 +257,31 @@ std::vector<std::pair<Value, Value>> daphne::ColBindOp::createOpsOutputSizes(OpB
     auto colsRhs = builder.create<daphne::NumColsOp>(loc, sizeTy, getRhs());
     return {{rows, builder.create<daphne::CastOp>(
                        loc, sizeTy,
-                       builder.create<daphne::EwAddOp>(loc, builder.create<daphne::CastOp>(loc, i64Ty, colsLhs),
+                       builder.create<daphne::EwAddOp>(loc, i64Ty, builder.create<daphne::CastOp>(loc, i64Ty, colsLhs),
                                                        builder.create<daphne::CastOp>(loc, i64Ty, colsRhs)))}};
 }
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // Other
-std::vector<daphne::VectorSplit> daphne::SyrkOp::getVectorSplits() { return {daphne::VectorSplit::ROWS}; }
+std::vector<daphne::VectorSplit> daphne::SyrkOp::getVectorSplits() {
+    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE};
+}
 std::vector<daphne::VectorCombine> daphne::SyrkOp::getVectorCombines() { return {daphne::VectorCombine::ADD}; }
 std::vector<std::pair<Value, Value>> daphne::SyrkOp::createOpsOutputSizes(OpBuilder &builder) {
     auto loc = getLoc();
     auto sizeTy = builder.getIndexType();
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg());
     // TODO: do max on #rows/#cols of lhs and rhs for broadcasting
-    return {{cols, cols}};
+    if (CompilerUtils::constantOrThrow<bool>(getTransLeft(),
+                                             "argument transLeft of SyrkOp must be a compile-time constant")) {
+        // This SyrkOp calculates `t(X) @ X`.
+        auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg());
+        return {{cols, cols}};
+    } else {
+        // This SyrkOp calculates `X @ t(X)`.
+        auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getArg());
+        return {{rows, rows}};
+    }
 }
 
 std::vector<daphne::VectorSplit> daphne::GemvOp::getVectorSplits() {

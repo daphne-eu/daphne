@@ -34,6 +34,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <sys/select.h>
 
 /**
  * @brief Reads the entire contents of a plain text file into a string.
@@ -93,10 +94,51 @@ int runProgram(std::stringstream &out, std::stringstream &err, const char *execP
 
         // Read data from stdout and stderr of the child from the pipes.
         ssize_t numBytes;
-        while ((numBytes = read(linkOut[READ], buf, sizeof(buf))))
-            out.write(buf, numBytes);
-        while ((numBytes = read(linkErr[READ], buf, sizeof(buf))))
-            err.write(buf, numBytes);
+        bool eofOut = false;         // whether EOF has been reached on linkOut
+        bool eofErr = false;         // whether EOF has been reached on linkErr
+        while (!eofOut || !eofErr) { // as long as at least one out/err has not reached EOF
+            // Prepare arguments to select().
+            int nfds = 0;
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            if (!eofOut) {
+                FD_SET(linkOut[READ], &readfds);
+                nfds = std::max(nfds, linkOut[READ]);
+            }
+            if (!eofErr) {
+                FD_SET(linkErr[READ], &readfds);
+                nfds = std::max(nfds, linkErr[READ]);
+            }
+
+            int retval = select(nfds + 1, &readfds, NULL, NULL, NULL);
+
+            if (retval == -1)
+                throw std::runtime_error("select() failed");
+            // retval == 0 should never happen, since we always provide at least one file descriptor to select() and
+            // don't use a timeout.
+            else {
+                // Read from the child's stdout, if data is available.
+                if (FD_ISSET(linkOut[READ], &readfds)) {
+                    numBytes = read(linkOut[READ], buf, sizeof(buf));
+                    if (numBytes == 0)
+                        eofOut = true;
+                    else if (numBytes == -1)
+                        throw std::runtime_error("error reading from the child's stdout");
+                    else
+                        out.write(buf, numBytes);
+                }
+                // Read from the child's stderr, if data is available.
+                if (FD_ISSET(linkErr[READ], &readfds)) {
+                    numBytes = read(linkErr[READ], buf, sizeof(buf));
+                    if (numBytes == 0)
+                        eofErr = true;
+                    else if (numBytes == -1)
+                        throw std::runtime_error("error reading from the child's stderr");
+                    else
+                        err.write(buf, numBytes);
+                }
+            }
+        }
 
         close(linkOut[READ]);
         close(linkErr[READ]);

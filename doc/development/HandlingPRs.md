@@ -37,35 +37,45 @@ However, they could also be interesting for *contributors* to (a) understand how
 
 ## PR Review/Merging Procedure
 
-### PR creation
+### PR Creation
 
 The contributor creates the PR.
 
 - if the PR is marked as a draft, it is handled by an informal discussion depending on concrete questions by the contributor; if there are none, the PR is left alone for now
 - if the PR is not marked as a draft, the review/merge procedure continues
 
-### Initial response and reviewer assignment
+### Continuous Integration (CI) Checks
+
+For every pull request on the main branch, the following checks are performed automatically through GitHub actions upon PR creation and updates:
+
+- building DAPHNE and running the test suite
+- checking for adherence to the code style
+- building and deploying the documentation
+
+For PRs by first-time contributors, a collaborator needs to approve the CI checks before they can run.
+
+### Initial Response and Reviewer Assignment
 
 The DAPHNE collaborators provide an *initial response* and *assign one (or multiple) reviewers* (usually from among themselves, but can also be non-collaborators).
 
 - **Initial response**
-  - ideally within a few working days after the PR was opened
-  - thank contributor for the contribution
-  - have a quick glance to decide if the contribution is relevant (default: yes)
+    - ideally within a few working days after the PR was opened
+    - thank contributor for the contribution
+    - have a quick glance to decide if the contribution is relevant (default: yes)
 - **Reviewer selection**
-  - any collaborator (or non-collaborator) may volunteer
-  - collaborators may select reviewer in a discussion (use @mentions)
-  - who qualifies as a reviewer
-    - collaborator experienced with the respective part of the code
-    - collaborator mentoring the contributor (e.g., in case of undergrad students)
-    - collaborator who wants to learn more about the respective part of the code base
-    - any other collaborator to balance the reviewing load among collaborators
-  - there may be multiple reviewers
+    - any collaborator (or non-collaborator) may volunteer
+    - collaborators may select reviewer in a discussion (use @mentions)
+    - who qualifies as a reviewer
+        - collaborator experienced with the respective part of the code
+        - collaborator mentoring the contributor (e.g., in case of undergrad students)
+        - collaborator who wants to learn more about the respective part of the code base
+        - any other collaborator to balance the reviewing load among collaborators
+    - there may be multiple reviewers
 - **Assignment of the reviewer(s)**
-  - on GitHub
-  - ideally, reviewer(s) should *communicate when review can be expected* (based on their availability and urgency of the PR)
+    - on GitHub
+    - ideally, reviewer(s) should *communicate when the review can be expected* (based on their availability and urgency of the PR)
 
-### Rounds of feedback and response
+### Rounds of Feedback and Response
 
 If necessary, the reviewer(s) and the contributor prepare the contribution for a merge by multiple (but ideally not more than one) rounds of feedback and response.
 
@@ -81,7 +91,7 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
         - if PR states to address an issue, check if it really does so
         - it can be okay if a PR addresses just a part of a complex issue (if contribution still makes sense)
         - briefly check if PR addresses further issues (if so, also mention that in feedback and commit message later)
-        - PR does not need to address an issue, but if it doesn't, check if contribution really belongs to the DAPHNE system itself (there might be useful contributions which should better reside in a separate repo, e.g., for the usage of DAPHNE, tools around DAPHNE, experiments/reproducibility, ...)
+        - PR does not need to address an issue, but if it doesn't, check if contribution really belongs to DAPHNE itself (there might be useful contributions which should better reside in a separate repo, e.g., for the usage of DAPHNE, tools around DAPHNE, experiments/reproducibility, ...)
     - *contribution DOs*
         - readable code
         - necessary API changes should be reflected in the documentation (e.g., DaphneDSL/DaphneLib, command line arguments, environment variables, ...)
@@ -108,13 +118,14 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
         - whitespace changes that unnecessarily blow up the diff (especially in files that otherwise have no changes)
         - ...
     - *code style*
-        - don't be strict as long as we don't have a clearly defined code style which can be enforced automatically
-        - but watch out for things that make code hard to read, e.g.
-            - wrong indentation
+        - the adherence to the code style is checked automatically through GitHub actions
+        - in addition to that, watch out for things that make code hard to read, e.g.
+            - incomprehensible, misleading, or excessively long identifiers
             - lots of commented out lines (especially artifacts from development/debugging)
+            - ...
 - **try out the code**
     - check out the branch
-        - If the contribution originates from a github fork, these steps will help to clone the PR's state into a branch of your working copy (example taken from PR #415):
+        - If the contribution originates from a GitHub fork, these steps will help to clone the PR's state into a branch of your working copy (example taken from PR #415):
             - Make sure your local copy of the main branch is up to date
 
                 ```bash
@@ -143,11 +154,8 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
                 git push origin main
                 ```
 
-    - check if the code builds at all (should be checked automatically)
-    - check if there are compiler warnings (should be fixed) (should be checked automatically)
-    - check if the test cases pass (should be checked automatically)
-    - whether these checks succeed or fail may be platform-specific
-        - **TODO:** think about that aspect in more detail
+    - check if there are compiler warnings when building the code (should be checked automatically); if so, they should be fixed
+    - feel free to try out scenarios that are not covered by the test cases yet (ideally, the test suite should be extended)
 
 **Reviewer fixes minor problems:**
 
@@ -193,7 +201,7 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
 - ideally, the contributor is willing to do this
 - otherwise (and especially for new contributors, for whom we want to lower the barrier of entry), the reviewer or someone else should take charge of this, if possible
 
-### Once the contribution is ready, a collaborator merges the PR
+### Once the Contribution is Ready, a Collaborator Merges the PR
 
 - can be done by the reviewer or any collaborator
 - we want to keep a clean history on the main branch (and remember never to force-push to main)
@@ -230,15 +238,15 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
         - if multiple authors edited the branch: choose one of them as the main author (after squashing in GitHub it should be the person who opened the PR); more authors can be added by adding [`Co-authored-by:  NAME NAME@EXAMPLE.COM`](https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/creating-a-commit-with-multiple-authors) after two blank lines at the end of the commit message (one for each co-author).
         - very often, reviewers may have made minor fixes, but should refrain from adding themselves as co-authors (prefer to give full credit for the contribution to the initial contributor, unless the reviewer's contribution was significant)
 
-### Creation of follow-up issues (optional)
+### Creation of Follow-up Issues (Optional)
 
 - things that were left out
 - nice-to-haves
 - functional, non-functional, documentation, tests
 
-### Inviting the contributor as a collaborator (conditional)
+### Inviting the Contributor as a Collaborator (Conditional)
 
-If this contributor has made enough non-trivial contributions of good quality (currently, we require three), he/she should be invited as a collaborator on GitHub.
+If this contributor has made enough non-trivial contributions of good quality (currently, we require three), they should be invited as a collaborator on GitHub.
 
 ## More Hints
 

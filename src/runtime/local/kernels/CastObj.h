@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/Column.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -240,26 +241,91 @@ template <typename VT> class CastObj<CSRMatrix<VT>, DenseMatrix<VT>> {
         const size_t numCols = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
         size_t numNonZeros = 0;
-        VT temp;
 
+        // Step 1: Count the non-zeros in the argument DenseMatrix.
+        // Required to know how much memory to allocate for the result CSRMatrix.
+        const VT *valuesArg = arg->getValues();
         for (size_t r = 0; r < numRows; r++) {
-            for (size_t c = 0; c < numCols; c++) {
-                temp = arg->get(r, c);
-                if (temp != 0)
+            for (size_t c = 0; c < numCols; c++)
+                if (valuesArg[c] != 0)
                     numNonZeros++;
-            }
+            valuesArg += arg->getRowSkip();
         }
 
-        if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, true);
+        // Step 2: Create and populate the result CSRMatrix.
+        if (numNonZeros == 0) {
+            // Special case: There are no non-zeros in the argument.
+            // This case is handled more efficiently than the common case.
 
-        // TODO This could be done more efficiently by avoiding the get()/set()
-        // calls (use append() or direct access to the underlying arrays, then
-        // we could even avoid initializing the output CSRMatrix).
-        for (size_t r = 0; r < numRows; r++) {
-            for (size_t c = 0; c < numCols; c++) {
-                temp = arg->get(r, c);
-                res->set(r, c, temp);
+            if (res == nullptr)
+                res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+
+            // The result's values and colIdx arrays are empty.
+
+            // The result's rowOffsets array must be filled with zeros.
+            size_t *rowOffsetsRes = res->getRowOffsets();
+            std::fill(rowOffsetsRes, rowOffsetsRes + numRows + 1, 0);
+        } else if (numNonZeros == numRows * numCols) {
+            // Special case: There are no zeros in the argument.
+            // This case is handled more efficiently than the common case.
+
+            // Create the result CSRMatrix and ensure that the values array is populated.
+            if (arg->getRowSkip() == numCols || numRows == 1) {
+                // The data in arg is contiguous in memory. The result can share the data with the argument.
+                if (res == nullptr)
+                    res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros,
+                                                                   arg->getValuesSharedPtr());
+                // TODO Should we ever pass an existing data object for the result, we must make sure that either (a)
+                // the values array of the argument is copied, or (b) the values array of the result is destroyed and
+                // replaced by the argument's values array.
+            } else {
+                // The data in arg is not contiguous in memory. We must copy the data row by row from the argument to
+                // the result.
+                if (res == nullptr)
+                    res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+                const VT *valuesArg = arg->getValues();
+                VT *valuesRes = res->getValues();
+                for (size_t r = 0; r < numRows; r++) {
+                    std::copy(valuesArg, valuesArg + numCols, valuesRes);
+                    valuesArg += arg->getRowSkip();
+                    valuesRes += numCols;
+                }
+            }
+
+            // The result's colIdxs are ascending sequences per row; the rowOffsets are the multiples of the number of
+            // columns.
+            size_t *colIdxsRes = res->getColIdxs();
+            size_t *rowOffsetsRes = res->getRowOffsets();
+            for (size_t r = 0; r < numRows; r++) {
+                std::iota(colIdxsRes, colIdxsRes + numCols, 0);
+                colIdxsRes += numCols;
+                rowOffsetsRes[r] = r * numCols;
+            }
+            rowOffsetsRes[numRows] = numRows * numCols;
+        } else {
+            // Common case: There are zeros and non-zeros in the arg.
+
+            if (res == nullptr)
+                res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+
+            // Scan the argument's values again and only insert the non-zeros into the result.
+            valuesArg = arg->getValues();
+            VT *valuesRes = res->getValues();
+            size_t *colIdxsRes = res->getColIdxs();
+            size_t *rowOffsetsRes = res->getRowOffsets();
+            size_t i = 0;
+            rowOffsetsRes[0] = 0;
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++) {
+                    VT temp = valuesArg[c];
+                    if (temp != 0) {
+                        valuesRes[i] = temp;
+                        colIdxsRes[i] = c;
+                        i++;
+                    }
+                }
+                valuesArg += arg->getRowSkip();
+                rowOffsetsRes[r + 1] = i;
             }
         }
     }
@@ -315,5 +381,93 @@ template <typename VTRes, typename VTArg> class CastObj<Matrix<VTRes>, Matrix<VT
             for (size_t c = 0; c < numCols; ++c)
                 res->append(r, c, static_cast<VTRes>(arg->get(r, c)));
         res->finishAppend();
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Column <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<Column<VT>, DenseMatrix<VT>> {
+
+  public:
+    static void apply(Column<VT> *&res, const DenseMatrix<VT> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        if (numCols == 1) {
+            // The input matrix has a single column.
+            const size_t rowSkipArg = arg->getRowSkip();
+            if (rowSkipArg == 1) {
+                // The input's single column is stored contiguously.
+                // Reuse the input's memory for the result (zero-copy).
+                res = DataObjectFactory::create<Column<VT>>(numRows, arg->getValuesSharedPtr());
+            } else {
+                // The input's single column is not stored contiguosly.
+                // Copy the input data to the result.
+                res = DataObjectFactory::create<Column<VT>>(numRows, false);
+                const VT *valuesArg = arg->getValues();
+                VT *valuesRes = res->getValues();
+                for (size_t r = 0; r < numRows; r++) {
+                    valuesRes[r] = *valuesArg;
+                    valuesArg += rowSkipArg;
+                }
+            }
+        } else {
+            // The input matrix has zero or multiple columns.
+            throw std::runtime_error("CastObj::apply: cannot cast a matrix with zero or mutliple columns to Column");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  DenseMatrix <- Column
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<DenseMatrix<VT>, Column<VT>> {
+
+  public:
+    static void apply(DenseMatrix<VT> *&res, const Column<VT> *arg, DCTX(ctx)) {
+        res = DataObjectFactory::create<DenseMatrix<VT>>(arg->getNumRows(), 1, arg->getValuesSharedPtr());
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Column <- Frame
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<Column<VT>, Frame> {
+
+  public:
+    static void apply(Column<VT> *&res, const Frame *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        if (numCols == 1 && arg->getColumnType(0) == ValueTypeUtils::codeFor<VT>) {
+            // The input frame has a single column of the result's value type.
+            // Zero-cost cast from frame to Column.
+            // TODO This case could even be used for (un)signed integers of the
+            // same width, involving a reinterpret cast of the pointers.
+            // TODO Can we avoid this const_cast?
+            res = DataObjectFactory::create<Column<VT>>(numRows, arg->getColumn<VT>(0)->getValuesSharedPtr());
+        } else {
+            // The input frame has multiple columns and/or other value types
+            // than the result.
+            throw std::runtime_error("CastObj::apply: cannot cast Frame with mutliple columns to Column");
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+//  Frame <- Column
+// ----------------------------------------------------------------------------
+
+template <typename VT> class CastObj<Frame, Column<VT>> {
+
+  public:
+    static void apply(Frame *&res, const Column<VT> *arg, DCTX(ctx)) {
+        std::vector<Structure *> colMats;
+        DenseMatrix<VT> *argMat = nullptr;
+        castObj<DenseMatrix<VT>>(argMat, arg, ctx);
+        colMats.push_back(argMat);
+        res = DataObjectFactory::create<Frame>(colMats, nullptr);
     }
 };

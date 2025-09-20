@@ -33,7 +33,7 @@ If required, you can find more details for custom setups later in this document.
 **Option 1: Use a binary release**
 
 Download and extract the file `daphne-<flavor>-<version>-bin.tgz` from the [release page](https://github.com/daphne-eu/daphne/releases).
-It is recommended to use the latest version and to choose the flavor based on your platform and needs (e.g., `X86-64`, `cuda-X86-64`, or `ARMV8`).
+It is recommended to use the latest version and to choose the flavor based on your platform and needs (e.g., `X86-64`, `cuda-X86-64`, or `AArch64`).
 Using DAPHNE with CUDA requires Nvidia Pascal hardware or newer.
 
 **Option 2: Build from sources**
@@ -123,8 +123,6 @@ git clone https://github.com/daphne-eu/daphne.git
 
 ### 2. Download the DAPHNE Development Container Image
 
-<!-- TODO assumes X86-64 is correct -->
-
 The development container image already contains all necessary (¹) dependencies of a DAPHNE development environment as well as a useful initialization of environment variables etc., such that you don't need to worry about these things and can have a productive start.
 
 **Get the container image**
@@ -132,9 +130,16 @@ The development container image already contains all necessary (¹) dependencies
 ```bash
 docker pull daphneeu/daphne-dev:latest_X86-64_BASE
 ```
+
+or
+
+```bash
+docker pull daphneeu/daphne-dev:latest_AArch64
+```
+
 ***Hint:** In case of Docker permission errors, try prepending `sudo` to the command.*
 
-***Hint:** You may want to choose another image tag based on your platform and needs, e.g., `latest_X86-64_CUDA` (for GPU support) or `latest_ARMV8_BASE` (for ARM support).*
+***Hint:** You may want to choose another image tag based on your platform and needs, e.g., `latest_X86-64_CUDA` (for GPU support) or `latest_AArch64` (for ARM support).*
 
 ***Hint:** (¹) TensorFlow and PyTorch are *optional* for DaphneLib and *not included* in the `daphne-dev`container due to their footprint of several gigabytes. Please follow the [instructions](/doc/development/InstallPythonLibsInContainer.md) on installing Python libraries in the `daphne-dev` container if you need these libraries.*
 
@@ -144,7 +149,7 @@ docker pull daphneeu/daphne-dev:latest_X86-64_BASE
 cd daphne
 ./containers/run-docker-example.sh
 ```
-```
+```text
 Use xyz with password Docker!0147 for SSH login
 Docker Container IP address(es):
 172.17.0.2
@@ -233,7 +238,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | gfortran                             | 9.3.0                        |                                                                                                                                         |
 | git                                  | 2.25.1                       |                                                                                                                                         |
 | java (e.g. openjdk)                  | 11 (1.7 should be fine)      |                                                                                                                                         |
-| jq                                   |                              | json commandline processor used in docker image generation scripts.                                                                     |
+| jq                                   |                              | JSON command-line processor used in docker image generation scripts.                                                                     |
 | libpfm4-dev                          | 4.10                         | This dependency is needed for profiling support [DAPHNE-#479]                                                                           |
 | gRPC                                 | 1.38.0                       |                                                                                                                                         |
 | libssl-dev                           | 1.1.1                        | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
@@ -259,13 +264,13 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 
 - about 7.5 GB of free disk space to build from source (mostly due to dependencies)
 - Optional:
-  - NVidia GPU for CUDA ops (tested on Pascal and newer architectures); 8GB for CUDA SDK
-  - Intel GPU for OneAPI ops (tested on Coffeelake graphics); 23 GB for OneAPI
-  - Intel FPGA for FPGAOPENCL ops (tested on PAC D5005 accelerator); 23 GB for OneAPI
+    - NVidia GPU for CUDA ops (tested on Pascal and newer architectures); 8GB for CUDA SDK
+    - Intel GPU for OneAPI ops (tested on Coffeelake graphics); 23 GB for OneAPI
+    - Intel FPGA for FPGAOPENCL ops (tested on PAC D5005 accelerator); 23 GB for OneAPI
 
 ### Obtaining the Source Code
 
-The DAPHNE system is based on MLIR, which is a part of the LLVM monorepo.
+DAPHNE is based on MLIR, which is a part of the LLVM monorepo.
 The LLVM monorepo is included in this repository as a submodule.
 Thus, clone this repository as follows to also clone the submodule:
 
@@ -287,7 +292,7 @@ git pull && git submodule update --init --recursive
 ./pull.sh
 ```
 
-### Building the DAPHNE system
+### Building DAPHNE
 
 Simply build the system using the build-script without any arguments:
 
@@ -320,7 +325,7 @@ For convenience, you can call the following to remove them all.
 
 See [this page](/doc/development/BuildingDaphne.md) for more information.
 
-### Setting up the environment
+### Setting up the Environment
 
 As DAPHNE uses shared libraries, these need to be found by the operating system's loader to link them at runtime.
 Since most DAPHNE setups will not end up in one of the standard directories (e.g., `/usr/local/lib`), environment variables
@@ -357,9 +362,9 @@ print("Hello World!");
 ... and execute it as follows: `bin/daphne scripts/examples/hello-world.daph` (This command works if `daphne` is run
 after building from source. Omit `bin/` in the path to the DAPHNE binary if executed from the binary distribution).
 
-Optionally flags like ``--cuda`` can be added after the daphne command and before the script file to activate support
+Optionally flags like `--cuda` can be added after the `daphne` command and before the script file to activate support
 for accelerated ops (see [software requirements](#software) above and [build instructions](development/BuildingDaphne.md)).
-For further flags that can be set at runtime to activate additional functionality, run ``daphne --help``.
+For further flags that can be set at runtime to activate additional functionality, run `daphne --help`.
 
 ### Building and Running with Containers
 
@@ -399,7 +404,7 @@ On the top-level, there are the following directories:
 - `bin`: after compilation, generated binaries will be placed here (e.g., daphne)
 - `build`: temporary build output
 - [`containers`:](/containers) scripts and configuration files to get/build/run with Docker or Singularity containers
-- [`deploy`:](/deploy) shell scripts to ease deployment in SLURM clusters
+- [`deploy`:](/deploy) shell scripts to ease deployment in Slurm clusters
 - [`doc`:](/doc) documentation written in markdown (e.g., what you are reading at the moment)
 - `lib`: after compilation, generated library files will be placed here (e.g., libAllKernels.so, libCUDAKernels.so, ...)
 - [`scripts`:](/scripts) a collection of algorithms and examples written in DAPHNE's own domain specific language ([DaphneDSL](/doc/DaphneDSL/LanguageRef.md))

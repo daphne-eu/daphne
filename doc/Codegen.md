@@ -1,3 +1,19 @@
+<!--
+Copyright 2025 The DAPHNE Consortium
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Code Generation with MLIR
 
 This document describes the process of directly generating code with the MLIR
@@ -5,9 +21,9 @@ framework.
 
 ## Motivation
 
-DAPHNE provides a kernel for (almost) every DaphneIR operation which reside in
-`src/runtime/local/kernels/`. These are precompiled as a shared library and
-linked during compile-time. Even though these kernels can be highly optimized
+DAPHNE provides a kernel for (almost) every DaphneIR operation. The kernels reside in
+`src/runtime/local/kernels/`. These are pre-compiled as a shared library during the DAPHNE build and
+linked at DaphneDSL compile-time. Even though these kernels can be highly optimized
 and thus achieve great runtime characteristics, they may not provide a desired
 level of extensibility for custom value types. They may also be lacking
 information only available at compile-time that could enable further
@@ -16,13 +32,13 @@ input IR, the code generation pipeline may enable more optimization
 possibilities such as operator or loop fusion.
 
 
-As an alternative way to implement our operators we provide the code generation
+As an alternative way to implement our operators, we provide the code generation
 pipeline which progressively lowers the DaphneIR available after parsing the
 DaphneDSL script to operations in either the same dialect or operations from
 other dialects. With that, we can optionally replace certain kernels by
 generating code directly, and also perform a hybrid compilation approach where
 we mix kernel calls with code generation in order to exploit advantages of
-both, precompiled kernel libraries and code generation. Code generation passes
+both, pre-compiled kernel libraries and code generation. Code generation passes
 are found in `src/compiler/lowering/`.
 
 
@@ -32,14 +48,14 @@ Currently, the code generation pipeline is enabled with the CLI flag
 `--mlir-codegen`. This adds the following passes that perform transformations and
 lowerings:
 
-- [DenseMatrixOptPass](src/compiler/lowering/DaphneOptPass.cpp)
-- [MatMulOpLoweringPass](src/compiler/lowering/MatMulOpLowering.cpp)
-- [AggAllLoweringPass](src/compiler/lowering/AggAllOpLowering.cpp)
-- [MapOpLoweringPass](src/compiler/lowering/MapOpLowering.cpp)
+- [DenseMatrixOptPass](/src/compiler/lowering/DaphneOptPass.cpp)
+- [MatMulOpLoweringPass](/src/compiler/lowering/MatMulOpLowering.cpp)
+- [AggAllLoweringPass](/src/compiler/lowering/AggAllOpLowering.cpp)
+- [MapOpLoweringPass](/src/compiler/lowering/MapOpLowering.cpp)
 - InlinerPass
-- [LowerEwOpPass](src/compiler/lowering/EwOpsLowering.cpp)
+- [LowerEwOpPass](/src/compiler/lowering/EwOpsLowering.cpp)
 - ConvertMathToLLVMPass
-- [ModOpLoweringPass](src/compiler/lowering/ModOpLowering.cpp)
+- [ModOpLoweringPass](/src/compiler/lowering/ModOpLowering.cpp)
 - Canonicalizer
 - CSE
 - LoopFusion
@@ -75,12 +91,11 @@ multiple passes) on the IR. `daphne-opt` provides all the functionality of the
 debug information.
 
 
-
 #### Testing
 
 To test the generated code, there currently are two different approaches.
 
-End-to-end tests can be found under `test/api/cli/codegen/` and are part of the
+Script-level tests can be found under `test/api/cli/codegen/` and are part of the
 existing Catch2 test-suite with the its own tag, `TAG_CODEGEN`.
 
 Additionally, there are tests that check the generated IR by running the
@@ -96,5 +111,4 @@ CHECK-NOT: daphne.ewAdd` looks through the IR and fails if `daphne.ewAdd` can be
 found. These `llvm-lit` tests are all run by the `codegen` testcase in
 `test/codegen/Codegen.cpp`.
 
-
-All codegen tests can be executed by running `bin/run_tests '[codegen]'`.
+All codegen tests can be executed by running `./test.sh [codegen]`.

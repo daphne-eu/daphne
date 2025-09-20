@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
 
+#include <ir/daphneir/DataPropertyTypes.h>
 #include <runtime/local/datastructures/Structure.h>
 
 #include <cstddef>
@@ -31,11 +32,30 @@ template <typename ValueType> class Matrix : public Structure {
 
   protected:
     Matrix(size_t numRows, size_t numCols)
-        : Structure(numRows, numCols){
-              // nothing to do
-          };
+        : Structure(numRows, numCols), sparsity(-1), symmetric(BoolOrUnknown::Unknown){
+                                                         // nothing to do
+                                                     };
 
   public:
+    /**
+     * @brief The sparsity of this matrix (number of non-zero elements divided by the total number of elements).
+     *
+     * The sparsity is a value between `0.0` (all zeros) and `1.0` (all non-zeros); a value of -1.0 indicates that the
+     * sparsity was unknown at compile-time.
+     *
+     * Note that, so far, this is the compile-time estimate (not the actual run-time value) of the sparsity.
+     */
+    double sparsity;
+
+    /**
+     * @brief Whether this matrix is symmetric.
+     *
+     * Only square matrices (number of rows equals number of columns) can be symmetric.
+     *
+     * Note that, so far, this is the compile-time estimate (not the actual run-time value) of the symmetry.
+     */
+    BoolOrUnknown symmetric;
+
     virtual ~Matrix(){
         // nothing to do
     };

@@ -66,11 +66,14 @@ nav:
     - MPI-Usage.md
     - Profiling.md
     - 'Custom Extensions': Extensions.md
+    - HDFSUsage.md
   - 'Developers':
     - development/Contributing.md
     - development/BuildingDaphne.md
+    - BuildEnvironment.md
     - Deploy.md
     - ReleaseScripts.md
+    - GPG-signing-keys.md
     - BinaryFormat.md
     - development/Logging.md
     - development/ExtendingDistributedRuntime.md
@@ -81,3 +84,6 @@ nav:
     - development/WriteDocs.md
     - development/Testing.md
     - development/InstallPythonLibsInContainer.md
+    - development/PropertyInference.md
+    - development/PropertyRecording.md
+    - Codegen.md

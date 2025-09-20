@@ -1,3 +1,19 @@
+<!--
+Copyright 2025 The DAPHNE Consortium
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Overview
 
 - [Getting Started](/doc/GettingStarted.md)
@@ -18,11 +34,15 @@
 - [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
 - [Profiling DAPHNE using PAPI](/doc/Profiling.md)
 - [Custom Extensions to DAPHNE](/doc/Extensions.md)
+- [HDFS Usage](/doc/HDFSUsage.md)
 
 ## Developer Documentation
 
 * [Creating release artifacts](ReleaseScripts.md)
 * [Maintaining GPG signing keys](GPG-signing-keys.md)
+* [Data Properties: Representation, Inference, and Exploitation](/doc/development/PropertyInference.md)
+* [Recording Data Properties](/doc/development/PropertyRecording.md)
+* [Code Generation with MLIR](/doc/Codegen.md)
 
 ### How-tos and Guidelines
 
@@ -33,6 +53,7 @@
 - [Extending DAPHNE with more scheduling knobs](/doc/development/ExtendingSchedulingKnobs.md)
 - [Extending the DAPHNE Distributed Runtime](/doc/development/ExtendingDistributedRuntime.md)
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
+- [Building in Unsupported Environments](/doc/BuildEnvironment.md)
 - [Logging in DAPHNE](/doc/development/Logging.md)
 - [Profiling in DAPHNE](/doc/development/Profiling.md)
 - [Testing](/doc/development/Testing.md)
