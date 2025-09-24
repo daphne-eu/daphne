@@ -1,0 +1,31 @@
+#f64 scalar *f64 matrix
+a1 = 2.5;
+X1 = [ 1.5, 2.0, 3.0, 4.0 ];
+X1 = reshape(X1, 2, 2);
+res1 = sum(a1 * X1);
+print(as.scalar(res1));
+#Expected : 26.25
+
+#int scalar *f64 matrix
+    a2 = 2;
+X2 = [ 1.5, 2.5, 3.5, 4.5 ];
+X2 = reshape(X2, 2, 2);
+res2 = sum(a2 * X2);
+print(as.scalar(res2));
+#Expected : 24
+
+#f64 scalar *int matrix
+    a3 = 1.5;
+X3 = [ 1, 2, 3, 4 ];
+X3 = reshape(X3, 2, 2);
+res3 = sum(a3 * X3);
+print(as.scalar(res3));
+#Expected : 15
+
+#int scalar *int matrix
+    a4 = 3;
+X4 = [ 2, 4, 6, 8 ];
+X4 = reshape(X4, 2, 2);
+res4 = sum(a4 * X4);
+print(as.scalar(res4));
+#Expected : 60

@@ -18,7 +18,8 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 set(TEST_SOURCES
         run_tests.h
         run_tests.cpp
-
+        
+        api/cli/expressions/SimplificationTest.cpp
         api/cli/algorithms/AlgorithmsTest.cpp
         api/cli/algorithms/DecisionTreeRandomForestTest.cpp
         api/cli/config/ConfigTest.cpp
