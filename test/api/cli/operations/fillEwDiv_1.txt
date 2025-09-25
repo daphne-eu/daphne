@@ -1,0 +1,3 @@
+DenseMatrix(2x3, double)
+4.1 4.1 4.1
+4.1 4.1 4.1

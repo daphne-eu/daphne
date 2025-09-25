@@ -1,0 +1,4 @@
+fillIntermediate = fill(-3,3,3);
+result = exp(fillIntermediate);
+
+print(result);

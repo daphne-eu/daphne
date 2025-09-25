@@ -1,0 +1,4 @@
+fillIntermediate = fill(3,3,3);
+result = sign(fillIntermediate);
+
+print(result);

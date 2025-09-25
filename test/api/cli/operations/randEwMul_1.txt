@@ -1,0 +1,6 @@
+DenseMatrix(2x2, int64_t)
+6 6
+6 6
+DenseMatrix(2x2, int64_t)
+0 0
+0 0
