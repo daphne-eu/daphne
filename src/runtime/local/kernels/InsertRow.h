@@ -18,10 +18,12 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 
@@ -32,8 +34,8 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTArg, class DTIns, typename VTSel> struct InsertRow {
-    static void apply(DTArg *&res, const DTArg *arg, const DTIns *ins, const VTSel rowLowerIncl,
+template <class DTRes, class DTArg, class DTIns, typename VTSel> struct InsertRow {
+    static void apply(DTRes *&res, const DTArg *arg, const DTIns *ins, const VTSel rowLowerIncl,
                       const VTSel rowUpperExcl, DCTX(ctx)) = delete;
 };
 
@@ -41,10 +43,10 @@ template <class DTArg, class DTIns, typename VTSel> struct InsertRow {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg, class DTIns, typename VTSel>
-void insertRow(DTArg *&res, const DTArg *arg, const DTIns *ins, const VTSel rowLowerIncl, const VTSel rowUpperExcl,
+template <class DTRes, class DTArg, class DTIns, typename VTSel>
+void insertRow(DTRes *&res, const DTArg *arg, const DTIns *ins, const VTSel rowLowerIncl, const VTSel rowUpperExcl,
                DCTX(ctx)) {
-    InsertRow<DTArg, DTIns, VTSel>::apply(res, arg, ins, rowLowerIncl, rowUpperExcl, ctx);
+    InsertRow<DTRes, DTArg, DTIns, VTSel>::apply(res, arg, ins, rowLowerIncl, rowUpperExcl, ctx);
 }
 
 // ****************************************************************************
@@ -90,10 +92,10 @@ void validateArgsInsertRow(size_t rowLowerIncl_SizeT, VTSel rowLowerIncl, size_t
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix
+// DenseMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
+template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg, const DenseMatrix<VT> *ins, VTSel rowLowerIncl,
                       VTSel rowUpperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
@@ -101,6 +103,7 @@ template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, DenseMa
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
 
+        // TODO This code is repeated in every specialization of the kernel, factor it out.
         // Resolve negative indices here only
         size_t rowLowerIncl_SizeT = static_cast<size_t>(rowLowerIncl);
         size_t rowUpperExcl_SizeT = static_cast<size_t>(rowUpperExcl);
@@ -149,15 +152,90 @@ template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, DenseMa
 };
 
 // ----------------------------------------------------------------------------
-// Matrix <- Matrix
+// DenseMatrix <- CSRMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT, typename VTSel> struct InsertRow<Matrix<VT>, Matrix<VT>, VTSel> {
+template <typename VT>
+void copyRowsFromCSRToDense(DenseMatrix<VT> *res, const CSRMatrix<VT> *arg, size_t rowLowerIncl, size_t rowUpperExcl) {
+    size_t rowSkipRes = res->getRowSkip();
+    VT *valuesRes = res->getValues() + rowLowerIncl * rowSkipRes;
+    size_t numCols = arg->getNumCols();
+
+    for (size_t r = rowLowerIncl; r < rowUpperExcl; r++) {
+        const VT *valuesArgRow = arg->getValues(r);
+        const size_t *colIdxsArgRow = arg->getColIdxs(r);
+        size_t nnzArgRow = arg->getNumNonZeros(r);
+
+        size_t lastColIdx = -1;
+        for (size_t i = 0; i < nnzArgRow; i++) {
+            size_t colIdx = colIdxsArgRow[i];
+            std::fill(valuesRes + lastColIdx + 1, valuesRes + colIdx, VT(0));
+            valuesRes[colIdx] = valuesArgRow[i];
+            lastColIdx = colIdx;
+        }
+        std::fill(valuesRes + lastColIdx + 1, valuesRes + numCols, VT(0));
+
+        valuesRes += rowSkipRes;
+    }
+}
+
+template <typename VT, typename VTSel> struct InsertRow<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>, VTSel> {
+    static void apply(DenseMatrix<VT> *&res, const CSRMatrix<VT> *arg, const DenseMatrix<VT> *ins, VTSel rowLowerIncl,
+                      VTSel rowUpperExcl, DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numRowsIns = ins->getNumRows();
+        const size_t numColsIns = ins->getNumCols();
+
+        // TODO This code is repeated in every specialization of the kernel, factor it out.
+        // Resolve negative indices here only
+        size_t rowLowerIncl_SizeT = static_cast<size_t>(rowLowerIncl);
+        size_t rowUpperExcl_SizeT = static_cast<size_t>(rowUpperExcl);
+        if constexpr (std::is_signed<VTSel>::value) {
+            if (rowLowerIncl < 0)
+                rowLowerIncl_SizeT =
+                    static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowLowerIncl));
+            if (rowUpperExcl < 0)
+                rowUpperExcl_SizeT =
+                    static_cast<size_t>(static_cast<ptrdiff_t>(numRowsArg) + static_cast<ptrdiff_t>(rowUpperExcl));
+            if (rowLowerIncl < 0 && rowUpperExcl == 0)
+                rowUpperExcl_SizeT = rowLowerIncl_SizeT + 1;
+        }
+
+        validateArgsInsertRow(rowLowerIncl_SizeT, rowLowerIncl, rowUpperExcl_SizeT, rowUpperExcl, numRowsArg,
+                              numColsArg, numRowsIns, numColsIns);
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
+
+        VT *valuesRes = res->getValues();
+        const VT *valuesIns = ins->getValues();
+        const size_t rowSkipRes = res->getRowSkip();
+        const size_t rowSkipIns = ins->getRowSkip();
+
+        // TODO Can be simplified/more efficient in certain cases.
+        copyRowsFromCSRToDense(res, arg, 0, rowLowerIncl_SizeT + 1);
+        valuesRes += rowLowerIncl_SizeT * rowSkipRes;
+        for (size_t r = rowLowerIncl_SizeT; r < rowUpperExcl_SizeT; r++) {
+            std::copy(valuesIns, valuesIns + numColsArg, valuesRes);
+            valuesRes += rowSkipRes;
+            valuesIns += rowSkipIns;
+        }
+        copyRowsFromCSRToDense(res, arg, rowUpperExcl_SizeT, numRowsArg);
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Matrix <- Matrix, Matrix
+// ----------------------------------------------------------------------------
+
+template <typename VT, typename VTSel> struct InsertRow<Matrix<VT>, Matrix<VT>, Matrix<VT>, VTSel> {
     static void apply(Matrix<VT> *&res, const Matrix<VT> *arg, const Matrix<VT> *ins, VTSel rowLowerIncl,
                       VTSel rowUpperExcl, DCTX(ctx)) {
         const size_t numRowsArg = arg->getNumRows();
         const size_t numColsArg = arg->getNumCols();
 
+        // TODO This code is repeated in every specialization of the kernel, factor it out.
         size_t rowLowerIncl_SizeT = static_cast<size_t>(rowLowerIncl);
         size_t rowUpperExcl_SizeT = static_cast<size_t>(rowUpperExcl);
         if constexpr (std::is_signed<VTSel>::value) {
