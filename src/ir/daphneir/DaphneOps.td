@@ -128,7 +128,8 @@ def Daphne_FillOp : Daphne_Op<"fill", [
 
 def Daphne_MatrixConstantOp : Daphne_Op<"matrixConstant", [
     DataTypeMat,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]>{
     let arguments = (ins UI64:$matrixAddr);
     let results = (outs MatrixOrU:$res);

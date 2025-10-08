@@ -5,10 +5,20 @@ print(checkMatInt);
 checkMatInt = reshape(checkMatInt, 2, 2);
 print(checkMatInt);
 
+checkMatIntSparse = [0,0,0,0];
+print(checkMatIntSparse);
+checkMatIntSparse = reshape(checkMatIntSparse, 2, 2);
+print(checkMatIntSparse);
+
 checkMatFloat = [1.1,2.2,3.3,4.4];
 print(checkMatFloat);
 checkMatFloat = reshape(checkMatFloat, 2, 2);
 print(checkMatFloat);
+
+checkMatFloatSparse = [0.0,0.0,0.0,0.0];
+print(checkMatFloatSparse);
+checkMatFloatSparse = reshape(checkMatFloatSparse, 2, 2);
+print(checkMatFloatSparse);
 
 checkMatBool = [true,true,false,true];
 print(checkMatBool);

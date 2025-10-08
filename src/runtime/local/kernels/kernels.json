@@ -2896,7 +2896,15 @@
             [["DenseMatrix", "uint32_t"]],
             [["DenseMatrix", "uint8_t"]],
             [["DenseMatrix", "bool"]],
-            [["DenseMatrix", "std::string"]]
+            [["DenseMatrix", "std::string"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]]
         ]
     },
     {

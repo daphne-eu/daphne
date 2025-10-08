@@ -29,7 +29,7 @@ const std::string dirPath = "test/api/cli/expressions/";
     TEST_CASE(name ", success", TAG_MATRIX_LITERAL) {                                                                  \
         for (unsigned i = 1; i <= count; i++) {                                                                        \
             DYNAMIC_SECTION(name "_success_" << i << ".daphne") {                                                      \
-                compareDaphneToRefSimple(dirPath, name "_success", i);                                                 \
+                compareDaphneToRefSimple(dirPath, name "_success", i, "--select-matrix-repr");                         \
             }                                                                                                          \
         }                                                                                                              \
     }
@@ -38,7 +38,7 @@ const std::string dirPath = "test/api/cli/expressions/";
     TEST_CASE(name ", failure", TAG_MATRIX_LITERAL) {                                                                  \
         for (unsigned i = 1; i <= count; i++) {                                                                        \
             DYNAMIC_SECTION(name "_failure_" << i << ".daphne") {                                                      \
-                checkDaphneFailsSimple(dirPath, name "_failure", i);                                                   \
+                checkDaphneFailsSimple(dirPath, name "_failure", i, "--select-matrix-repr");                           \
             }                                                                                                          \
         }                                                                                                              \
     }

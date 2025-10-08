@@ -17,6 +17,7 @@
 #include <compiler/inference/TypeInferenceUtils.h>
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <mlir/IR/Value.h>
 
@@ -55,6 +56,48 @@ double getSparsityOrUnknownFromType(Value v) {
 // ****************************************************************************
 // Sparsity inference interface implementations
 // ****************************************************************************
+
+template <typename VT> double getSparsity(uint64_t matrixAddr) {
+    const DenseMatrix<VT> *arg = reinterpret_cast<DenseMatrix<VT> *>(matrixAddr);
+    const size_t numRows = arg->getNumRows();
+    const size_t numCols = arg->getNumCols();
+    const VT *values = arg->getValues();
+    size_t nnz = 0;
+    for (size_t r = 0; r < numRows; r++) {
+        for (size_t c = 0; c < numCols; c++)
+            if (values[c] != 0)
+                nnz++;
+        values += arg->getRowSkip();
+    }
+    return static_cast<double>(nnz) / (numRows * numCols);
+}
+
+std::vector<double> daphne::MatrixConstantOp::inferSparsity() {
+    std::pair<bool, uint64_t> p = CompilerUtils::isConstant<uint64_t>(getMatrixAddr());
+    if (p.first) { // if the address is a compile-time constant (it should be)
+        const uint64_t matrixAddr = p.second;
+        Type vt = CompilerUtils::getValueType(getResult().getType());
+        if (vt.isF64())
+            return {getSparsity<double>(matrixAddr)};
+        if (vt.isF32())
+            return {getSparsity<float>(matrixAddr)};
+        if (vt.isSignedInteger(64))
+            return {getSparsity<int64_t>(matrixAddr)};
+        if (vt.isSignedInteger(32))
+            return {getSparsity<int32_t>(matrixAddr)};
+        if (vt.isSignedInteger(8))
+            return {getSparsity<int8_t>(matrixAddr)};
+        if (vt.isUnsignedInteger(64))
+            return {getSparsity<uint64_t>(matrixAddr)};
+        if (vt.isUnsignedInteger(32))
+            return {getSparsity<uint32_t>(matrixAddr)};
+        if (vt.isUnsignedInteger(8))
+            return {getSparsity<uint8_t>(matrixAddr)};
+    }
+    // For (so far) non-supported value types (or in the unexpected case that the address was not a compile-time
+    // constant), return an unknown sparsity.
+    return {-1};
+}
 
 std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
     auto argTy = getArg().getType().dyn_cast<daphne::MatrixType>();

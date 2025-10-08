@@ -18,8 +18,10 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_MATRIXCONSTANT_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/CastObj.h>
 
 #include <cstring>
 
@@ -75,4 +77,16 @@ template <typename VT> struct MatrixConstant<DenseMatrix<VT>> {
         std::copy(valuesOrig, valuesOrig + numRows * numCols, valuesRes);
     }
 };
+
+// ----------------------------------------------------------------------------
+// CSRMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct MatrixConstant<CSRMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *&res, uint64_t matrixAddr, DCTX(ctx)) {
+        DenseMatrix<VT> *orig = reinterpret_cast<DenseMatrix<VT> *>(matrixAddr);
+        castObj<CSRMatrix<VT>>(res, orig, ctx);
+    }
+};
+
 #endif // SRC_RUNTIME_LOCAL_KERNELS_MATRIXCONSTANT_H
