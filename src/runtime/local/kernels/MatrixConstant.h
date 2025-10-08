@@ -19,11 +19,8 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CastObj.h>
-
-#include <cstring>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -50,10 +47,10 @@ template <class DTRes> void matrixConstant(DTRes *&res, uint64_t matrixAddr, DCT
 
 template <typename VT> struct MatrixConstant<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, uint64_t matrixAddr, DCTX(ctx)) {
-        // We create a copy of the DenseMatrix backing the matrix literal.
+        // We increase the reference counter of the DenseMatrix backing the matrix literal.
         // This is important since the matrix literal may be used inside a loop
         // with multiple iterations or inside a function with multiple
-        // invocations. If we handed out the original DenseMatrix, it would be
+        // invocations. If we didn't increase the reference counter, the DenseMatrix would be
         // freed by DAPHNE's garbage collection by the end of the
         // loop's/function's body.
 
@@ -64,17 +61,8 @@ template <typename VT> struct MatrixConstant<DenseMatrix<VT>> {
         // DAPHNE process. However, in long-running distributed workers these
         // matrix objects might pile up over time.
 
-        DenseMatrix<VT> *orig = reinterpret_cast<DenseMatrix<VT> *>(matrixAddr);
-        const size_t numRows = orig->getNumRows();
-        const size_t numCols = orig->getNumCols();
-
-        if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-
-        const VT *valuesOrig = orig->getValues();
-        VT *valuesRes = res->getValues();
-
-        std::copy(valuesOrig, valuesOrig + numRows * numCols, valuesRes);
+        res = reinterpret_cast<DenseMatrix<VT> *>(matrixAddr);
+        res->increaseRefCounter();
     }
 };
 
