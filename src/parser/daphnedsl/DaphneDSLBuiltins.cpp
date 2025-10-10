@@ -1303,14 +1303,32 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
     // ****************************************************************************
 
     if (func == "map") {
-        checkNumArgsExact(loc, func, numArgs, 2);
+        checkNumArgsBetween(loc, func, numArgs, 2, 4);
+
         mlir::Value source = args[0];
 
         auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>();
         mlir::Attribute attr = co.getValue();
 
-        return static_cast<mlir::Value>(
-            builder.create<MapOp>(loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()));
+        // Default values, if not given
+        mlir::Value axis = builder.create<ConstantOp>(loc, int64_t(-1));
+        mlir::Value udfReturnsScalar = builder.create<ConstantOp>(loc, false);
+
+        if (numArgs >= 3) { // axis is given
+            int64_t axisInt =
+                CompilerUtils::constantOrThrow<int64_t>(args[2], "third argument of map must be a constant");
+            if (axisInt == 0 || axisInt == 1)
+                axis = args[2];
+            else
+                throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid axis for aggregation.");
+        }
+
+        if (numArgs == 4) { // udfReturnsScalar is given
+            udfReturnsScalar = args[3];
+        }
+
+        return static_cast<mlir::Value>(builder.create<MapOp>(
+            loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>(), axis, udfReturnsScalar));
     }
 
     // ****************************************************************************

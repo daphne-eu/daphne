@@ -1,0 +1,14 @@
+DenseMatrix(2x1, double)
+4.1
+4.3
+DenseMatrix(2x1, double)
+5
+13
+DenseMatrix(1x1, double)
+6
+DenseMatrix(5x1, double)
+2
+4
+6
+8
+10

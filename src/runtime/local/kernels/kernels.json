@@ -3208,6 +3208,14 @@
                 {
                     "type": "void *",
                     "name": "func"
+                },
+                {
+                    "type": "const int64_t",
+                    "name": "axis"
+                },
+                {
+                    "type": "const bool",
+                    "name": "udfReturnsScalar"
                 }
             ]
         },
@@ -3244,6 +3252,10 @@
                 ["DenseMatrix", "double"],
                 ["DenseMatrix", "uint8_t"]
             ],
+            [
+                ["DenseMatrix", "double"],
+                ["DenseMatrix", "bool"]
+            ],
 
             [
                 ["DenseMatrix", "float"],
@@ -3277,6 +3289,10 @@
                 ["DenseMatrix", "float"],
                 ["DenseMatrix", "uint8_t"]
             ],
+            [
+                ["DenseMatrix", "float"],
+                ["DenseMatrix", "bool"]
+            ],
 
             [
                 ["DenseMatrix", "int64_t"],
@@ -3310,6 +3326,10 @@
                 ["DenseMatrix", "int64_t"],
                 ["DenseMatrix", "uint8_t"]
             ],
+            [
+                ["DenseMatrix", "int64_t"],
+                ["DenseMatrix", "bool"]
+            ],
 
             [
                 ["DenseMatrix", "int32_t"],
@@ -3343,6 +3363,10 @@
                 ["DenseMatrix", "int32_t"],
                 ["DenseMatrix", "uint8_t"]
             ],
+            [
+                ["DenseMatrix", "int32_t"],
+                ["DenseMatrix", "bool"]
+            ],
 
             [
                 ["DenseMatrix", "int8_t"],
@@ -3376,6 +3400,10 @@
                 ["DenseMatrix", "int8_t"],
                 ["DenseMatrix", "uint8_t"]
             ],
+            [
+                ["DenseMatrix", "int8_t"],
+                ["DenseMatrix", "bool"]
+            ],
 
             [
                 ["DenseMatrix", "uint64_t"],
@@ -3409,6 +3437,10 @@
                 ["DenseMatrix", "uint64_t"],
                 ["DenseMatrix", "uint8_t"]
             ],
+            [
+                ["DenseMatrix", "uint64_t"],
+                ["DenseMatrix", "bool"]
+            ],
 
             [
                 ["DenseMatrix", "uint32_t"],
@@ -3442,6 +3474,10 @@
                 ["DenseMatrix", "uint32_t"],
                 ["DenseMatrix", "uint8_t"]
             ],
+            [
+                ["DenseMatrix", "uint32_t"],
+                ["DenseMatrix", "bool"]
+            ],
 
             [
                 ["DenseMatrix", "uint8_t"],
@@ -3474,6 +3510,47 @@
             [
                 ["DenseMatrix", "uint8_t"],
                 ["DenseMatrix", "uint8_t"]
+            ],
+            [
+                ["DenseMatrix", "uint8_t"],
+                ["DenseMatrix", "bool"]
+            ],
+
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "double"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "float"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "int64_t"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "int32_t"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "int8_t"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "uint64_t"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "uint32_t"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "uint8_t"]
+            ],
+            [
+                ["DenseMatrix", "bool"],
+                ["DenseMatrix", "bool"]
             ]
         ]
     },

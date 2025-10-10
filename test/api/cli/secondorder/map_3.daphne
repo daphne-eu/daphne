@@ -4,5 +4,14 @@ def timesThree(x) {
     return x * 3;
 }
 
+// element-wise
 X = fill(2, 1000, 1000);
 print(sum(map(X, timesThree)));
+
+// row-wise
+X = fill(2, 1000, 1000);
+print(sum(map(X, timesThree, 0)));
+
+// column-wise
+X = fill(2, 1000, 1000);
+print(sum(map(X, timesThree, 0)));
