@@ -150,7 +150,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createTransferDataPropertiesPass());
     if (userConfig_.explain_transfer_data_props)
-        pm.addPass(mlir::daphne::createPrintIRPass("IR afters transferring data properties:"));
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after transferring data properties:"));
 
     if (userConfig_.use_phy_op_selection) {
         pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
