@@ -324,12 +324,7 @@ void VectorizeComputationsPass::runOnOperation() {
                 outCols.push_back(outSize.second);
             }
         }
-        std::vector<Location> locs;
-        locs.reserve(pipeline.size());
-        for (auto op : pipeline) {
-            locs.push_back(op->getLoc());
-        }
-        auto loc = builder.getFusedLoc(locs);
+        auto loc = builder.getFusedLoc(locations);
         auto pipelineOp = builder.create<daphne::VectorizedPipelineOp>(
             loc, ValueRange(results).getTypes(), operands, outRows, outCols, builder.getArrayAttr(vSplitAttrs),
             builder.getArrayAttr(vCombineAttrs), nullptr);
