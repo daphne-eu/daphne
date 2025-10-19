@@ -19,9 +19,15 @@
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
 
+/**
+ * @brief Simplifies `VectorizedPipelineOp` by eliminating duplicate arguments and unused results.
+ *
+ * An argument is a duplicate if both the value and the split match that of another argument.
+ * A result is unused if it has no uses after the `VectorizedPipelineOp`.
+ */
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
                                                                      mlir::PatternRewriter &rewriter) {
-    // // Find duplicate inputs
+    // Find duplicate inputs (same value and same split).
     std::vector<Attribute> vSplitsAttrs;
     for (auto &split : op.getSplits())
         vSplitsAttrs.push_back(split);
@@ -48,7 +54,8 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
         }
     }
 
-    std::vector<Value> resultsToReplace;
+    // Find unused results.
+    std::vector<Value> resultsToRetain;
     std::vector<Value> outRows;
     std::vector<Value> outCols;
     std::vector<Attribute> vCombineAttrs;
@@ -58,34 +65,44 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
     for (auto result : op.getResults()) {
         auto resultIx = result.getResultNumber();
         if (result.use_empty()) {
-            // remove
+            // Mark this result for removal.
             eraseIxs.set(resultIx);
         } else {
-            resultsToReplace.push_back(result);
+            // Retain this result.
+            resultsToRetain.push_back(result);
             outRows.push_back(op.getOutRows()[resultIx]);
             outCols.push_back(op.getOutCols()[resultIx]);
             vCombineAttrs.push_back(op.getCombines()[resultIx]);
         }
     }
+    // Remove the unused results from the VectorizedPipelineOp's ReturnOp.
     op.getBody().front().getTerminator()->eraseOperands(eraseIxs);
     if (!op.getCuda().getBlocks().empty())
         op.getCuda().front().getTerminator()->eraseOperands(eraseIxs);
 
-    if (resultsToReplace.size() == op->getNumResults() && op.getSplits().size() == vSplitsAttrs.size()) {
+    // If there are no unused results and no duplicate inputs, then don't rewrite this VectorizedPipelineOp.
+    if (resultsToRetain.size() == op->getNumResults() && op.getSplits().size() == vSplitsAttrs.size()) {
         return failure();
     }
-    auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(
-        op.getLoc(), ValueRange(resultsToReplace).getTypes(), op.getInputs(), outRows, outCols,
+
+    // Simplify the signature of the `VectorizedPipelineOp`.
+    auto newOp = rewriter.create<daphne::VectorizedPipelineOp>(
+        op.getLoc(), ValueRange(resultsToRetain).getTypes(), op.getInputs(), outRows, outCols,
         rewriter.getArrayAttr(vSplitsAttrs), rewriter.getArrayAttr(vCombineAttrs), op.getCtx());
-    pipelineOp.getBody().takeBody(op.getBody());
+    // Reuse the body of the old VectorizedPipelineOp.
+    newOp.getBody().takeBody(op.getBody());
     if (!op.getCuda().getBlocks().empty())
-        pipelineOp.getCuda().takeBody(op.getCuda());
-    for (auto e : llvm::enumerate(resultsToReplace)) {
-        auto resultToReplace = e.value();
+        newOp.getCuda().takeBody(op.getCuda());
+    // Replace the uses of the results of the old VectorizedPipelineOp by the corresponding results of the new
+    // VectorizedPipelineOp.
+    for (auto e : llvm::enumerate(resultsToRetain)) {
+        auto resultToRetain = e.value();
         auto i = e.index();
-        resultToReplace.replaceAllUsesWith(pipelineOp.getResult(i));
+        resultToRetain.replaceAllUsesWith(newOp.getResult(i));
     }
+    // Remove the old `VectorizedPipelineOp`.
     op.erase();
+
     return success();
 }
 
