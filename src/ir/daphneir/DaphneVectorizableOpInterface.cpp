@@ -189,6 +189,30 @@ IMPL_SPLIT_COMBINE_EWUNARYOP(EwSqrtOp)
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
+// Full Aggregations
+// ----------------------------------------------------------------------------
+
+template <class AllAggOp> std::vector<daphne::VectorSplit> getVectorSplits_AllAggOp(AllAggOp *op) {
+    return {daphne::VectorSplit::ROWS};
+}
+template <class AllAggOp>
+std::vector<std::pair<Value, Value>> createOpsOutputSizes_AllAggOp(AllAggOp *op, OpBuilder &builder) {
+    auto cst1 = builder.create<daphne::ConstantOp>(op->getLoc(), size_t(1));
+    return {{cst1, cst1}};
+}
+
+#define IMPL_SPLIT_COMBINE_ALLAGG(OP)                                                                                  \
+    std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { return getVectorSplits_AllAggOp(this); }          \
+    std::vector<std::pair<Value, Value>> daphne::OP::createOpsOutputSizes(OpBuilder &builder) {                        \
+        return createOpsOutputSizes_AllAggOp(this, builder);                                                           \
+    }
+
+IMPL_SPLIT_COMBINE_ALLAGG(AllAggSumOp)
+std::vector<daphne::VectorCombine> daphne::AllAggSumOp::getVectorCombines() { return {daphne::VectorCombine::ADD}; }
+
+#undef IMPL_SPLIT_COMBINE_ALLAGG
+
+// ----------------------------------------------------------------------------
 // Aggregations
 // TODO: splitting and combining by column probably makes more sense
 #define IMPL_SPLIT_COMBINE_ROWAGG(OP)                                                                                  \

@@ -328,10 +328,22 @@ void VectorizeComputationsPass::runOnOperation() {
             }
         }
         auto loc = builder.getFusedLoc(locations);
+        // Determine the result types of the VectorizedPipelineOp.
+        // Map scalar result types to matrix types, because we will rewrite the pipeline to return scalar results as 1x1
+        // matrices further down.
+        std::vector<Type> resTys;
+        for (Value res : results) {
+            Type resTy = res.getType();
+            if (CompilerUtils::isScaType(resTy))
+                resTys.push_back(daphne::MatrixType::get(&getContext(), resTy).withShape(1, 1));
+            else
+                resTys.push_back(resTy);
+        }
+
         // Create the VectorizedPipelineOp.
-        auto pipelineOp = builder.create<daphne::VectorizedPipelineOp>(
-            loc, ValueRange(results).getTypes(), operands, outRows, outCols, builder.getArrayAttr(vSplitAttrs),
-            builder.getArrayAttr(vCombineAttrs), nullptr);
+        auto pipelineOp = builder.create<daphne::VectorizedPipelineOp>(loc, resTys, operands, outRows, outCols,
+                                                                       builder.getArrayAttr(vSplitAttrs),
+                                                                       builder.getArrayAttr(vCombineAttrs), nullptr);
         Block *bodyBlock = builder.createBlock(&pipelineOp.getBody());
 
         // Remove information on certain data characteristics from the operands inside the pipeline.
@@ -354,6 +366,7 @@ void VectorizeComputationsPass::runOnOperation() {
         }
 
         // Move the ops to fuse into the newly created VectorizedPipelineOp.
+        std::vector<Value> resultsWithScaAsMat; // same as results, but scalars casted to 1x1 matrices
         auto argsIx = 0u;
         auto resultsIx = 0u;
         for (auto vIt = pipeline.rbegin(); vIt != pipeline.rend(); ++vIt) {
@@ -375,6 +388,24 @@ void VectorizeComputationsPass::runOnOperation() {
             auto pipelineReplaceResults = pipelineOp->getResults().drop_front(resultsIx).take_front(numResults);
             resultsIx += numResults;
             for (auto [old, replacement] : llvm::zip(v->getResults(), pipelineReplaceResults)) {
+                Value replacementVal;
+                Type oldTy = old.getType();
+                if (CompilerUtils::isScaType(oldTy)) {
+                    // If this result of v is a scalar, cast this result to a 1x1 matrix inside the VectorizedPipelineOp
+                    // and cast the corresponding pipeline result back to a scalar after the VectorizedPipelineOp.
+
+                    builder.setInsertionPointAfter(v);
+                    Value oldMat = builder.create<daphne::CastOp>(old.getLoc(), replacement.getType(), old);
+                    builder.setInsertionPointAfter(pipelineOp);
+                    Value replacementSca = builder.create<daphne::CastOp>(replacement.getLoc(), oldTy, replacement);
+
+                    resultsWithScaAsMat.push_back(oldMat);
+                    replacementVal = replacementSca;
+                } else {
+                    resultsWithScaAsMat.push_back(old);
+                    replacementVal = replacement;
+                }
+
                 // TODO: switch to type based size inference instead
                 // FIXME: if output is dynamic sized, we can't do this
                 // replace `NumRowOp` and `NumColOp`s for output size inference
@@ -397,8 +428,9 @@ void VectorizeComputationsPass::runOnOperation() {
                     }
                 }
                 // Replace only if not used by pipeline op
-                old.replaceUsesWithIf(replacement, [&](OpOperand &opOperand) {
-                    return llvm::count(pipeline, opOperand.getOwner()) == 0;
+                old.replaceUsesWithIf(replacementVal, [&](OpOperand &opOperand) {
+                    return llvm::count(pipeline, opOperand.getOwner()) == 0 &&
+                           !pipelineOp->isProperAncestor(opOperand.getOwner());
                 });
             }
         }
@@ -417,7 +449,7 @@ void VectorizeComputationsPass::runOnOperation() {
 
         // Create the VectorizedPipelineOp's terminating ReturnOp.
         builder.setInsertionPointToEnd(bodyBlock);
-        builder.create<daphne::ReturnOp>(loc, results);
+        builder.create<daphne::ReturnOp>(loc, resultsWithScaAsMat);
     }
 }
 
