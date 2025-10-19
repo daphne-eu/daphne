@@ -285,6 +285,8 @@ void VectorizeComputationsPass::runOnOperation() {
         auto valueIsPartOfPipeline = [&](Value operand) {
             return llvm::any_of(pipeline, [&](daphne::Vectorizable lv) { return lv == operand.getDefiningOp(); });
         };
+
+        // Find out the necessary information before creating the VectorizedPipelineOp.
         std::vector<Attribute> vSplitAttrs;
         std::vector<Attribute> vCombineAttrs;
         std::vector<Location> locations;
@@ -293,10 +295,11 @@ void VectorizeComputationsPass::runOnOperation() {
         std::vector<Value> outRows;
         std::vector<Value> outCols;
 
-        // first op in pipeline is last in IR
+        // The first op in the pipeline is the last op in the IR.
         builder.setInsertionPoint(pipeline.front());
-        // move all operations, between the operations that will be part of the
-        // pipeline, before or after the completed pipeline
+        // In between the ops to fuse there may be other ops in the block. Move those other ops before (if they don't
+        // depend on the pipeline's results) or after (if they depend on the pipeline's results) the point where the
+        // VectorizedPipelineOp will be created.
         movePipelineInterleavedOperations(builder.getInsertionPoint(), pipeline);
         for (auto vIt = pipeline.rbegin(); vIt != pipeline.rend(); ++vIt) {
             auto v = *vIt;
@@ -325,27 +328,32 @@ void VectorizeComputationsPass::runOnOperation() {
             }
         }
         auto loc = builder.getFusedLoc(locations);
+        // Create the VectorizedPipelineOp.
         auto pipelineOp = builder.create<daphne::VectorizedPipelineOp>(
             loc, ValueRange(results).getTypes(), operands, outRows, outCols, builder.getArrayAttr(vSplitAttrs),
             builder.getArrayAttr(vCombineAttrs), nullptr);
         Block *bodyBlock = builder.createBlock(&pipelineOp.getBody());
 
+        // Remove information on certain data characteristics from the operands inside the pipeline.
         for (size_t i = 0u; i < operands.size(); ++i) {
             auto argTy = operands[i].getType();
             switch (vSplitAttrs[i].cast<daphne::VectorSplitAttr>().getValue()) {
             case daphne::VectorSplit::ROWS: {
+                // Remove information on the number of rows, because the number of rows of individual chunks is subject
+                // to run-time scheduling.
+                // TODO Other information (e.g., symmetry) could also become invalid on individual chunks.
                 auto matTy = argTy.cast<daphne::MatrixType>();
-                // only remove row information
                 argTy = matTy.withShape(-1, matTy.getNumCols());
                 break;
             }
             case daphne::VectorSplit::NONE:
-                // keep any size information
+                // All information on data characteristics stays valid, because this operand is broadcasted.
                 break;
             }
             bodyBlock->addArgument(argTy, builder.getUnknownLoc());
         }
 
+        // Move the ops to fuse into the newly created VectorizedPipelineOp.
         auto argsIx = 0u;
         auto resultsIx = 0u;
         for (auto vIt = pipeline.rbegin(); vIt != pipeline.rend(); ++vIt) {
@@ -353,18 +361,20 @@ void VectorizeComputationsPass::runOnOperation() {
             auto numOperands = v->getNumOperands();
             auto numResults = v->getNumResults();
 
+            // Move the op into the VectorizedPipelineOp.
             v->moveBefore(bodyBlock, bodyBlock->end());
 
+            // Rewire the op's operands to the block arguments of the VectorizedPipelineOp.
             for (auto i = 0u; i < numOperands; ++i) {
                 if (!valueIsPartOfPipeline(v->getOperand(i))) {
                     v->setOperand(i, bodyBlock->getArgument(argsIx++));
                 }
             }
 
+            // Rewire uses of the op's results to the corresponding results of the VectorizedPipelineOp.
             auto pipelineReplaceResults = pipelineOp->getResults().drop_front(resultsIx).take_front(numResults);
             resultsIx += numResults;
             for (auto [old, replacement] : llvm::zip(v->getResults(), pipelineReplaceResults)) {
-
                 // TODO: switch to type based size inference instead
                 // FIXME: if output is dynamic sized, we can't do this
                 // replace `NumRowOp` and `NumColOp`s for output size inference
@@ -392,6 +402,11 @@ void VectorizeComputationsPass::runOnOperation() {
                 });
             }
         }
+
+        // Set the shapes of matrix intermediates inside the pipeline to unknown.
+        // TODO Also do that for other data characteristics that are not valid on the individual chunks (e.g.,
+        // symmetry).
+        // TODO Maybe we could benefit from another InferencePass inside the pipeline.
         bodyBlock->walk([](Operation *op) {
             for (auto resVal : op->getResults()) {
                 if (auto ty = resVal.getType().dyn_cast<daphne::MatrixType>()) {
@@ -399,6 +414,8 @@ void VectorizeComputationsPass::runOnOperation() {
                 }
             }
         });
+
+        // Create the VectorizedPipelineOp's terminating ReturnOp.
         builder.setInsertionPointToEnd(bodyBlock);
         builder.create<daphne::ReturnOp>(loc, results);
     }
