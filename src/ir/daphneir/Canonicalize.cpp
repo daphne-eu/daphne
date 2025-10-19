@@ -19,6 +19,8 @@
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
 
+#include <stdexcept>
+
 /**
  * @brief Simplifies `VectorizedPipelineOp` by eliminating duplicate arguments and unused results.
  *
@@ -68,11 +70,39 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
             // Mark this result for removal.
             eraseIxs.set(resultIx);
         } else {
-            // Retain this result.
-            resultsToRetain.push_back(result);
-            outRows.push_back(op.getOutRows()[resultIx]);
-            outCols.push_back(op.getOutCols()[resultIx]);
-            vCombineAttrs.push_back(op.getCombines()[resultIx]);
+            // Find out if this result is only used by a TransferPropertiesOp.
+            // TODO Explicitly excluding TransferPropertiesOp is just a workaround. A better solution would be to
+            // refactor TransferPropertiesOp such that it returns its argument and is Pure. Then, this op could
+            // automatically be removed if its result has no uses.
+            auto users = result.getUsers();
+            bool onlyTPUsers = true;
+            TransferPropertiesOp tpo = nullptr;
+            for (auto user : users) {
+                if (llvm::isa<daphne::TransferPropertiesOp>(user)) {
+                    if (tpo != nullptr)
+                        throw std::runtime_error("found more than one TransferPropertiesOp consuming a specific "
+                                                 "VectorizedPipelineOp result");
+                    tpo = llvm::dyn_cast<daphne::TransferPropertiesOp>(user);
+                } else {
+                    onlyTPUsers = false;
+                    break;
+                }
+            }
+
+            if (onlyTPUsers) {
+                // This result is only used by a subsequent TransferPropertiesOp.
+                // Mark this result for removal and remove the consuming TransferPropertiesOp, because there is no other
+                // user of the result that will consume the information set on the run-time object by the
+                // TransferPropertiesOp.
+                tpo.erase();
+                eraseIxs.set(resultIx);
+            } else {
+                // Retain this result.
+                resultsToRetain.push_back(result);
+                outRows.push_back(op.getOutRows()[resultIx]);
+                outCols.push_back(op.getOutCols()[resultIx]);
+                vCombineAttrs.push_back(op.getCombines()[resultIx]);
+            }
         }
     }
     // Remove the unused results from the VectorizedPipelineOp's ReturnOp.
