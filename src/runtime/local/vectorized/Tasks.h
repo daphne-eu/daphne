@@ -125,7 +125,7 @@ template <typename VT> class CompiledPipelineTask<DenseMatrix<VT>> : public Comp
     uint64_t getTaskSize() override;
 
   private:
-    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
+    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults, std::vector<DenseMatrix<VT> *> &localAggRes,
                            uint64_t rowStart, uint64_t rowEnd);
 };
 
