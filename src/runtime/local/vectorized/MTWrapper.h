@@ -32,7 +32,9 @@
 #include <spdlog/spdlog.h>
 
 #include <functional>
+#include <limits>
 #include <set>
+#include <type_traits>
 #include <utility>
 
 #include <hwloc.h>
@@ -114,11 +116,23 @@ template <typename DT> class MTWrapperBase {
     size_t allocateOutput(DT ***&res, size_t numOutputs, const int64_t *outRows, const int64_t *outCols,
                           mlir::daphne::VectorCombine *combines) {
         auto mem_required = 0ul;
-        // output allocation for row-wise combine
+        // Output allocation and, in case of aggregating combine, also initialization.
         for (size_t i = 0; i < numOutputs; ++i) {
             if ((*res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
+                // TODO Ideally, we should not initialize the result for aggregating combines (since it wastes cycles),
+                // but rather start the aggregation with the first individual result.
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
                 (*res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
+                if (combines[i] == mlir::daphne::VectorCombine::MIN)
+                    std::fill((*res[i])->getValues(), (*res[i])->getValues() + outRows[i] * outCols[i],
+                              std::is_floating_point_v<typename DT::VT>
+                                  ? std::numeric_limits<typename DT::VT>::infinity()
+                                  : std::numeric_limits<typename DT::VT>::max());
+                else if (combines[i] == mlir::daphne::VectorCombine::MAX)
+                    std::fill((*res[i])->getValues(), (*res[i])->getValues() + outRows[i] * outCols[i],
+                              std::is_floating_point_v<typename DT::VT>
+                                  ? -std::numeric_limits<typename DT::VT>::infinity()
+                                  : std::numeric_limits<typename DT::VT>::min());
                 mem_required += static_cast<DT *>((*res[i]))->getBufferSize();
             }
         }

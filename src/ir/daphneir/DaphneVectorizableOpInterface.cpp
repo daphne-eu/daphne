@@ -209,6 +209,10 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_AllAggOp(AllAggOp *op,
 
 IMPL_SPLIT_COMBINE_ALLAGG(AllAggSumOp)
 std::vector<daphne::VectorCombine> daphne::AllAggSumOp::getVectorCombines() { return {daphne::VectorCombine::ADD}; }
+IMPL_SPLIT_COMBINE_ALLAGG(AllAggMinOp)
+std::vector<daphne::VectorCombine> daphne::AllAggMinOp::getVectorCombines() { return {daphne::VectorCombine::MIN}; }
+IMPL_SPLIT_COMBINE_ALLAGG(AllAggMaxOp)
+std::vector<daphne::VectorCombine> daphne::AllAggMaxOp::getVectorCombines() { return {daphne::VectorCombine::MAX}; }
 
 #undef IMPL_SPLIT_COMBINE_ALLAGG
 

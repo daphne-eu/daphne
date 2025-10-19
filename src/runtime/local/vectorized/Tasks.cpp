@@ -19,7 +19,7 @@
 
 template <typename VT> void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batchSize) {
     // local add aggregation to minimize locking
-    std::vector<DenseMatrix<VT> *> localAddRes(_data._numOutputs);
+    std::vector<DenseMatrix<VT> *> localAggRes(_data._numOutputs);
     std::vector<DenseMatrix<VT> *> localResults(_data._numOutputs);
     std::vector<DenseMatrix<VT> **> outputs;
     for (auto &lres : localResults)
@@ -32,7 +32,7 @@ template <typename VT> void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint3
 
         // execute function on given data binding (batch size)
         _data._funcs[fid](outputs.data(), linputs.data(), _data._ctx);
-        accumulateOutputs(localResults, localAddRes, r, r2);
+        accumulateOutputs(localResults, localAggRes, r, r2);
 
         // cleanup
         for (auto &localResult : localResults)
@@ -47,18 +47,35 @@ template <typename VT> void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint3
     }
 
     for (size_t o = 0; o < _data._numOutputs; ++o) {
-        if (_data._combines[o] == VectorCombine::ADD) {
-            auto &result = (*_res[o]);
-            _resLock.lock();
-            if (result == nullptr) {
-                result = localAddRes[o];
-                _resLock.unlock();
-            } else {
-                ewBinaryMat(BinaryOpCode::ADD, result, result, localAddRes[o], _data._ctx);
-                _resLock.unlock();
-                // cleanup
-                DataObjectFactory::destroy(localAddRes[o]);
+        if (_data._combines[o] == VectorCombine::ROWS || _data._combines[o] == VectorCombine::COLS)
+            continue;
+
+        auto &result = (*_res[o]);
+        _resLock.lock();
+        if (result == nullptr) {
+            result = localAggRes[o];
+            _resLock.unlock();
+        } else {
+            BinaryOpCode opCode;
+            switch (_data._combines[o]) {
+            case VectorCombine::ADD:
+                opCode = BinaryOpCode::ADD;
+                break;
+            case VectorCombine::MIN:
+                opCode = BinaryOpCode::MIN;
+                break;
+            case VectorCombine::MAX:
+                opCode = BinaryOpCode::MAX;
+                break;
+            default:
+                throw std::runtime_error(("VectorCombine case `" +
+                                          std::to_string(static_cast<int64_t>(_data._combines[o])) +
+                                          "` not supported"));
             }
+            ewBinaryMat(opCode, result, result, localAggRes[o], _data._ctx);
+            _resLock.unlock();
+            // cleanup
+            DataObjectFactory::destroy(localAggRes[o]);
         }
     }
 }
@@ -67,7 +84,7 @@ template <typename VT> uint64_t CompiledPipelineTask<DenseMatrix<VT>>::getTaskSi
 
 template <typename VT>
 void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
-                                                              std::vector<DenseMatrix<VT> *> &localAddRes,
+                                                              std::vector<DenseMatrix<VT> *> &localAggRes,
                                                               uint64_t rowStart, uint64_t rowEnd) {
     // TODO: in-place computation via better compiled pipelines
     // TODO: multi-return
@@ -99,12 +116,32 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
             break;
         }
         case VectorCombine::ADD: {
-            if (localAddRes[o] == nullptr) {
+            if (localAggRes[o] == nullptr) {
                 // take lres and reset it to nullptr
-                localAddRes[o] = localResults[o];
+                localAggRes[o] = localResults[o];
                 localResults[o] = nullptr;
             } else {
-                ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], nullptr);
+                ewBinaryMat(BinaryOpCode::ADD, localAggRes[o], localAggRes[o], localResults[o], nullptr);
+            }
+            break;
+        }
+        case VectorCombine::MIN: {
+            if (localAggRes[o] == nullptr) {
+                // take lres and reset it to nullptr
+                localAggRes[o] = localResults[o];
+                localResults[o] = nullptr;
+            } else {
+                ewBinaryMat(BinaryOpCode::MIN, localAggRes[o], localAggRes[o], localResults[o], nullptr);
+            }
+            break;
+        }
+        case VectorCombine::MAX: {
+            if (localAggRes[o] == nullptr) {
+                // take lres and reset it to nullptr
+                localAggRes[o] = localResults[o];
+                localResults[o] = nullptr;
+            } else {
+                ewBinaryMat(BinaryOpCode::MAX, localAggRes[o], localAggRes[o], localResults[o], nullptr);
             }
             break;
         }

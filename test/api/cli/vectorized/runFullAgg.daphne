@@ -1,3 +1,5 @@
 X = rand(10000, 1000, 0.0, 1.0, 1.0, 7);
 
 print(sum(X));
+print(aggMin(X));
+print(aggMax(X));
