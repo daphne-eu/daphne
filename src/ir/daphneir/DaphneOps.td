@@ -2025,6 +2025,8 @@ def Daphne_TransferPropertiesOp : Daphne_Op<"transferProperties"> {
 
     let arguments = (ins MatrixOrU:$arg, F64:$sparsity, SI64:$symmetric);
     let results = (outs);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 // ****************************************************************************
