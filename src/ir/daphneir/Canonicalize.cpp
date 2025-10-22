@@ -19,7 +19,27 @@
 #include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
 
-#include <stdexcept>
+/**
+ * @brief Eliminates a `TransferPropertiesOp` if it is the only user of its argument.
+ *
+ * The only purpose of `TransferPropertiesOp` is to attach compile-time information on its argument's data
+ * characteristics to the underlying runtime object once this object exists. This information can then be exploited by
+ * other runtime kernels consuming this object. Hence, if there are no such other users, the `TransferPropertiesOp` is
+ * unnecessary. It is important to eliminate such an unnecessary `TransferPropertiesOp`, because this elimination can
+ * unlock further optimizations (e.g., the elimination of the op producing the argument).
+ */
+// TODO Explicitly eliminating TransferPropertiesOp is just a workaround. A better solution would be to refactor
+// TransferPropertiesOp such that it returns its argument and is Pure. Then, this op could automatically be removed if
+// its result has no uses.
+mlir::LogicalResult mlir::daphne::TransferPropertiesOp::canonicalize(mlir::daphne::TransferPropertiesOp op,
+                                                                     mlir::PatternRewriter &rewriter) {
+    if (op.getArg().hasOneUse()) {
+        // Eliminate this TransferPropertiesOp if its argument has exactly one use (which is this op).
+        rewriter.eraseOp(op);
+        return success();
+    }
+    return failure();
+}
 
 /**
  * @brief Simplifies `VectorizedPipelineOp` by eliminating duplicate arguments and unused results.
@@ -70,39 +90,11 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
             // Mark this result for removal.
             eraseIxs.set(resultIx);
         } else {
-            // Find out if this result is only used by a TransferPropertiesOp.
-            // TODO Explicitly excluding TransferPropertiesOp is just a workaround. A better solution would be to
-            // refactor TransferPropertiesOp such that it returns its argument and is Pure. Then, this op could
-            // automatically be removed if its result has no uses.
-            auto users = result.getUsers();
-            bool onlyTPUsers = true;
-            TransferPropertiesOp tpo = nullptr;
-            for (auto user : users) {
-                if (llvm::isa<daphne::TransferPropertiesOp>(user)) {
-                    if (tpo != nullptr)
-                        throw std::runtime_error("found more than one TransferPropertiesOp consuming a specific "
-                                                 "VectorizedPipelineOp result");
-                    tpo = llvm::dyn_cast<daphne::TransferPropertiesOp>(user);
-                } else {
-                    onlyTPUsers = false;
-                    break;
-                }
-            }
-
-            if (onlyTPUsers) {
-                // This result is only used by a subsequent TransferPropertiesOp.
-                // Mark this result for removal and remove the consuming TransferPropertiesOp, because there is no other
-                // user of the result that will consume the information set on the run-time object by the
-                // TransferPropertiesOp.
-                tpo.erase();
-                eraseIxs.set(resultIx);
-            } else {
-                // Retain this result.
-                resultsToRetain.push_back(result);
-                outRows.push_back(op.getOutRows()[resultIx]);
-                outCols.push_back(op.getOutCols()[resultIx]);
-                vCombineAttrs.push_back(op.getCombines()[resultIx]);
-            }
+            // Retain this result.
+            resultsToRetain.push_back(result);
+            outRows.push_back(op.getOutRows()[resultIx]);
+            outCols.push_back(op.getOutCols()[resultIx]);
+            vCombineAttrs.push_back(op.getCombines()[resultIx]);
         }
     }
     // Remove the unused results from the VectorizedPipelineOp's ReturnOp.

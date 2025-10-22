@@ -1,0 +1,20 @@
+// Pipeline with one input (X) and multiple outputs (X1s, X2-7), whereby one of the intermediate results (X1) is not needed as a pipeline result.
+
+X = fill(1, 10, 3);
+
+X1 = X + 1;
+X1s = sum(X1);
+X2 = X1 + 2;
+X3 = X2 + 3;
+X4 = X3 + 4;
+X5 = X4 + 5;
+X6 = X5 + 6;
+X7 = X6 + 7;
+
+print(X1s);
+print(X2);
+print(X3);
+print(X4);
+print(X5);
+print(X6);
+print(X7);
