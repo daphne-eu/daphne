@@ -63,4 +63,4 @@ void compareDaphneToDaphneOtherArgs(const std::string &scriptFilePath) {
         }                                                                                                              \
     }
 
-MAKE_TEST_CASE("pipeline", 10)
+MAKE_TEST_CASE("pipeline", 13)

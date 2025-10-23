@@ -1,6 +1,6 @@
 // Pipeline with one input (X) and multiple outputs (X1s, X2-7), whereby one of the intermediate results (X1) is not needed as a pipeline result.
 
-X = fill(1, 10, 3);
+X = rand(10, 3, 0.0, 1.0, 1, 12345);
 
 X1 = X + 1;
 X1s = sum(X1);

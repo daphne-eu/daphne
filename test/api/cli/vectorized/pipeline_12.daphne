@@ -1,0 +1,11 @@
+// Pipeline with multiple full aggregates on the same input (opportunities for horizontal fusion),
+// whereby the common input of the initial separate pipelines is a block argument.
+
+def foo(X:matrix<f64>) {
+    print(sum(X));
+    print(aggMin(X));
+    print(aggMax(X));
+}
+
+X = rand(10, 3, 0.0, 1.0, 1, 12345);
+foo(X);

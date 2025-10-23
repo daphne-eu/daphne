@@ -27,6 +27,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     RewriteToColumnarOpsPass.cpp
     SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
+    HorizontalFusionPass.cpp
     DaphneOptPass.cpp
     EwOpsLowering.cpp
     ModOpLowering.cpp
