@@ -1,0 +1,12 @@
+// Pipeline with one input and multiple outputs (with different combines) (opportunities for horizontal fusion),
+// whereby one of the intermediate results (X + 1) is not needed as a pipeline result.
+
+X = rand(10, 3, 0.0, 1.0, 1, 12345);
+
+print(sum(X + 1));
+print(X + 2);
+print(X + 3);
+print(X + 4);
+print(X + 5);
+print(X + 6);
+print(X + 7);
