@@ -30,12 +30,14 @@ using namespace mlir;
 // ****************************************************************************
 // For families of operations.
 
+// Elementwise binary
 template <class EwBinaryOp> std::vector<daphne::VectorSplit> getVectorSplits_EwBinaryOp(EwBinaryOp *op) {
-    // Matrix -> row-wise, Scalar -> none
-    auto lhsSplit = op->getLhs().getType().template isa<daphne::MatrixType>() ? daphne::VectorSplit::ROWS
-                                                                              : daphne::VectorSplit::NONE;
-    auto rhsSplit = op->getRhs().getType().template isa<daphne::MatrixType>() ? daphne::VectorSplit::ROWS
-                                                                              : daphne::VectorSplit::NONE;
+    bool isLhsMatrix = op->getLhs().getType().template isa<daphne::MatrixType>();
+    bool isRhsMatrix = op->getRhs().getType().template isa<daphne::MatrixType>();
+
+    auto lhsSplit = isLhsMatrix ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
+    auto rhsSplit = isRhsMatrix ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
+
     return {lhsSplit, rhsSplit};
 }
 template <class EwBinaryOp> std::vector<daphne::VectorCombine> getVectorCombines_EwBinaryOp(EwBinaryOp *op) {
@@ -50,6 +52,24 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_EwBinaryOp(EwBinaryOp 
     // TODO: do max on #rows/#cols of lhs and rhs for broadcasting
     return {{lhsRows, lhsCols}};
 }
+
+// Outer binary
+template <class OuterBinaryOp> std::vector<daphne::VectorSplit> getVectorSplits_OuterBinaryOp(OuterBinaryOp *op) {
+    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE};
+}
+template <class OuterBinaryOp> std::vector<daphne::VectorCombine> getVectorCombines_OuterBinaryOp(OuterBinaryOp *op) {
+    return {daphne::VectorCombine::ROWS};
+}
+template <class OuterBinaryOp>
+std::vector<std::pair<Value, Value>> createOpsOutputSizes_OuterBinaryOp(OuterBinaryOp *op, OpBuilder &builder) {
+    auto loc = op->getLoc();
+    auto sizeTy = builder.getIndexType();
+    auto lhsRows = builder.create<daphne::NumRowsOp>(loc, sizeTy, op->getLhs());
+    auto rhsCols = builder.create<daphne::NumColsOp>(loc, sizeTy, op->getRhs());
+    return {{lhsRows, rhsCols}};
+}
+
+// Elementwise unary
 template <class EwUnaryOp> std::vector<daphne::VectorSplit> getVectorSplits_EwUnaryOp(EwUnaryOp *op) {
     return {daphne::VectorSplit::ROWS};
 }
@@ -65,6 +85,8 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_EwUnaryOp(EwUnaryOp *o
     // TODO: do max on #rows/#cols of lhs and rhs for broadcasting
     return {{rows, cols}};
 }
+
+// Row-wise aggregation
 template <class RowAggOp> std::vector<daphne::VectorSplit> getVectorSplits_RowAggOp(RowAggOp *op) {
     return {daphne::VectorSplit::ROWS};
 }
@@ -79,6 +101,8 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_RowAggOp(RowAggOp *op,
     auto cst1 = builder.create<daphne::ConstantOp>(loc, sizeTy, builder.getIndexAttr(1l));
     return {{rows, cst1}};
 }
+
+// Column-wise aggregation
 template <class ColAggOp> std::vector<daphne::VectorSplit> getVectorSplits_ColAggOp(ColAggOp *op) {
     return {daphne::VectorSplit::ROWS};
 }
@@ -97,6 +121,8 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_ColAggOp(ColAggOp *op,
 
 // ----------------------------------------------------------------------------
 // Matrix multiplication
+// ----------------------------------------------------------------------------
+
 std::vector<daphne::VectorSplit> daphne::MatMulOp::getVectorSplits() {
     return {
         daphne::VectorSplit::ROWS, // lhs
@@ -129,11 +155,12 @@ std::vector<std::pair<Value, Value>> daphne::MatMulOp::createOpsOutputSizes(OpBu
 
     return {{rows, cols}};
 }
-// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
-// Binary
-#define IMPL_SPLIT_COMBINE_EWBINARYOP(OP)                                                                              \
+// Elementwise binary
+// ----------------------------------------------------------------------------
+
+#define IMPL_SPLIT_COMBINE_EWBINARY(OP)                                                                                \
     std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { return getVectorSplits_EwBinaryOp(this); }        \
     std::vector<daphne::VectorCombine> daphne::OP::getVectorCombines() { return getVectorCombines_EwBinaryOp(this); }  \
     std::vector<std::pair<Value, Value>> daphne::OP::createOpsOutputSizes(OpBuilder &builder) {                        \
@@ -141,55 +168,132 @@ std::vector<std::pair<Value, Value>> daphne::MatMulOp::createOpsOutputSizes(OpBu
     }
 
 // Arithmetic
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwAddOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwSubOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwMulOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwDivOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwPowOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwModOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwLogOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwAddOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwSubOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwMulOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwDivOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwPowOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwModOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwLogOp)
 
 // Min/max
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwMinOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwMaxOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwMinOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwMaxOp)
 
 // Logical
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwAndOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwOrOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwXorOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwAndOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwOrOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwXorOp)
 
 // Bitwise
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwBitwiseAndOp);
+IMPL_SPLIT_COMBINE_EWBINARY(EwBitwiseAndOp);
 
 // Strings
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwConcatOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwConcatOp)
 
 // Comparisons
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwEqOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwNeqOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwLtOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwLeOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwGtOp)
-IMPL_SPLIT_COMBINE_EWBINARYOP(EwGeOp)
-#undef IMPL_SPLIT_COMBINE_EWBINARYOP
-// ----------------------------------------------------------------------------
+IMPL_SPLIT_COMBINE_EWBINARY(EwEqOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwNeqOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwLtOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwLeOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwGtOp)
+IMPL_SPLIT_COMBINE_EWBINARY(EwGeOp)
+
+#undef IMPL_SPLIT_COMBINE_EWBINARY
 
 // ----------------------------------------------------------------------------
-// Unary
-#define IMPL_SPLIT_COMBINE_EWUNARYOP(OP)                                                                               \
+// Outer binary (generalized outer product)
+// ----------------------------------------------------------------------------
+
+#define IMPL_SPLIT_COMBINE_OUTERBINARY(OP)                                                                             \
+    std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { return getVectorSplits_OuterBinaryOp(this); }     \
+    std::vector<daphne::VectorCombine> daphne::OP::getVectorCombines() {                                               \
+        return getVectorCombines_OuterBinaryOp(this);                                                                  \
+    }                                                                                                                  \
+    std::vector<std::pair<Value, Value>> daphne::OP::createOpsOutputSizes(OpBuilder &builder) {                        \
+        return createOpsOutputSizes_OuterBinaryOp(this, builder);                                                      \
+    }
+
+// Arithmetic
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterAddOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterSubOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterMulOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterDivOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterPowOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterModOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterLogOp)
+
+// Min/max
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterMinOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterMaxOp)
+
+// Logical
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterAndOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterOrOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterXorOp)
+
+// Strings
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterConcatOp)
+
+// Comparisons
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterEqOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterNeqOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterLtOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterLeOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterGtOp)
+IMPL_SPLIT_COMBINE_OUTERBINARY(OuterGeOp)
+
+#undef IMPL_SPLIT_COMBINE_OUTERBINARY
+
+// ----------------------------------------------------------------------------
+// Elementwise unary
+// ----------------------------------------------------------------------------
+
+#define IMPL_SPLIT_COMBINE_EWUNARY(OP)                                                                                 \
     std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { return getVectorSplits_EwUnaryOp(this); }         \
     std::vector<daphne::VectorCombine> daphne::OP::getVectorCombines() { return getVectorCombines_EwUnaryOp(this); }   \
     std::vector<std::pair<Value, Value>> daphne::OP::createOpsOutputSizes(OpBuilder &builder) {                        \
         return createOpsOutputSizes_EwUnaryOp(this, builder);                                                          \
     }
 
-IMPL_SPLIT_COMBINE_EWUNARYOP(EwSqrtOp)
+// Arithmetic/general math
+IMPL_SPLIT_COMBINE_EWUNARY(EwMinusOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwAbsOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwSignOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwExpOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwLnOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwSqrtOp)
 
-#undef IMPL_SPLIT_COMBINE_EWUNARYOP
-// ----------------------------------------------------------------------------
+// Logical
+IMPL_SPLIT_COMBINE_EWUNARY(EwNegOp)
+
+// Rounding
+IMPL_SPLIT_COMBINE_EWUNARY(EwRoundOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwFloorOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwCeilOp)
+
+// Trigonometric
+IMPL_SPLIT_COMBINE_EWUNARY(EwSinOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwCosOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwTanOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwSinhOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwCoshOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwTanhOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwAsinOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwAcosOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwAtanOp)
+
+// Comparison
+IMPL_SPLIT_COMBINE_EWUNARY(EwIsNanOp)
+
+// Strings
+IMPL_SPLIT_COMBINE_EWUNARY(EwLowerOp)
+IMPL_SPLIT_COMBINE_EWUNARY(EwUpperOp)
+
+#undef IMPL_SPLIT_COMBINE_EWUNARY
 
 // ----------------------------------------------------------------------------
-// Full Aggregations
+// Full aggregation
 // ----------------------------------------------------------------------------
 
 template <class AllAggOp> std::vector<daphne::VectorSplit> getVectorSplits_AllAggOp(AllAggOp *op) {
@@ -217,34 +321,41 @@ std::vector<daphne::VectorCombine> daphne::AllAggMaxOp::getVectorCombines() { re
 #undef IMPL_SPLIT_COMBINE_ALLAGG
 
 // ----------------------------------------------------------------------------
-// Aggregations
-// TODO: splitting and combining by column probably makes more sense
+// Row/column-wise aggregation
+// ----------------------------------------------------------------------------
+
 #define IMPL_SPLIT_COMBINE_ROWAGG(OP)                                                                                  \
     std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { return getVectorSplits_RowAggOp(this); }          \
     std::vector<daphne::VectorCombine> daphne::OP::getVectorCombines() { return getVectorCombines_RowAggOp(this); }    \
     std::vector<std::pair<Value, Value>> daphne::OP::createOpsOutputSizes(OpBuilder &builder) {                        \
         return createOpsOutputSizes_RowAggOp(this, builder);                                                           \
     }
+
+IMPL_SPLIT_COMBINE_ROWAGG(RowAggSumOp)
+IMPL_SPLIT_COMBINE_ROWAGG(RowAggMinOp)
+IMPL_SPLIT_COMBINE_ROWAGG(RowAggMaxOp)
+
+#undef IMPL_SPLIT_COMBINE_ROWAGG
+
 #define IMPL_SPLIT_COMBINE_COLAGG(OP)                                                                                  \
     std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { return getVectorSplits_ColAggOp(this); }          \
     std::vector<std::pair<Value, Value>> daphne::OP::createOpsOutputSizes(OpBuilder &builder) {                        \
         return createOpsOutputSizes_ColAggOp(this, builder);                                                           \
     }
 
-// RowAgg
-IMPL_SPLIT_COMBINE_ROWAGG(RowAggMinOp)
-IMPL_SPLIT_COMBINE_ROWAGG(RowAggMaxOp)
-IMPL_SPLIT_COMBINE_ROWAGG(RowAggSumOp)
-
 IMPL_SPLIT_COMBINE_COLAGG(ColAggSumOp)
 std::vector<daphne::VectorCombine> daphne::ColAggSumOp::getVectorCombines() { return {daphne::VectorCombine::ADD}; }
+IMPL_SPLIT_COMBINE_COLAGG(ColAggMinOp)
+std::vector<daphne::VectorCombine> daphne::ColAggMinOp::getVectorCombines() { return {daphne::VectorCombine::MIN}; }
+IMPL_SPLIT_COMBINE_COLAGG(ColAggMaxOp)
+std::vector<daphne::VectorCombine> daphne::ColAggMaxOp::getVectorCombines() { return {daphne::VectorCombine::MAX}; }
 
-#undef IMPL_SPLIT_COMBINE_ROWAGG
 #undef IMPL_SPLIT_COMBINE_COLAGG
-// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // Left and right indexing
+// ----------------------------------------------------------------------------
+
 std::vector<daphne::VectorSplit> daphne::ExtractColOp::getVectorSplits() {
     return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE};
 }
@@ -258,10 +369,11 @@ std::vector<std::pair<Value, Value>> daphne::ExtractColOp::createOpsOutputSizes(
     auto cols = builder.create<daphne::NumRowsOp>(loc, sizeTy, getSelectedCols());
     return {{rows, cols}};
 }
-// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // Reorganization
+// ----------------------------------------------------------------------------
+
 std::vector<daphne::VectorSplit> daphne::TransposeOp::getVectorSplits() { return {daphne::VectorSplit::ROWS}; }
 std::vector<daphne::VectorCombine> daphne::TransposeOp::getVectorCombines() { return {daphne::VectorCombine::COLS}; }
 std::vector<std::pair<Value, Value>> daphne::TransposeOp::createOpsOutputSizes(OpBuilder &builder) {
@@ -288,10 +400,11 @@ std::vector<std::pair<Value, Value>> daphne::ColBindOp::createOpsOutputSizes(OpB
                        builder.create<daphne::EwAddOp>(loc, i64Ty, builder.create<daphne::CastOp>(loc, i64Ty, colsLhs),
                                                        builder.create<daphne::CastOp>(loc, i64Ty, colsRhs)))}};
 }
-// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // Other
+// ----------------------------------------------------------------------------
+
 std::vector<daphne::VectorSplit> daphne::SyrkOp::getVectorSplits() {
     return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE};
 }
@@ -323,4 +436,3 @@ std::vector<std::pair<Value, Value>> daphne::GemvOp::createOpsOutputSizes(OpBuil
     auto one = builder.create<daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(1));
     return {{cols, one}};
 }
-// ----------------------------------------------------------------------------
