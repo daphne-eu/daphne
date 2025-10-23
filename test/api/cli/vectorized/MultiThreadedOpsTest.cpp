@@ -44,6 +44,7 @@ auto dirPath = "test/api/cli/vectorized/"sv;
 MAKE_TEST_CASE("runMatMult", "", "--vec")
 MAKE_TEST_CASE("runEwUnary", "", "--vec")
 MAKE_TEST_CASE("runEwBinary", "", "--vec")
+MAKE_TEST_CASE("runOuterBinary", "", "--vec")
 MAKE_TEST_CASE_SPARSE("runEwBinarySparse")
 MAKE_TEST_CASE("runFullAgg", "", "--vec")
 MAKE_TEST_CASE("runRowAgg", "", "--vec")
