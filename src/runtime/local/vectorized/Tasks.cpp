@@ -17,6 +17,8 @@
 #include "runtime/local/vectorized/Tasks.h"
 #include "runtime/local/kernels/EwBinaryMat.h"
 
+#include <algorithm>
+
 template <typename VT> void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batchSize) {
     // local add aggregation to minimize locking
     std::vector<DenseMatrix<VT> *> localAggRes(_data._numOutputs);
@@ -91,27 +93,31 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
     for (auto o = 0u; o < _data._numOutputs; ++o) {
         auto &result = (*_res[o]);
         switch (_data._combines[o]) {
-        case VectorCombine::ROWS: {
-            auto slice = result->sliceRow(rowStart - _data._offset, rowEnd - _data._offset);
-            // TODO It's probably more efficient to memcpy than to get/set.
-            // But eventually, we don't want to copy at all.
-            for (auto i = 0u; i < slice->getNumRows(); ++i) {
-                for (auto j = 0u; j < slice->getNumCols(); ++j) {
-                    slice->set(i, j, localResults[o]->get(i, j));
-                }
-            }
-            DataObjectFactory::destroy(slice);
-            break;
-        }
+        case VectorCombine::ROWS:
         case VectorCombine::COLS: {
-            auto slice = result->sliceCol(rowStart - _data._offset, rowEnd - _data._offset);
-            // TODO It's probably more efficient to memcpy than to get/set.
-            // But eventually, we don't want to copy at all.
-            for (auto i = 0u; i < slice->getNumRows(); ++i) {
-                for (auto j = 0u; j < slice->getNumCols(); ++j) {
+            DenseMatrix<VT> *slice = (_data._combines[o] == VectorCombine::ROWS)
+                                         ? result->sliceRow(rowStart - _data._offset, rowEnd - _data._offset)
+                                         : result->sliceCol(rowStart - _data._offset, rowEnd - _data._offset);
+            // TODO Eventually, we don't want to copy at all.
+#if 0
+            // We leave this old, inefficient code here for now in case it is needed at some point in the future,
+            // because get()/set() may interact with the DenseMatrix's meta data object internally.
+            for (auto i = 0u; i < slice->getNumRows(); ++i)
+                for (auto j = 0u; j < slice->getNumCols(); ++j)
                     slice->set(i, j, localResults[o]->get(i, j));
-                }
+#else
+            // This is the new, more efficient code.
+            const VT *valuesLocalResult = localResults[o]->getValues();
+            VT *valuesSlice = slice->getValues();
+            const size_t numCols = slice->getNumCols();
+            const size_t rowSkipLocalResult = localResults[o]->getRowSkip();
+            const size_t rowSkipSlice = slice->getRowSkip();
+            for (size_t i = 0; i < slice->getNumRows(); i++) {
+                std::copy(valuesLocalResult, valuesLocalResult + numCols, valuesSlice);
+                valuesLocalResult += rowSkipLocalResult;
+                valuesSlice += rowSkipSlice;
             }
+#endif
             DataObjectFactory::destroy(slice);
             break;
         }
