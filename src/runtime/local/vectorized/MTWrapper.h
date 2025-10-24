@@ -83,7 +83,7 @@ template <typename DT> class MTWrapperBase {
 
         int i = 0;
         for (auto &w : cpp_workers) {
-            _ctx->logger->debug("creatign worker {} with topology {}, size={}", i, _topology.physicalIds,
+            _ctx->logger->debug("creating worker {} with topology {}, size={}", i, _topology.physicalIds,
                                 _topology.physicalIds.size());
             w = std::make_unique<WorkerCPU>(qvector, _topology.physicalIds, _topology.uniqueThreads, _ctx, verbose, 0,
                                             batchSize, i, numQueues, queueMode, this->_victimSelection, pinWorkers);
