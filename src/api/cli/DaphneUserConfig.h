@@ -99,6 +99,7 @@ struct DaphneUserConfig {
                                                 // might be the optimal.
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
+    size_t phyBatchSize = 96 * 1024;
 
     // hdfs
     bool use_hdfs = false;

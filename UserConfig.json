@@ -37,6 +37,7 @@
     "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
+    "phyBatchSize": 98304,
     "useHdfs": false,
     "hdfsAddress": "",
     "hdfsUsername": "",

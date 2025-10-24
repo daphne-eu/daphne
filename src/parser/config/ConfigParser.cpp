@@ -139,6 +139,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.numberOfThreads = jf.at(DaphneConfigJsonParams::NUMBER_OF_THREADS).get<int>();
     if (keyExists(jf, DaphneConfigJsonParams::MINIMUM_TASK_SIZE))
         config.minimumTaskSize = jf.at(DaphneConfigJsonParams::MINIMUM_TASK_SIZE).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::PHY_BATCH_SIZE))
+        config.phyBatchSize = jf.at(DaphneConfigJsonParams::PHY_BATCH_SIZE).get<size_t>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_HDFS_))
         config.use_hdfs = jf.at(DaphneConfigJsonParams::USE_HDFS_).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::HDFS_ADDRESS))

@@ -36,17 +36,18 @@ template <typename VT>
     std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
 
     std::vector<TaskQueue *> tmp_q{q.get()};
-    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(tmp_q, batchSize8M, verbose, 1, QueueTypeOption::CENTRALIZED, false);
+    size_t logBatchSizeCPU = std::max(1ul, ctx->getUserConfig().phyBatchSize / row_mem);
+    this->initCPPWorkers(tmp_q, logBatchSizeCPU, verbose, 1, QueueTypeOption::CENTRALIZED, false);
 
 #ifdef USE_CUDA
+    size_t logBatchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8 * 1024 * 1024 / row_mem)));
     if (this->_numCUDAThreads) {
-        this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
+        this->initCUDAWorkers(q.get(), logBatchSize8M * 4, verbose);
         this->cudaPrefetchInputs(inputs, numInputs, mem_required, splits);
         ctx->logger->info("MTWrapper_dense: \nRequired memory (ins/outs): {} "
                           "Required mem/row: {}\n batchsizeCPU={} "
                           "batchsizeGPU={}",
-                          mem_required, row_mem, batchSize8M, batchSize8M * 4);
+                          mem_required, row_mem, logBatchSizeCPU, logBatchSize8M * 4);
     }
 #endif
 
@@ -109,8 +110,8 @@ template <typename VT>
         }
     }
 
-    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode,
+    size_t logBatchSizeCPU = std::max(1ul, ctx->getUserConfig().phyBatchSize / row_mem);
+    this->initCPPWorkers(qvector, logBatchSizeCPU, verbose, this->_numQueues, this->_queueMode,
                          ctx->getUserConfig().pinWorkers);
 
     // lock for aggregation combine
@@ -210,7 +211,7 @@ template <typename VT>
     auto mem_required = inputProps.second;
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
-    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
+    size_t logBatchSizeCPU = std::max(1ul, ctx->getUserConfig().phyBatchSize / row_mem);
     // lock for aggregation combine
     // TODO: multiple locks per output
     std::mutex resLock;
@@ -221,7 +222,8 @@ template <typename VT>
     auto gpu_task_len = static_cast<size_t>(std::ceil(static_cast<float>(len) * taskRatioCUDA));
     device_task_len += gpu_task_len;
     std::unique_ptr<TaskQueue> q_cuda = std::make_unique<BlockingTaskQueue>(gpu_task_len);
-    this->initCUDAWorkers(q_cuda.get(), batchSize8M * 4, verbose);
+    size_t logBatchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8 * 1024 * 1024 / row_mem)));
+    this->initCUDAWorkers(q_cuda.get(), logBatchSize8M * 4, verbose);
 
     auto ***res_cuda = new DenseMatrix<VT> **[numOutputs];
     auto blksize = gpu_task_len / ctx->cuda_contexts.size();
@@ -273,7 +275,7 @@ template <typename VT>
                 qvector.push_back(q[i].get());
             }
         }
-        this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode,
+        this->initCPPWorkers(qvector, logBatchSizeCPU, verbose, this->_numQueues, this->_queueMode,
                              ctx->getUserConfig().pinWorkers);
         // End Multiple Queues
 

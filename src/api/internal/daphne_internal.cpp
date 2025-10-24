@@ -205,6 +205,11 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                          "node that executes the code)"));
     static opt<int> minimumTaskSize("grain-size", cat(schedulingOptions),
                                     desc("Define the minimum grain size of a task (default is 1)"), init(1));
+    static opt<size_t> phyBatchSize(
+        "phy-batch-size", cat(schedulingOptions),
+        desc("The physical size in bytes into which the whole of all inputs and results of a "
+             "vectorized pipeline are split by CPU workers (within a task) for cache-efficiency (default is 96 KiB)"),
+        init(96 * 1024));
     static opt<bool> useVectorizedPipelines("vec", cat(schedulingOptions), desc("Enable vectorized execution engine"));
     static opt<bool> useDistributedRuntime("distributed", cat(daphneOptions), desc("Enable distributed runtime"));
     static opt<bool> prePartitionRows("pre-partition", cat(schedulingOptions),
@@ -442,6 +447,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     }
 
     user_config.minimumTaskSize = minimumTaskSize;
+    user_config.phyBatchSize = phyBatchSize;
     user_config.pinWorkers = pinWorkers;
     user_config.hyperthreadingEnabled = hyperthreadingEnabled;
     user_config.debugMultiThreading = debugMultiThreading;

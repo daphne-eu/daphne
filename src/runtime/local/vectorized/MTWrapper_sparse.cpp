@@ -49,8 +49,8 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(
         }
     }
 
-    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode,
+    size_t logBatchSizeCPU = std::max(1ul, ctx->getUserConfig().phyBatchSize / row_mem);
+    this->initCPPWorkers(qvector, logBatchSizeCPU, verbose, this->_numQueues, this->_queueMode,
                          ctx->getUserConfig().pinWorkers);
 
     for (size_t i = 0; i < numOutputs; i++)
