@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_CASTSCAOBJ_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
@@ -52,6 +53,27 @@ template <typename VTRes, typename VTArg> struct CastScaObj<DenseMatrix<VTRes>, 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, 1, false);
         *res->getValues() = static_cast<VTRes>(arg);
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- Scalar
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTArg> struct CastScaObj<CSRMatrix<VTRes>, VTArg> {
+    static void apply(CSRMatrix<VTRes> *&res, const VTArg arg, DCTX(ctx)) {
+        if (res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VTRes>>(1, 1, arg != 0, false);
+
+        res->getRowOffsets()[0] = 0;
+        if (arg == 0) {
+            res->getRowOffsets()[1] = 0;
+            // values and colIdxs are empty
+        } else {
+            res->getRowOffsets()[1] = 1;
+            res->getValues(0)[0] = arg;
+            res->getColIdxs(0)[0] = 0;
+        }
     }
 };
 

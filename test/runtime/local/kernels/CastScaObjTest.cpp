@@ -25,26 +25,33 @@
 #include <tags.h>
 #include <vector>
 
-TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to matrix", TAG_KERNELS, (DenseMatrix),
-                           (double, float, int64_t, uint64_t, int32_t, uint32_t)) {
+#define MATRIX_DATA_TYPES DenseMatrix, CSRMatrix
+#define VALUE_TYPES double, float, int64_t, uint64_t, int32_t, uint32_t, int8_t, uint8_t
+
+TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to matrix", TAG_KERNELS, (MATRIX_DATA_TYPES), (VALUE_TYPES)) {
     using DTRes = TestType;
     using VTRes = typename DTRes::VT;
     DTRes *res = nullptr;
     DTRes *exp = nullptr;
 
-    SECTION("int64_t to DenseMatrix<VTRes>") {
-        int64_t val = 2;
-        exp = genGivenVals<DTRes>(1, {VTRes(val)});
-        castScaObj<DTRes, int64_t>(res, val, nullptr);
-        CHECK(*res == *exp);
+    for (int64_t val : {0, 2}) {
+        DYNAMIC_SECTION("int64_t scalar to matrix of the given data+value type - " << (val ? "non-" : "")
+                                                                                   << "zero value") {
+            exp = genGivenVals<DTRes>(1, {VTRes(val)});
+            castScaObj<DTRes, int64_t>(res, val, nullptr);
+            CHECK(*res == *exp);
+        }
     }
 
-    SECTION("double to DenseMatrix<VTRes>") {
-        double val = 2.2;
-        exp = genGivenVals<DTRes>(1, {VTRes(val)});
-        castScaObj<DTRes, double>(res, val, nullptr);
-        CHECK(*res == *exp);
+    for (double val : {0.0, 2.2}) {
+        DYNAMIC_SECTION("double scalar to matrix of the given data+value type - " << (val ? "non-" : "")
+                                                                                  << "zero value") {
+            exp = genGivenVals<DTRes>(1, {VTRes(val)});
+            castScaObj<DTRes, double>(res, val, nullptr);
+            CHECK(*res == *exp);
+        }
     }
+
     DataObjectFactory::destroy(exp);
     DataObjectFactory::destroy(res);
 }
@@ -53,7 +60,7 @@ TEMPLATE_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, double, float, in
     using VTRes = TestType;
     Frame *exp = nullptr;
     std::vector<Structure *> cols;
-    SECTION("double to Frame[VTRes]") {
+    SECTION("double scalar to Frame[VTRes]") {
         double val = 2.2;
 
         auto m0 = genGivenVals<DenseMatrix<VTRes>>(1, {static_cast<VTRes>(val)});
@@ -67,7 +74,7 @@ TEMPLATE_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, double, float, in
         DataObjectFactory::destroy(m0, exp, res);
     }
 
-    SECTION("int64_t to Frame[VTRes]") {
+    SECTION("int64_t scalar to Frame[VTRes]") {
         int64_t val = 2;
 
         auto m0 = genGivenVals<DenseMatrix<VTRes>>(1, {static_cast<VTRes>(val)});

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Column.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -54,6 +55,20 @@ template <typename VTRes, typename VTArg> struct CastObjSca<VTRes, DenseMatrix<V
         if (numCols != 1 || numRows != 1)
             throw std::runtime_error("Cast matrix to scalar: matrix shape should be 1x1");
         return static_cast<VTRes>(*arg->getValues());
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Scalar <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTArg> struct CastObjSca<VTRes, CSRMatrix<VTArg>> {
+    static VTRes apply(const CSRMatrix<VTArg> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        if (numCols != 1 || numRows != 1)
+            throw std::runtime_error("Cast matrix to scalar: matrix shape should be 1x1");
+        return arg->getNumNonZeros(0) ? *arg->getValues(0) : 0;
     }
 };
 
