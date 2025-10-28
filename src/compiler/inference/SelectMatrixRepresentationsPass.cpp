@@ -31,7 +31,11 @@ class SelectMatrixRepresentationsPass
     const DaphneUserConfig &cfg;
 
     std::function<WalkResult(Operation *)> walkOp = [&](Operation *op) {
-        if (returnsKnownProperties(op)) {
+        if (llvm::isa<daphne::ReceiveFromScipyOp>(op)) {
+            mlir::Value res = op->getResults()[0];
+            res.setType(
+                res.getType().dyn_cast<daphne::MatrixType>().withRepresentation(daphne::MatrixRepresentation::Sparse));
+        } else if (returnsKnownProperties(op)) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
             // Handle all non-SCF operations

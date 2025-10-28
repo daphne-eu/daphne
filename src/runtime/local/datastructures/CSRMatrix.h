@@ -146,6 +146,12 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         rowOffsets = std::shared_ptr<size_t[]>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
 
+    CSRMatrix(size_t numRows, size_t numCols, size_t numNonZeros, std::shared_ptr<ValueType[]> &values,
+              std::shared_ptr<size_t[]> &colIdxs, std::shared_ptr<size_t[]> &rowOffsets)
+        : Matrix<ValueType>(numRows, numCols), numRowsAllocated(numRows), isRowAllocatedBefore(false),
+          maxNumNonZeros(numNonZeros), values(values), colIdxs(colIdxs), rowOffsets(rowOffsets), lastAppendedRowIdx(0) {
+    }
+
     virtual ~CSRMatrix() {
         // nothing to do
     }
@@ -180,11 +186,20 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     }
 
     void shrinkNumNonZeros(size_t numNonZeros) {
-        if (numNonZeros > getNumNonZeros())
+        size_t actualNumNonZeros = getNumNonZeros();
+        if (numNonZeros > actualNumNonZeros)
             throw std::runtime_error("CSRMatrix (shrinkNumNonZeros): "
-                                     "numNonZeros can only be shrunk");
-        // TODO Here we could reduce the allocated size of the values and
-        // colIdxs arrays.
+                                     "cannot shrink below actual non-zero count");
+        // allocate new buffers
+        auto newValues = std::shared_ptr<ValueType[]>(new ValueType[numNonZeros], std::default_delete<ValueType[]>());
+        auto newColIdxs = std::shared_ptr<size_t[]>(new size_t[numNonZeros], std::default_delete<size_t[]>());
+        // copy first numNonZeros entries
+        std::memcpy(newValues.get(), values.get(), numNonZeros * sizeof(ValueType));
+        std::memcpy(newColIdxs.get(), colIdxs.get(), numNonZeros * sizeof(size_t));
+
+        values = std::move(newValues);
+        colIdxs = std::move(newColIdxs);
+        maxNumNonZeros = numNonZeros;
     }
 
     ValueType *getValues() { return values.get(); }

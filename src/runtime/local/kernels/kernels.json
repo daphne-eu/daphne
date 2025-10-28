@@ -4255,6 +4255,14 @@
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint32_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]],
             ["Frame"]
         ]
     },
@@ -4312,6 +4320,63 @@
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint32_t"]],
             [["DenseMatrix", "uint8_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ReceiveFromScipy.h",
+            "opName": "receiveFromScipy",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "valuesAddr"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "rowRelatedIdx"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "colRelatedIdx"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numRows"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "numCols"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "nnz"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "format"
+                }
+            ]
+        },
+        "instantiations": [
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint8_t"]]
         ]
     },
     {

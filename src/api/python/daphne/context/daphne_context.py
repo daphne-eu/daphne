@@ -32,10 +32,15 @@ from daphne.operator.nodes.while_loop import WhileLoop
 from daphne.operator.nodes.do_while_loop import DoWhileLoop
 from daphne.operator.nodes.multi_return import MultiReturn
 from daphne.operator.operation_node import OperationNode
-from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8, STR
+from daphne.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8, STR, CSR, COO, CSC
 
 import numpy as np
 import pandas as pd
+
+try: 
+    import scipy.sparse as sp
+except ImportError as e:
+    sp = e
 try:
     import torch as torch
 except ImportError as e:
@@ -190,6 +195,141 @@ class DaphneContext(object):
             print(f"from_numpy(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
         return (res, original_shape) if return_shape else res
+    
+    def from_numpy_sparse_arrays(self, data: np.ndarray, row_related: np.ndarray, col_related: np.ndarray, shape: tuple, format: str, 
+                   shared_memory=True, verbose=False, return_shape=False):
+        """
+        Generates a `DAGNode` representing a matrix with data given by the CSR, COO, or CSC format arrays.
+
+        :param data: The non-zero values of the CSR, COO, or CSC matrix.
+        :param row_related: The row information of the CSR, COO, or CSC matrix.
+        :param col_related: The column information of the CSR, COO, or CSC matrix.
+        :param shape: Tuple (rows, cols) representing the matrix shape.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether to print timing information (True) or not (False).
+        :param return_shape: Whether to return the original shape of the input array.
+        :return: The data from numpy as a Matrix.
+        """
+
+        if verbose:
+            start_time = time.time()
+
+        rows, cols = shape
+
+        if shared_memory:
+            data_addr = data.ctypes.data
+            row_related_addr = row_related.ctypes.data
+            col_related_addr = col_related.ctypes.data
+
+            # Cast data type if needed
+            if data.dtype == np.int16:
+                data = data.astype(np.int32, copy=False)
+            elif data.dtype == np.uint16:
+                data = data.astype(np.uint32, copy=False)
+
+            d_type = data.dtype
+            if d_type == np.float64:
+                vtc = F64
+            elif d_type == np.float32:
+                vtc = F32
+            elif d_type == np.int8:
+                vtc = SI8
+            elif d_type == np.int32:
+                vtc = SI32
+            elif d_type == np.int64:
+                vtc = SI64
+            elif d_type == np.uint8:
+                vtc = UI8
+            elif d_type == np.uint32:
+                vtc = UI32
+            elif d_type == np.uint64:
+                vtc = UI64
+            else:
+                print("unsupported numpy dtype")
+                return None
+
+            if format == "csr":
+                representation = CSR
+            elif format == "coo":
+                representation = COO
+            elif format == "csc":
+                representation = CSC
+            else:
+                print("unsupported scipy sparse representation")
+                return None
+
+            res = Matrix(
+                self,
+                'receiveFromScipy',
+                [data_addr, row_related_addr, col_related_addr, rows, cols, len(data), representation, vtc],
+                local_data=data
+            )
+        else:
+            # TO DO: Data transfer via a file.
+            res = None
+
+        if verbose:
+            print(f"from_scipy(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+
+        return (res, shape) if return_shape else res
+    
+    def from_scipy(self, mat, shared_memory: bool = True, verbose: bool = False, return_shape: bool = False):
+        """
+        Generates a `DAGNode` representing a sparse matrix from a SciPy sparse object.
+        Supports CSR, CSC and COO formats.
+
+        :param mat: The scipy CSR, COO, or CSC matrix.
+        :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether to print timing information (True) or not (False).
+        :param return_shape: Whether to return the original shape of the input array.
+        :return: The data from Scipy as a Matrix.
+        """
+        if verbose:
+            start_time = time.time()
+
+        # Detect format
+        if sp.isspmatrix_csr(mat):
+            # Matrix has CSR description
+            data_arr = mat.data
+            rows_arr = mat.indptr
+            cols_arr = mat.indices
+            rows, cols = mat.shape
+            format = "csr"
+        elif sp.isspmatrix_csc(mat):
+            # Matrix has CSC description
+            data_arr = mat.data
+            rows_arr = mat.indices
+            cols_arr = mat.indptr
+            rows, cols = mat.shape
+            format = "csc"
+        elif sp.isspmatrix_coo(mat):
+            # Matrix has COO description
+            data_arr = mat.data
+            rows_arr = mat.row
+            cols_arr = mat.col
+            rows, cols = mat.shape
+            format = "coo"
+
+        else:
+            raise ValueError(f"Unsupported sparse format: {type(mat)}")
+
+        # Shared‐memory transfer
+        if shared_memory:
+            if rows_arr.dtype != np.uint64:
+                rows_arr = rows_arr.astype(np.uint64, copy=False)
+            if cols_arr.dtype != np.uint64:
+                cols_arr = cols_arr.astype(np.uint64, copy=False)
+
+            res = self.from_numpy_sparse_arrays(data_arr, rows_arr, cols_arr, (rows, cols), format, shared_memory=True)
+        else:
+            # TO DO: File based transfer.
+            raise NotImplementedError("file‐based sparse transfer not supported")
+
+        if verbose:
+            print(f"from_scipy(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+
+        return (res, (rows, cols)) if return_shape else res
+
 
     def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame:
         """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
@@ -308,7 +448,8 @@ class DaphneContext(object):
         def from_tensorflow(self, tensor, shared_memory=True, verbose=False, return_shape=False):
             raise tf
     else:
-        def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):
+        
+        def from_tensorflow(self, tensor, shared_memory=True, verbose=False, return_shape=False):
             """Generates a `DAGNode` representing a matrix with data given by a TensorFlow `Tensor`.
             :param tensor: The TensorFlow Tensor.
             :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
@@ -317,43 +458,69 @@ class DaphneContext(object):
             :return: A Matrix or a tuple of a Matrix and the original tensor shape (if `return_shape == True`).
             """
 
-            # Store the original shape for later use.
-            original_shape = tensor.shape
+            original_shape = tuple(tensor.shape)
             
             if verbose:
                 start_time = time.time()
 
-            # Check if the tensor is 2d or higher dimensional.
-            if len(original_shape) == 2:
-                # If 2d, handle as a matrix, convert to numpy array.
-                # This function is only zero copy, if the tensor is shared within the CPU.
-                mat = tensor.numpy()
-                # Using the existing from_numpy method for 2d arrays.
-                matrix = self.from_numpy(mat, shared_memory, verbose)
+            # Check if tensor is sparse. (COO in TF)
+            if isinstance(tensor, tf.sparse.SparseTensor):
+                coo_idx = tensor.indices.numpy()
+                data = tensor.values.numpy()
+                full_shape = tuple(tensor.dense_shape.numpy())
+
+                ndims = len(full_shape)
+
+                if ndims < 2:
+                    raise ValueError("SparseTensor must be at least 2D")
+                
+                numRows = full_shape[0]
+                tail_shape = full_shape[1:]
+                numCols = int(np.prod(tail_shape))
+
+                rows = coo_idx[:, 0].astype(np.uintp)
+                if ndims == 2:
+                    cols = coo_idx[:, 1].astype(np.uintp)
+                else:
+                    # If it has more than 2 dimensions, we reshape collapsing the first n - 1 dimensions into one.
+                    multi_idx = coo_idx[:, 1:].T 
+                    cols = np.ravel_multi_index(multi_idx, tail_shape).astype(np.uintp)
+
+                # The format is forced as "coo", which is tensorflows natural type
+                matrix = self.from_numpy_sparse_arrays(data, rows, cols, (numRows, numCols), shared_memory=shared_memory, verbose=verbose, format="coo") 
+
             else:
-                # If higher dimensional, reshape to 2d and handle as a matrix.
-                # Store the original numpy representation.
-                original_tensor = tensor.numpy()
-                # Reshape to 2d using numpy's zero copy reshape.
-                reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
+                # Check if the tensor is 2d or higher dimensional.
+                if len(original_shape) == 2:
+                    # If 2d, handle as a matrix, convert to numpy array.
+                    # This function is only zero copy, if the tensor is shared within the CPU.
+                    mat = tensor.numpy()
+                    # Using the existing from_numpy method for 2d arrays.
+                    matrix = self.from_numpy(mat, shared_memory, verbose)
+                else:
+                    # If higher dimensional, reshape to 2d and handle as a matrix.
+                    # Store the original numpy representation.
+                    original_tensor = tensor.numpy()
+                    # Reshape to 2d using numpy's zero copy reshape.
+                    reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
+
+                    if verbose:
+                        # Check if the original and reshaped tensors share memory.
+                        shares_memory = np.shares_memory(tensor, reshaped_tensor)
+                        print(f"from_tensorflow(): original and reshaped tensors share memory: {shares_memory}")
+
+                    # Use the existing from_numpy method for the reshaped 2D array
+                    matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
                 if verbose:
-                    # Check if the original and reshaped tensors share memory.
-                    shares_memory = np.shares_memory(tensor, reshaped_tensor)
-                    print(f"from_tensorflow(): original and reshaped tensors share memory: {shares_memory}")
-
-                # Use the existing from_numpy method for the reshaped 2D array
-                matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
-
-            if verbose:
-                print(f"from_tensorflow(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
+                    print(f"from_tensorflow(): total Python-side execution time: {(time.time() - start_time):.10f} seconds")
 
             # Return the matrix, and the original shape if return_shape is set to True.
             return (matrix, original_shape) if return_shape else matrix
 
     # This feature is only available if PyTorch is available.
     if isinstance(torch, ImportError):
-        def from_pytorch(self, tensor              , shared_memory=True, verbose=False, return_shape=False):
+        def from_pytorch(self, tensor , shared_memory=True, verbose=False, return_shape=False):
             raise torch
     else:
         def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False):
@@ -370,29 +537,67 @@ class DaphneContext(object):
             
             if verbose:
                 start_time = time.time()
+            if tensor.is_sparse:
+                original_shape = tuple(tensor.size())
+                ndims = len(original_shape)
 
-            # Check if the tensor is 2d or higher dimensional.
-            if tensor.dim() == 2:
-                # If 2d, handle as a matrix, convert to numpy array.
-                # If the Tensor is stored on the CPU, mat = tensor.numpy(force=True) can speed up the performance.
-                mat = tensor.numpy()
-                # Using the existing from_numpy method for 2d arrays.
-                matrix = self.from_numpy(mat, shared_memory, verbose)
+                # Collapse the extra dimensions into columns
+                numRows = original_shape[0]
+                tail_shape = original_shape[1:]
+                numCols = int(np.prod(tail_shape)) if ndims > 1 else 1
+
+                layout = tensor.layout
+                # Detect format
+                if layout == torch.sparse_coo:
+                    # Tranform to CSR array representations
+                    idx = tensor.coalesce()._indices().cpu().numpy()
+                    data = tensor.coalesce()._values().cpu().numpy()
+                    rows = idx[0].astype(np.uintp)
+                    if ndims == 2:
+                        cols = idx[1].astype(np.uintp)
+                    else:
+                        cols = np.ravel_multi_index(idx[1:], tail_shape).astype(np.uintp)
+                    format = "coo"
+
+                elif layout == torch.sparse_csr:
+                    rows = tensor.crow_indices().cpu().numpy().astype(np.uintp)
+                    cols = tensor.col_indices().cpu().numpy().astype(np.uintp)
+                    data = tensor.values().cpu().numpy()
+                    format = "csr"
+
+                elif layout == torch.sparse_csc:
+                    rows = tensor.csc_indptr().cpu().numpy().astype(np.uintp)
+                    cols = tensor.csc_indices().cpu().numpy().astype(np.uintp)
+                    data = tensor.values().cpu().numpy()
+                    format = "csc"
+
+                else:
+                    raise ValueError(f"Unsupported sparse layout: {layout}")
+
+                matrix = self.from_numpy_sparse_arrays(data, rows, cols, (numRows, numCols), shared_memory=shared_memory, verbose=verbose, format=format)
             else:
-                # If higher dimensional, reshape to 2d and handle as a matrix.
-                # Store the original numpy representation.
-                original_tensor = tensor.numpy(force=True)
-                # Reshape to 2d
-                # TODO Does this change the input tensor?
-                reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
+                # Check if the tensor is 2d or higher dimensional.
+                if tensor.dim() == 2:
+                    # If 2d, handle as a matrix, convert to numpy array.
+                    # If the Tensor is stored on the CPU, mat = tensor.numpy(force=True) can speed up the performance.
+                    mat = tensor.numpy()
+                    # Using the existing from_numpy method for 2d arrays.
+                    matrix = self.from_numpy(mat, shared_memory, verbose)
+                else:
+                    # If higher dimensional, reshape to 2d and handle as a matrix.
+                    # Store the original numpy representation.
+                    original_tensor = tensor.numpy(force=True)
+                    # Reshape to 2d
+                    # TODO Does this change the input tensor?
+                    reshaped_tensor = original_tensor.reshape((original_shape[0], -1))
 
-                if verbose:
-                    # Check if the original and reshaped tensors share memory and print the result.
-                    shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
-                    print(f"from_pytorch(): original and reshaped tensors share memory: {shares_memory}")
+                    if verbose:
+                        # Check if the original and reshaped tensors share memory and print the result.
+                        shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
+                        print(f"from_pytorch(): original and reshaped tensors share memory: {shares_memory}")
 
-                # Use the existing from_numpy method for the reshaped 2d array.
-                matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
+                    # Use the existing from_numpy method for the reshaped 2d array.
+                    matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
             if verbose:
                 print(f"from_pytorch(): total execution time: {(time.time() - start_time):.10f} seconds")

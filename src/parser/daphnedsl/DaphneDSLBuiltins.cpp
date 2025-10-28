@@ -1197,6 +1197,46 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         return static_cast<mlir::Value>(
             builder.create<ReceiveFromNumpyOp>(loc, utils.matrixOf(vt), address, rows, cols));
     }
+    if (func == "receiveFromScipy") {
+        checkNumArgsExact(loc, func, numArgs, 8);
+
+        mlir::Value data_addr = utils.castUI64If(args[0]);
+        mlir::Value row_related_addr = utils.castUI64If(args[1]);
+        mlir::Value col_related_addr = utils.castUI64If(args[2]);
+        mlir::Value rows = args[3];
+        mlir::Value cols = args[4];
+        mlir::Value nnz = args[5];
+        mlir::Value format = utils.castUI64If(args[6]);
+        mlir::Value valueType = args[7];
+
+        int64_t valueTypeCode = CompilerUtils::constantOrThrow<int64_t>(
+            valueType, "the value type code in ReceiveFromScipyOp must be a constant");
+
+        // TODO Is there a utility for this mapping from value type code to MLIR
+        // type?
+        mlir::Type vt;
+        if (valueTypeCode == (int64_t)ValueTypeCode::F32)
+            vt = builder.getF32Type();
+        else if (valueTypeCode == (int64_t)ValueTypeCode::F64)
+            vt = builder.getF64Type();
+        else if (valueTypeCode == (int64_t)ValueTypeCode::SI8)
+            vt = builder.getIntegerType(8, true);
+        else if (valueTypeCode == (int64_t)ValueTypeCode::SI32)
+            vt = builder.getIntegerType(32, true);
+        else if (valueTypeCode == (int64_t)ValueTypeCode::SI64)
+            vt = builder.getIntegerType(64, true);
+        else if (valueTypeCode == (int64_t)ValueTypeCode::UI8)
+            vt = builder.getIntegerType(8, false);
+        else if (valueTypeCode == (int64_t)ValueTypeCode::UI32)
+            vt = builder.getIntegerType(32, false);
+        else if (valueTypeCode == (int64_t)ValueTypeCode::UI64)
+            vt = builder.getIntegerType(64, false);
+        else
+            throw ErrorHandler::compilerError(loc, "DSLBuiltins", "invalid value type code");
+
+        return static_cast<mlir::Value>(builder.create<ReceiveFromScipyOp>(
+            loc, utils.matrixOf(vt), data_addr, row_related_addr, col_related_addr, rows, cols, nnz, format));
+    }
     if (func == "saveDaphneLibResult") {
         checkNumArgsExact(loc, func, numArgs, 1);
         mlir::Value arg = args[0];

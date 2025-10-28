@@ -14,30 +14,5 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include <cinttypes>
-#include <string>
-
-struct DaphneLibResult {
-    // For matrices.
-    int64_t rows;
-    int64_t cols;
-    int64_t vtc;
-    bool isSparse;
-
-    // For DenseMatrix
-    void *address;
-
-    // For Sparse Matrix
-    void *data;
-    void *row_related;
-    void *col_related;
-
-    // For frames.
-    int64_t *vtcs;
-    char **labels;
-    void **columns;
-    // To pass error messages to Python code.
-    std::string error_message;
-};
+A = rand(2, 6, 0.0, 1.0, 0.2, 912);
+print(A);
