@@ -9,10 +9,8 @@
       
       
       
-        <link rel="prev" href="../Logging/">
+        <link rel="prev" href="../../Codegen/">
       
-      
-        <link rel="next" href="../ExtendingSchedulingKnobs/">
       
       
       <link rel="icon" href="../../assets/logo_small.png">
@@ -20,7 +18,7 @@
     
     
       
-        <title>ExtendingDistributedRuntime - DAPHNE</title>
+        <title>RestrictedVectorization - DAPHNE</title>
       
     
     
@@ -74,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extending-the-daphne-distributed-runtime" class="md-skip">
+        <a href="#restricted-vectorization" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ExtendingDistributedRuntime
+              RestrictedVectorization
             
           </span>
         </div>
@@ -1234,32 +1232,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    ExtendingDistributedRuntime
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ExtendingDistributedRuntime/" class="md-nav__link">
         
   
   
@@ -1270,80 +1246,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#background" class="md-nav__link">
-    <span class="md-ellipsis">
-      Background
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#coordinator" class="md-nav__link">
-    <span class="md-ellipsis">
-      Coordinator
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-wrapper" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed Wrapper
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-backends" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed Backends
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#templated-distributed-kernels" class="md-nav__link">
-    <span class="md-ellipsis">
-      Templated Distributed Kernels
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-worker" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed Worker
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1583,10 +1485,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../RestrictedVectorization/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    RestrictedVectorization
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1597,6 +1521,35 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1636,54 +1589,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#background" class="md-nav__link">
+  <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
-      Background
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#coordinator" class="md-nav__link">
-    <span class="md-ellipsis">
-      Coordinator
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-wrapper" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed Wrapper
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-backends" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed Backends
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#templated-distributed-kernels" class="md-nav__link">
-    <span class="md-ellipsis">
-      Templated Distributed Kernels
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-worker" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed Worker
+      Example
     </span>
   </a>
   
@@ -1708,178 +1616,108 @@
   
 
 
-<h1 id="extending-the-daphne-distributed-runtime">Extending the DAPHNE Distributed Runtime</h1>
-<p>This page is about implementing and extending the distributed runtime. It focuses on
-helping the DAPHNE developer understand the building blocks of the distributed runtime,
-both of the DAPHNE coordinator as well as the DAPHNE distributed worker. If you want to
-learn how to execute DaphneDSL scripts on the distributed runtime, please see related page in the <a href="/daphne/DistributedRuntime">user documentation</a>.</p>
-<h2 id="background">Background</h2>
-<p>The distributed runtime works similar to the vectorized engine. Compiler passes create
-<em>pipelines</em> by merging multiple operations. This allows DAPHNE to split data across multiple
-workers (nodes) and let them execute a pipeline in parallel. The DAPHNE distributed runtime code
-can be found at <a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/distributed"><code>src/runtime/distributed</code></a> where it is split into two main parts. The
-<strong>coordinator</strong> and the <strong>worker</strong>.</p>
-<p>The DAPHNE distributed runtime works on an hierarchical approach.</p>
-<ol>
-<li>Workers are <strong>not</strong> aware of the total execution. They handle a single task-pipeline and return outputs,
-one pipeline at a time.</li>
-<li>Workers are <strong>only</strong> aware of their chunk of data.</li>
-</ol>
-<h2 id="coordinator">Coordinator</h2>
-<p>The coordinator is responsible for distributing data and broadcasting the IR code fragment,
-that is the task-pipeline. Each worker receives and compiles the IR optimizing it for its
-local hardware. Coordinator code can be found at <code>src/runtime/distributed/coordinator/kernels</code>.</p>
-<h2 id="distributed-wrapper">Distributed Wrapper</h2>
-<p>The <strong><code>DistributedWrapper.h</code></strong> kernel contains the <code>DistributedWrapper</code> class which is the main entry point
-for a distributed pipeline on the coordinator:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kt">void</span><span class="w"> </span><span class="n">DistributedWrapper</span><span class="o">::</span><span class="n">execute</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">                </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mlirCode</span><span class="p">,</span><span class="w">       </span><span class="c1">// the IR code fragment</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">                </span><span class="n">DT</span><span class="w"> </span><span class="o">***</span><span class="n">res</span><span class="p">,</span><span class="w">                  </span><span class="c1">// array of pipeline outputs</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">                </span><span class="k">const</span><span class="w"> </span><span class="n">Structure</span><span class="w"> </span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span><span class="w">   </span><span class="c1">// array of pipeline inputs</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">                </span><span class="kt">size_t</span><span class="w"> </span><span class="n">numInputs</span><span class="p">,</span><span class="w">           </span><span class="c1">// number of inputs</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">                </span><span class="kt">size_t</span><span class="w"> </span><span class="n">numOutputs</span><span class="p">,</span><span class="w">          </span><span class="c1">// number of outputs</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">                </span><span class="kt">int64_t</span><span class="w"> </span><span class="o">*</span><span class="n">outRows</span><span class="p">,</span><span class="w">           </span><span class="c1">// number of rows for each pipeline output</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">                </span><span class="kt">int64_t</span><span class="w"> </span><span class="o">*</span><span class="n">outCols</span><span class="p">,</span><span class="w">           </span><span class="c1">// number of columns for each pipeline output</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">                </span><span class="n">VectorSplit</span><span class="w"> </span><span class="o">*</span><span class="n">splits</span><span class="p">,</span><span class="w">        </span><span class="c1">// compiler hints on how each input should be split</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">                </span><span class="n">VectorCombine</span><span class="w"> </span><span class="o">*</span><span class="n">combines</span><span class="p">)</span><span class="w">    </span><span class="c1">// compiler hints on how each output should be combined</span>
+<h1 id="restricted-vectorization">Restricted Vectorization</h1>
+<p>When <code>daphne</code> is invoked with <code>--vec</code>, by default, all vectorizable operations (those that have the custom MLIR interface <code>Vectorizable</code>) that have at least one matrix argument or result are considered by the <code>VectorizeComputationsPass</code> for vectorization, i.e., for being executed in the context of a vectorized pipeline (<code>VectorizedPipelineOp</code>).</p>
+<p>However, when conducting research in the context of DAPHNE, it can be desirable to apply DAPHNE's vectorized processing only to certain, well-chosen operations.
+To this end, there is an experimental feature for restricting the operations considered by the <code>VectorizeComputationsPass</code> to those that have a certain boolean MLIR attribute set to <code>true</code> (in addition to the conditions that are required by default).
+The name of this attribute is stored in <code>CompilerUtils::ATTR_VEC</code> (<code>src/compiler/utils/CompilerUtils.h</code>); at the time of this writing, it is called <code>vec</code>.
+By default, this feature is turned off.
+It can be turned on by invoking <code>daphne</code> with <code>--vec-restricted</code>; note that this command-line argument only takes effect if <code>--vec</code> (for turning on DAPHNE's vectorized engine) is specified as well.</p>
+<h2 id="example">Example</h2>
+<p>Let's say we want to restrict vectorization to <code>EwSqrtOp</code> (elementwise square root, <code>sqrt()</code> in DaphneDSL).
+To this end, we could modify the DaphneDSL parser to attach the necessary MLIR attribute to those operations as follows.
+Note that this example mainly serves the purpose of illustrating how to attach the attribute, which can also be done in a compiler pass or elsewhere, and how to invoke DAPHNE and see the effect.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gd">--- a/src/parser/daphnedsl/DaphneDSLBuiltins.cpp</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gi">+++ b/src/parser/daphnedsl/DaphneDSLBuiltins.cpp</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gu">@@ -101,7 +101,10 @@ template &lt;class UnaryOp&gt;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w"> </span>mlir::Value DaphneDSLBuiltins::createUnaryOp(mlir::Location loc, const std::string &amp;func,
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w"> </span>                                             const std::vector&lt;mlir::Value&gt; &amp;args) {
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w"> </span>    checkNumArgsExact(loc, func, args.size(), 1);
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="gd">-    return CompilerUtils::retValWithInferredType(builder.create&lt;UnaryOp&gt;(loc, utils.unknownType, args[0]));</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="gi">+    auto op = builder.create&lt;UnaryOp&gt;(loc, utils.unknownType, args[0]);</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="gi">+    if (func == &quot;sqrt&quot;)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="gi">+        op-&gt;setAttr(CompilerUtils::ATTR_VEC, builder.getBoolAttr(true));</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="gi">+    return CompilerUtils::retValWithInferredType(op);</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w"> </span>}
 </code></pre></div>
-<p>Using the hints <code>splits</code> provided by the compiler we determine whether an input should be
-<strong>distributed/scattered</strong> (by rows or columns) or <strong>broadcasted</strong>. Depending on that, we call
-the corresponding kernel (<code>Distribute.h</code> or <code>Broadcast.h</code>, more details below) which is then
-responsible for transferring data to the workers. The <code>DistributedCompute.h</code> kernel is then called
-in order to broadcast the IR code fragment and start the actual computation.
-Finally, the <code>DistributedCollect.h</code> kernel collects the final results (pipeline outputs).</p>
-<p>Similar to local runtime kernels, <strong><code>Distribute.h</code></strong>, <strong><code>Broadcast.h</code></strong>, <strong><code>DistributedCompute.h</code></strong> and <strong><code>DistributedCollect.h</code></strong>
-use C++ template meta programming (see the guidelines on <a href="/daphne/development/ImplementBuiltinKernel">implementing built-in kernels</a> for more information on how we utilize C++ templates on the local runtime). Since DAPHNE supports multiple distributed
-backends (e.g., gRPC, MPI, etc.) we cannot provide a fully generic code that would work for
-all implementations. Thus, we specialize each template for each distributed backend we want to
-support.</p>
-<p>The DAPHNE developer can work on a new distributed backend by simply providing a new template
-specialization of these four kernels with a different distributed backend.</p>
-<h2 id="distributed-backends">Distributed Backends</h2>
-<p>DAPHNE supports multiple different devices (GPUs, distributed nodes, FPGAs etc.). Because of that,
-all DAPHNE data objects (e.g. matrices) require tracking where their data is stored. That is why each
-DAPHNE data object contains meta data providing that information. Below you can see a list of all the different
-devices a DAPHNE data object can be allocated to.</p>
-<p>Please note that not all of them are supported yet and we might add more in the future.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">ALLOCATION_TYPE</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="n">DIST_GRPC</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="n">DIST_OPENMPI</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="n">DIST_SPARK</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="n">GPU_CUDA</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="n">GPU_HIP</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="n">HOST</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="n">HOST_PINNED_CUDA</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="n">FPGA_INT</span><span class="p">,</span><span class="w"> </span><span class="c1">// Intel</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="n">FPGA_XLX</span><span class="p">,</span><span class="w"> </span><span class="c1">// Xilinx</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="n">ONEAPI</span><span class="p">,</span><span class="w"> </span><span class="c1">// probably need separate ones for CPU/GPU/FPGA</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="n">NUM_ALLOC_TYPES</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="p">};</span>
+<p>After re-building DAPHNE, we can observe that only <code>EwSqrtOp</code> (but not other vectorizable ops like <code>EwAbsOp</code>) get vectorized if <code>--vec-restricted</code> is specified.</p>
+<p><em>File <code>example.daphne</code>:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">fill</span><span class="p">(</span><span class="m">1.23</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">);</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nf">print</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="nf">sqrt</span><span class="p">(</span><span class="n">X</span><span class="p">)));</span>
 </code></pre></div>
-<p>As we described above, each kernel is partially specialized for each distributed backend. We specialize
-the templated distributed kernels for each distributed allocation type in the <code>enum class</code> shown above
-(e.g. <code>DIST_GRPC</code>).</p>
-<h2 id="templated-distributed-kernels">Templated Distributed Kernels</h2>
-<p>Each kernel is responsible for two things.</p>
-<ol>
-<li>Handling the communication part. That is sending data to the workers.</li>
-<li>Updating the meta data. That is populating the meta data of an object which can then lead
-to reduced communication (if an object is already placed on nodes, we don't need to re-send it).</li>
-</ol>
-<p>You can find more information on the meta data implementation in <code>/src/runtime/local/datastructures</code>.</p>
-<p>Below we see the <strong><code>Broadcast.h</code></strong> templated kernel, along with its gRPC specialization.
-<code>DT</code> is the type of the object being broadcasted.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// ****************************************************************************</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1">// Struct for partial template specialization</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">// ****************************************************************************</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1">// DT is object type</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1">// AT is allocation type (distributed backend)</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">template</span><span class="o">&lt;</span><span class="n">ALLOCATION_TYPE</span><span class="w"> </span><span class="n">AT</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DT</span><span class="o">&gt;</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">struct</span><span class="w"> </span><span class="nc">Broadcast</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="n">DT</span><span class="w"> </span><span class="o">*</span><span class="n">mat</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">isScalar</span><span class="p">,</span><span class="w"> </span><span class="n">DCTX</span><span class="p">(</span><span class="n">dctx</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">};</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1">// ****************************************************************************</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1">// Convenience function</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1">// ****************************************************************************</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="k">template</span><span class="o">&lt;</span><span class="n">ALLOCATION_TYPE</span><span class="w"> </span><span class="n">AT</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DT</span><span class="o">&gt;</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="kt">void</span><span class="w"> </span><span class="n">broadcast</span><span class="p">(</span><span class="n">DT</span><span class="w"> </span><span class="o">*&amp;</span><span class="n">mat</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">isScalar</span><span class="p">,</span><span class="w"> </span><span class="n">DCTX</span><span class="p">(</span><span class="n">dctx</span><span class="p">))</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">{</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">    </span><span class="n">Broadcast</span><span class="o">&lt;</span><span class="n">AT</span><span class="p">,</span><span class="w"> </span><span class="n">DT</span><span class="o">&gt;::</span><span class="n">apply</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span><span class="w"> </span><span class="n">isScalar</span><span class="p">,</span><span class="w"> </span><span class="n">dctx</span><span class="p">);</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="p">}</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="c1">// ****************************************************************************</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="c1">// (Partial) template specializations for different distributed backends</span>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="c1">// ****************************************************************************</span>
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="c1">// ----------------------------------------------------------------------------</span>
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="c1">// GRPC</span>
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="c1">// ----------------------------------------------------------------------------</span>
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>
-<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">DT</span><span class="o">&gt;</span>
-<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="k">struct</span><span class="w"> </span><span class="nc">Broadcast</span><span class="o">&lt;</span><span class="n">ALLOCATION_TYPE</span><span class="o">::</span><span class="n">DIST_GRPC</span><span class="p">,</span><span class="w"> </span><span class="n">DT</span><span class="o">&gt;</span>
-<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="p">{</span>
-<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">    </span><span class="c1">// Specific gRPC implementation...</span>
-<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="w">    </span><span class="p">...</span>
-</code></pre></div>
-<p>So, for example, if we wanted to add broadcast support for MPI, all we need to do is provide the partial
-template specialization of the <code>Broadcast</code> kernel for MPI.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// ----------------------------------------------------------------------------</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1">// MPI</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1">// ----------------------------------------------------------------------------</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">DT</span><span class="o">&gt;</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">struct</span><span class="w"> </span><span class="nc">Broadcast</span><span class="o">&lt;</span><span class="n">ALLOCATION_TYPE</span><span class="o">::</span><span class="n">DIST_MPI</span><span class="p">,</span><span class="w"> </span><span class="n">DT</span><span class="o">&gt;</span><span class="w"> </span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">{</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="c1">// Specific MPI implementation...</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="p">...</span>
-</code></pre></div>
-<p>For now, the selection of a distributed backend is hardcoded in <code>/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h</code>.</p>
-<h2 id="distributed-worker">Distributed Worker</h2>
-<p>The worker code can be found in <code>src/runtime/distributed/worker</code>.</p>
-<p><strong><code>WorkerImpl.h</code></strong> contains the <code>WorkerImpl</code> class which provides all the logic for the distributed worker.
-There are three important methods in this class:</p>
 <ul>
-<li>The <strong><code>Store</code></strong> method, which stores an object in memory and returns an identifier.</li>
-<li>The <strong><code>Compute</code></strong> method, which receives the IR code fragment along with identifier of inputs, computes the pipeline and returns identifiers of pipeline outputs.</li>
-<li>And the <strong><code>Transfer</code></strong> method, which is used to return an object using an identifier.</li>
+<li>
+<p><em>Calling <code>daphne</code> with <code>--vec</code>:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--explain<span class="w"> </span>vectorized<span class="w"> </span>example.daphne
+</code></pre></div>
+<p>The output reveals that both <code>daphne.ewSqrt</code> and <code>daphne.ewAbs</code> are inside the <code>daphne.vectorizedPipeline</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>IR after vectorization:
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>module {
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  func.func @main() {
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    %0 = &quot;daphne.constant&quot;() {value = 3 : index} : () -&gt; index
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    %1 = &quot;daphne.constant&quot;() {value = -1 : si64} : () -&gt; si64
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    %2 = &quot;daphne.constant&quot;() {value = 1 : si64} : () -&gt; si64
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    %3 = &quot;daphne.constant&quot;() {value = -1.000000e+00 : f64} : () -&gt; f64
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    %4 = &quot;daphne.constant&quot;() {value = false} : () -&gt; i1
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    %5 = &quot;daphne.constant&quot;() {value = true} : () -&gt; i1
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    %6 = &quot;daphne.constant&quot;() {value = 1.230000e+00 : f64} : () -&gt; f64
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    %7 = &quot;daphne.fill&quot;(%6, %0, %0) : (f64, index, index) -&gt; !daphne.Matrix&lt;3x3xf64:symmetric[true]&gt;
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    &quot;daphne.transferProperties&quot;(%7, %3, %2) : (!daphne.Matrix&lt;3x3xf64:symmetric[true]&gt;, f64, si64) -&gt; ()
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    %8 = &quot;daphne.vectorizedPipeline&quot;(%7, %0, %0) ({
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    ^bb0(%arg0: !daphne.Matrix&lt;?x3xf64:symmetric[true]&gt;):
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>      %9 = &quot;daphne.ewSqrt&quot;(%arg0) {vec = true} : (!daphne.Matrix&lt;?x3xf64:symmetric[true]&gt;) -&gt; !daphne.Matrix&lt;?x?xf64&gt;
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>      %10 = &quot;daphne.ewAbs&quot;(%9) : (!daphne.Matrix&lt;?x?xf64&gt;) -&gt; !daphne.Matrix&lt;?x?xf64&gt;
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>      &quot;daphne.return&quot;(%10) : (!daphne.Matrix&lt;?x?xf64&gt;) -&gt; ()
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    }, {
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    }) {combines = [1], operand_segment_sizes = array&lt;i32: 1, 1, 1, 0&gt;, splits = [1]} : (!daphne.Matrix&lt;3x3xf64:symmetric[true]&gt;, index, index) -&gt; !daphne.Matrix&lt;3x3xf64&gt;
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    &quot;daphne.transferProperties&quot;(%8, %3, %1) : (!daphne.Matrix&lt;3x3xf64&gt;, f64, si64) -&gt; ()
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    &quot;daphne.print&quot;(%8, %5, %4) : (!daphne.Matrix&lt;3x3xf64&gt;, i1, i1) -&gt; ()
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>    &quot;daphne.return&quot;() : () -&gt; ()
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>  }
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>}
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>DenseMatrix(3x3, double)
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>1.10905 1.10905 1.10905
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>1.10905 1.10905 1.10905
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>1.10905 1.10905 1.10905
+</code></pre></div>
+</li>
+<li>
+<p><em>Calling <code>daphne</code> with <code>--vec --vec-restricted</code>:</em></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>bin/daphne<span class="w"> </span>--vec<span class="w"> </span>--vec-restricted<span class="w"> </span>--explain<span class="w"> </span>vectorized<span class="w"> </span>example.daphne
+</code></pre></div>
+<p>The output reveals that only <code>daphne.ewSqrt</code> (but not <code>daphne.ewAbs</code>) is inside the <code>daphne.vectorizedPipeline</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>IR after vectorization:
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>module {
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  func.func @main() {
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    %0 = &quot;daphne.constant&quot;() {value = 3 : index} : () -&gt; index
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    %1 = &quot;daphne.constant&quot;() {value = -1 : si64} : () -&gt; si64
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    %2 = &quot;daphne.constant&quot;() {value = 1 : si64} : () -&gt; si64
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    %3 = &quot;daphne.constant&quot;() {value = -1.000000e+00 : f64} : () -&gt; f64
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    %4 = &quot;daphne.constant&quot;() {value = false} : () -&gt; i1
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    %5 = &quot;daphne.constant&quot;() {value = true} : () -&gt; i1
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    %6 = &quot;daphne.constant&quot;() {value = 1.230000e+00 : f64} : () -&gt; f64
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    %7 = &quot;daphne.fill&quot;(%6, %0, %0) : (f64, index, index) -&gt; !daphne.Matrix&lt;3x3xf64:symmetric[true]&gt;
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    &quot;daphne.transferProperties&quot;(%7, %3, %2) : (!daphne.Matrix&lt;3x3xf64:symmetric[true]&gt;, f64, si64) -&gt; ()
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    %8 = &quot;daphne.vectorizedPipeline&quot;(%7, %0, %0) ({
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    ^bb0(%arg0: !daphne.Matrix&lt;?x3xf64:symmetric[true]&gt;):
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>      %10 = &quot;daphne.ewSqrt&quot;(%arg0) {vec = true} : (!daphne.Matrix&lt;?x3xf64:symmetric[true]&gt;) -&gt; !daphne.Matrix&lt;?x?xf64&gt;
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>      &quot;daphne.return&quot;(%10) : (!daphne.Matrix&lt;?x?xf64&gt;) -&gt; ()
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    }, {
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>    }) {combines = [1], operand_segment_sizes = array&lt;i32: 1, 1, 1, 0&gt;, splits = [1]} : (!daphne.Matrix&lt;3x3xf64:symmetric[true]&gt;, index, index) -&gt; !daphne.Matrix&lt;3x3xf64&gt;
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    &quot;daphne.transferProperties&quot;(%8, %3, %1) : (!daphne.Matrix&lt;3x3xf64&gt;, f64, si64) -&gt; ()
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    %9 = &quot;daphne.ewAbs&quot;(%8) : (!daphne.Matrix&lt;3x3xf64&gt;) -&gt; !daphne.Matrix&lt;3x3xf64&gt;
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    &quot;daphne.transferProperties&quot;(%9, %3, %1) : (!daphne.Matrix&lt;3x3xf64&gt;, f64, si64) -&gt; ()
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>    &quot;daphne.print&quot;(%9, %5, %4) : (!daphne.Matrix&lt;3x3xf64&gt;, i1, i1) -&gt; ()
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>    &quot;daphne.return&quot;() : () -&gt; ()
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>  }
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>}
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>DenseMatrix(3x3, double)
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>1.10905 1.10905 1.10905
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>1.10905 1.10905 1.10905
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>1.10905 1.10905 1.10905
+</code></pre></div>
+</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cm">/**</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="cm"> * @brief Stores a matrix at worker&#39;s memory</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="cm"> * </span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="cm"> * @param mat Structure * obj to store</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="cm"> * @return StoredInfo Information regarding stored object (identifier, numRows, numCols)</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="cm"> */</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">StoredInfo</span><span class="w"> </span><span class="nf">Store</span><span class="p">(</span><span class="n">DT</span><span class="w"> </span><span class="o">*</span><span class="n">mat</span><span class="p">)</span><span class="w"> </span><span class="p">;</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="cm">/**</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="cm"> * @brief Computes a pipeline</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="cm"> * </span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="cm"> * @param outputs vector to populate with results of the pipeline (identifier, numRows/cols, etc.)</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="cm"> * @param inputs vector with inputs of pipeline (identifiers to use, etc.)</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="cm"> * @param mlirCode mlir code fragment</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="cm"> * @return WorkerImpl::Status tells us if everything went fine, with an optional error message</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="cm"> */</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="n">Status</span><span class="w"> </span><span class="nf">Compute</span><span class="p">(</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">StoredInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="n">outputs</span><span class="p">,</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">StoredInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="n">inputs</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="n">mlirCode</span><span class="p">)</span><span class="w"> </span><span class="p">;</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="cm">/**</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="cm"> * @brief Returns a matrix stored in worker&#39;s memory</span>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="cm"> * </span>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="cm"> * @param storedInfo Information regarding stored object (identifier, numRows, numCols)</span>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="cm"> * @return Structure* Returns object</span>
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="cm"> */</span>
-<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="n">Structure</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">Transfer</span><span class="p">(</span><span class="n">StoredInfo</span><span class="w"> </span><span class="n">storedInfo</span><span class="p">);</span>
-</code></pre></div>
-<p>The developer can provide an implementation for a distributed worker by deriving from the <code>WorkerImpl</code> class.
-The derived class handles all the communication using the preferred distributed backend and invokes the parent methods for the logic.
-You can find the gRPC implementation of the distributed worker in <code>src/runtime/distributed/worker/WorkerImplGrpc.h/.cpp</code>.</p>
-<p><code>main.cpp</code> is the entry point of the distributed worker. A distributed implementation is created using a pointer to the parent class
-<code>WorkerImpl</code>. The distributed node then blocks and waits for the coordinator to send a request by invoking the virtual method:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">Wait</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">};</span>
-</code></pre></div>
-<p>Each distributed worker implementation needs to override this method and implement it in order to wait for requests.</p>
 
 
 
