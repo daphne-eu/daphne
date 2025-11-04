@@ -43,6 +43,7 @@ limitations under the License.
 * [Data Properties: Representation, Inference, and Exploitation](/doc/development/PropertyInference.md)
 * [Recording Data Properties](/doc/development/PropertyRecording.md)
 * [Code Generation with MLIR](/doc/Codegen.md)
+* [Restricted Vectorization](/doc/development/RestrictedVectorization.md)
 
 ### How-tos and Guidelines
 

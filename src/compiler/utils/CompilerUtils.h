@@ -64,6 +64,23 @@ struct CompilerUtils {
 
   public:
     /**
+     * @brief The name of the attribute used to flag DaphneIR ops for vectorization if --vec-restricted is used.
+     */
+    static constexpr std::string ATTR_VEC = "vec";
+
+    /**
+     * @brief Returns `true` if the given op has a boolean attribute with the given name and the value of this attribute
+     * is `true`; or `false`, otherwise.
+     *
+     * @param op The operation to check
+     * @param attr The name of the boolean attribute to check
+     * @return `true` if the attribute is present and has the value `true`; or `false`, otherwise
+     */
+    static bool isAttrTrue(mlir::Operation *op, const std::string &attr) {
+        return op->hasAttr(attr) ? op->getAttr(attr).dyn_cast<mlir::BoolAttr>().getValue() : false;
+    }
+
+    /**
      * @brief If the given `Value` is defined by some constant operation, return
      * that constant operation; otherwise, return `nullptr`.
      *

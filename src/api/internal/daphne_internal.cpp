@@ -25,6 +25,7 @@
 #include <api/cli/StatusCode.h>
 #include <api/daphnelib/DaphneLibResult.h>
 #include <api/internal/daphne_internal.h>
+#include <compiler/utils/CompilerUtils.h>
 #include <parser/catalog/KernelCatalogParser.h>
 #include <parser/config/ConfigParser.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
@@ -211,6 +212,10 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
              "vectorized pipeline are split by CPU workers (within a task) for cache-efficiency (default is 96 KiB)"),
         init(96 * 1024));
     static opt<bool> useVectorizedPipelines("vec", cat(schedulingOptions), desc("Enable vectorized execution engine"));
+    static opt<bool> useVectorizedRestricted(
+        "vec-restricted", cat(schedulingOptions),
+        desc("Restrict the processing in the vectorized engine to DaphneIR operations that have the attribute \"" +
+             CompilerUtils::ATTR_VEC + "\" set to true; only effective if used in combination with --vec"));
     static opt<bool> useDistributedRuntime("distributed", cat(daphneOptions), desc("Enable distributed runtime"));
     static opt<bool> prePartitionRows("pre-partition", cat(schedulingOptions),
                                       desc("Partition rows into the number of queues before applying "
@@ -412,6 +417,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         logger = std::make_unique<DaphneLogger>(user_config);
 
     user_config.use_vectorized_exec = useVectorizedPipelines;
+    user_config.use_vectorized_restricted = useVectorizedRestricted;
     user_config.use_distributed = useDistributedRuntime;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;

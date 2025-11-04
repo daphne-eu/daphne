@@ -74,7 +74,7 @@ std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig &cf
 std::unique_ptr<Pass> createSelectMatrixRepresentationsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig &cfg);
 std::unique_ptr<Pass> createTransposeOpLoweringPass();
-std::unique_ptr<Pass> createVectorizeComputationsPass();
+std::unique_ptr<Pass> createVectorizeComputationsPass(bool isRestricted);
 std::unique_ptr<Pass> createHorizontalFusionPass();
 std::unique_ptr<Pass> createTransferDataPropertiesPass();
 #ifdef USE_CUDA

@@ -94,6 +94,15 @@ void greedyPipelineFusion(std::map<daphne::Vectorizable, size_t> &operationToPip
 }
 
 struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass, OperationPass<func::FuncOp>> {
+    /**
+     * @brief If set to `false`, this pass will consider all vectorizable ops (those that have the MLIR interface
+     * `Vectorizable`) with at least one matrix argument or result for vectorization; if set to `true` only ops that
+     * additionally have a specific attribute (`CompilerUtils::ATTR_VEC`) set to `true` will be considered.
+     */
+    const bool isRestricted;
+
+    VectorizeComputationsPass(bool isRestricted) : isRestricted(isRestricted) {};
+
     void runOnOperation() final;
 };
 } // namespace
@@ -105,10 +114,14 @@ void VectorizeComputationsPass::runOnOperation() {
     //  This requires multi-returns in way more cases, which is not implemented
     //  yet.
 
-    // Find vectorizable operations and their inputs of vectorizable operations
+    // Find vectorizable operations and their inputs of vectorizable operations.
+    // If this->isRestricted is false (default), all vectorizable operations with at least one matrix argument or result
+    // are considered; if this->isRestricted is true, only ops that additionally have a specific attribute
+    // (`CompilerUtils::ATTR_VEC`) set to `true` will be considered.
     std::vector<daphne::Vectorizable> vectOps;
     func->walk([&](daphne::Vectorizable op) {
-        if (CompilerUtils::isMatrixComputation(op))
+        if (CompilerUtils::isMatrixComputation(op) &&
+            (!isRestricted || CompilerUtils::isAttrTrue(op, CompilerUtils::ATTR_VEC)))
             vectOps.emplace_back(op);
     });
     std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(), vectOps.end());
@@ -117,7 +130,8 @@ void VectorizeComputationsPass::runOnOperation() {
         for (auto e : llvm::zip(v->getOperands(), v.getVectorSplits())) {
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
-            if (defOp && v->getBlock() == defOp->getBlock() && CompilerUtils::isMatrixComputation(defOp)) {
+            if (defOp && v->getBlock() == defOp->getBlock() && CompilerUtils::isMatrixComputation(defOp) &&
+                (!isRestricted || CompilerUtils::isAttrTrue(defOp, CompilerUtils::ATTR_VEC))) {
                 // defOp is not a candidate for fusion with v, if the
                 // result/operand along which we would fuse is used within a
                 // nested block (e.g., control structure) between defOp and v.
@@ -370,6 +384,6 @@ void VectorizeComputationsPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<Pass> daphne::createVectorizeComputationsPass() {
-    return std::make_unique<VectorizeComputationsPass>();
+std::unique_ptr<Pass> daphne::createVectorizeComputationsPass(bool isRestricted) {
+    return std::make_unique<VectorizeComputationsPass>(isRestricted);
 }

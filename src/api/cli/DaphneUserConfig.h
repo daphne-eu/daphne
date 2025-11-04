@@ -40,6 +40,7 @@ struct DaphneUserConfig {
     bool use_columnar = false;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
+    bool use_vectorized_restricted = false;
     bool use_distributed = false;
     bool use_obj_ref_mgnt = true;
     bool use_optimistic_splitting = false;

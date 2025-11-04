@@ -49,6 +49,8 @@ void ConfigParser::readUserConfig(const std::string &filename, DaphneUserConfig 
         config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA_).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_EXEC))
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_RESTRICTED))
+        config.use_vectorized_restricted = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_RESTRICTED).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_OBJ_REF_MGNT))
         config.use_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::USE_OBJ_REF_MGNT).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_OPTIMISTIC_SPLITTING))

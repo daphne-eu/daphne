@@ -87,3 +87,4 @@ nav:
     - development/PropertyInference.md
     - development/PropertyRecording.md
     - Codegen.md
+    - development/RestrictedVectorization.md

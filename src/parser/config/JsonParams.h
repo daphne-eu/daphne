@@ -26,6 +26,7 @@
 struct DaphneConfigJsonParams {
     inline static const std::string USE_CUDA_ = "use_cuda";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
+    inline static const std::string USE_VECTORIZED_RESTRICTED = "use_vectorized_restricted";
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
     inline static const std::string USE_OPTIMISTIC_SPLITTING = "use_optimistic_splitting";
     inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
@@ -89,6 +90,7 @@ struct DaphneConfigJsonParams {
                                                      MATMUL_INVERT_LOOPS,
                                                      USE_CUDA_,
                                                      USE_VECTORIZED_EXEC,
+                                                     USE_VECTORIZED_RESTRICTED,
                                                      USE_OBJ_REF_MGNT,
                                                      USE_OPTIMISTIC_SPLITTING,
                                                      USE_IPA_CONST_PROPA,
