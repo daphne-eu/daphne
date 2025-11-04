@@ -101,7 +101,7 @@ struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass,
      */
     const bool isRestricted;
 
-    VectorizeComputationsPass(bool isRestricted) : isRestricted(isRestricted) {};
+    VectorizeComputationsPass(bool isRestricted) : isRestricted(isRestricted){};
 
     void runOnOperation() final;
 };
