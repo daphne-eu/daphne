@@ -19,3 +19,11 @@ print(map(X, timesThree));
 // matrix
 X = reshape([1, 0, 5, -2], 2, 2);
 print(map(X, timesThree));
+
+// row-wise
+X = reshape([1, 0, 5, -2], 2, 2);
+print(map(X, timesThree, 0));
+
+// column-wise
+X = reshape([1, 0, 5, -2], 2, 2);
+print(map(X, timesThree, 1));

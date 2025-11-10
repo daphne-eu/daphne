@@ -10,3 +10,9 @@ DenseMatrix(1x4, double)
 DenseMatrix(2x2, double)
 3.3 0
 16.5 -6.6
+DenseMatrix(2x2, double)
+3.3 0
+16.5 -6.6
+DenseMatrix(2x2, double)
+3.3 0
+16.5 -6.6

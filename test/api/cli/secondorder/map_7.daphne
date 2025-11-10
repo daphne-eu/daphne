@@ -1,0 +1,21 @@
+// Column-wise (Matrix -> Scalar)
+
+def isSumEven(col) {
+  return as.bool(as.scalar<si64>(sum(col) % 2 == 0));
+}
+
+// double
+X = reshape([1.1, 1.1, 1.1, 1.1, 0.3, 0.3, 0.3, 0.3, -2.2, -2.2, -2.2, -2.2, 5.5, 5.5, 5.5, 5.5], 4, 4);
+print(map(X, isSumEven, 1, true));
+
+// int64_t
+X = reshape([0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12], 3, 4);
+print(map(X, isSumEven, 1, true));
+
+// one column
+X = reshape([0, 1, 2], 3, 1);
+print(map(X, isSumEven, 1, true));
+
+// one row
+X = reshape([0, 1, 2], 1, 3);
+print(map(X, isSumEven, 1, true));

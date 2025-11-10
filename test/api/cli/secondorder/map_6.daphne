@@ -1,0 +1,17 @@
+// Column-wise (Matrix -> Matrix)
+
+def topThree(col) {
+  return order(col[:3, 0], 0, true, false);
+}
+
+// double
+X = reshape([1.1, 1.1, 1.1, 1.1, 0.3, 0.3, 0.3, 0.3, -2.2, -2.2, -2.2, -2.2, 5.5, 5.5, 5.5, 5.5], 4, 4);
+print(map(X, topThree, 1));
+
+// int64_t
+X = reshape([4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0], 5, 4);
+print(map(X, topThree, 1));
+
+// one column
+X = reshape([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10, 1);
+print(map(X, topThree, 1));
