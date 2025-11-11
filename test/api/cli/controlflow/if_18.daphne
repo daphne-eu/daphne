@@ -1,0 +1,9 @@
+// Update a string inside then-branch of if-statement with value computed outside if-statement (scf.if gets rewritten to arith.select).
+X = "a";
+Y = X + "b";
+# r must be unknown at compile-time (otherwise, the entire "if" gets optimized away)
+# TODO The rand() might get optimized away at some point in the future (but not at the moment), because the result is clear.
+r = as.scalar(rand(1, 1, 0, 1, 1, -1));
+if(r)
+    X = Y;
+print(X);

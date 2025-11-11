@@ -72,7 +72,8 @@ void processValue(OpBuilder builder, Value v) {
     // TODO Address handles from the distributed runtime (but they will be
     // removed soon anyway).
     // We only need to manage the reference counters of DAPHNE data objects
-    // like matrices and frames (not of scalars).
+    // (like matrices, frames, and lists), but not for scalars (except for
+    // strings) and other types.
 
     Operation *defOp = v.getDefiningOp();
     if (defOp && llvm::isa<daphne::ConvertDenseMatrixToMemRef>(defOp))
@@ -96,12 +97,16 @@ void processValue(OpBuilder builder, Value v) {
         builder.create<daphne::IncRefOp>(v.getLoc(), v);
     }
 
-    // Increase the reference counter of the result of the arith.select op, if
-    // it is a string scalar. This is necessary because for arith.select, we
-    // have no clue which of its two arguments (2nd or 3rd one) it will return.
+    // Increase the reference counter of the result of an arith.select op,
+    // if the result is of a type that has a reference counter at runtime.
+    // This is necessary because for arith.select, we have no clue which of
+    // its two arguments (2nd or 3rd one) it will return.
     // Unless we do something about it, the reference counter of the result will
     // be too low by 1. Thus, we increase the result's reference counter here.
-    if (defOp && llvm::isa<arith::SelectOp>(defOp) && llvm::isa<daphne::StringType>(v.getType())) {
+    // TODO This might cause a memory leak, if this arith.select is not the last
+    // user of both input SSA values (further investigation necessary).
+    if (defOp && llvm::isa<arith::SelectOp>(defOp) &&
+        llvm::isa<daphne::MatrixType, daphne::FrameType, daphne::ListType, daphne::StringType>(v.getType())) {
         builder.setInsertionPointAfter(defOp);
         builder.create<daphne::IncRefOp>(v.getLoc(), v);
     }
