@@ -164,6 +164,17 @@ template <typename VTRes, typename VTArg> struct AggRow<DenseMatrix<VTRes>, Dens
 // DenseMatrix <- CSRMatrix
 // ----------------------------------------------------------------------------
 
+#define MAKE_CASE(aggOpCode, binOpCode)                                                                                \
+    case aggOpCode:                                                                                                    \
+        for (size_t r = 0; r < numRows; r++) {                                                                         \
+            const size_t numNonZeros = arg->getNumNonZeros(r);                                                         \
+            const bool includeExtraZero = !isSparseSafe && numNonZeros < numCols;                                      \
+            *valuesRes = aggAllArray<EwBinarySca<binOpCode, VTRes, VTArg, VTArg>, VTRes>(                              \
+                arg->getValues(r), numNonZeros, includeExtraZero, neutral, ctx);                                       \
+            valuesRes += rowSkipRes;                                                                                   \
+        }                                                                                                              \
+        break;
+
 template <typename VTRes, typename VTArg> struct AggRow<DenseMatrix<VTRes>, CSRMatrix<VTArg>> {
     static void apply(AggOpCode opCode, DenseMatrix<VTRes> *&res, const CSRMatrix<VTArg> *arg, DCTX(ctx)) {
         const size_t numCols = arg->getNumCols();
@@ -173,19 +184,22 @@ template <typename VTRes, typename VTArg> struct AggRow<DenseMatrix<VTRes>, CSRM
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, false);
 
         VTRes *valuesRes = res->getValues();
+        size_t rowSkipRes = res->getRowSkip();
 
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
-
-            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func =
-                getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
-
             const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
             const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
 
-            for (size_t r = 0; r < numRows; r++) {
-                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(arg->getValues(r), arg->getNumNonZeros(r),
-                                                                       numCols, func, isSparseSafe, neutral, ctx);
-                valuesRes += res->getRowSkip();
+            switch (opCode) {
+                MAKE_CASE(AggOpCode::SUM, BinaryOpCode::ADD)
+                MAKE_CASE(AggOpCode::PROD, BinaryOpCode::MUL)
+                MAKE_CASE(AggOpCode::MIN, BinaryOpCode::MIN)
+                MAKE_CASE(AggOpCode::MAX, BinaryOpCode::MAX)
+                MAKE_CASE(AggOpCode::MEAN, BinaryOpCode::ADD)
+                MAKE_CASE(AggOpCode::STDDEV, BinaryOpCode::ADD)
+                MAKE_CASE(AggOpCode::VAR, BinaryOpCode::ADD)
+            default:
+                throw std::runtime_error("unsupported AggOpCode");
             }
         } else { // The op-code is either MEAN or STDDEV or VAR
             // get sum for each row
@@ -194,13 +208,12 @@ template <typename VTRes, typename VTArg> struct AggRow<DenseMatrix<VTRes>, CSRM
             const bool isSparseSafe = true;
             auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, 1, true);
             VTRes *valuesT = tmp->getValues();
-            EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func =
-                getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
             for (size_t r = 0; r < numRows; r++) {
-                *valuesRes = AggAll<VTRes, CSRMatrix<VTArg>>::aggArray(arg->getValues(r), arg->getNumNonZeros(r),
-                                                                       numCols, func, isSparseSafe, neutral, ctx);
-                const VTArg *valuesArg = arg->getValues(0);
                 const size_t numNonZeros = arg->getNumNonZeros(r);
+                const bool includeExtraZero = !isSparseSafe && numNonZeros < numCols;
+                *valuesRes = aggAllArray<EwBinarySca<BinaryOpCode::ADD, VTRes, VTArg, VTArg>, VTRes>(
+                    arg->getValues(r), numNonZeros, includeExtraZero, neutral, ctx);
+                const VTArg *valuesArg = arg->getValues(0);
                 *valuesRes = *valuesRes / numCols;
                 if (opCode != AggOpCode::MEAN) {
                     for (size_t i = ctr; i < ctr + numNonZeros; i++) {
@@ -216,13 +229,15 @@ template <typename VTRes, typename VTArg> struct AggRow<DenseMatrix<VTRes>, CSRM
                     else
                         *valuesRes = valuesT[r];
                 }
-                valuesRes += res->getRowSkip();
+                valuesRes += rowSkipRes;
             }
             valuesRes = res->getValues();
             DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
         }
     }
 };
+
+#undef MAKE_CASE
 
 // ----------------------------------------------------------------------------
 // Matrix <- Matrix
