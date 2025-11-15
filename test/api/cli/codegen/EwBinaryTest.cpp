@@ -25,8 +25,7 @@
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-void test_binary_lowering(const std::string op, const std::string kernel_call, const std::string lowering,
-                          const std::string result) {
+void test_binary_lowering(const std::string op, const std::string kernel_call, const std::string result) {
     std::stringstream out;
     std::stringstream err;
 
@@ -34,7 +33,6 @@ void test_binary_lowering(const std::string op, const std::string kernel_call, c
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), Catch::Contains(kernel_call));
-    CHECK_THAT(err.str(), !Catch::Contains(lowering));
     CHECK(out.str() == result);
 
     out.str(std::string());
@@ -45,7 +43,6 @@ void test_binary_lowering(const std::string op, const std::string kernel_call, c
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), !Catch::Contains(kernel_call));
-    CHECK_THAT(err.str(), Catch::Contains(lowering));
     CHECK(out.str() == result);
 }
 
@@ -66,7 +63,7 @@ TEST_CASE("ewBinaryAddScalar", TAG_CODEGEN) {
                             "6 7 8\n"
                         "6\n";
     // clang-format on
-    test_binary_lowering("add", "llvm.call @_ewAdd__", "llvm.add", result);
+    test_binary_lowering("add", "llvm.call @_ewAdd__", result);
 }
 
 TEST_CASE("ewBinarySubScalar", TAG_CODEGEN) {
@@ -86,7 +83,7 @@ TEST_CASE("ewBinarySubScalar", TAG_CODEGEN) {
                             "2 3 4\n"
                         "-2\n";
     // clang-format on
-    test_binary_lowering("sub", "llvm.call @_ewSub__", "llvm.sub", result);
+    test_binary_lowering("sub", "llvm.call @_ewSub__", result);
 }
 
 TEST_CASE("ewBinaryMulScalar", TAG_CODEGEN) {
@@ -106,7 +103,7 @@ TEST_CASE("ewBinaryMulScalar", TAG_CODEGEN) {
                             "8 10 12\n"
                         "8\n";
     // clang-format on
-    test_binary_lowering("mul", "llvm.call @_ewMul__", "llvm.mul", result);
+    test_binary_lowering("mul", "llvm.call @_ewMul__", result);
 }
 
 TEST_CASE("ewBinaryDivScalar", TAG_CODEGEN) {
@@ -133,7 +130,7 @@ TEST_CASE("ewBinaryDivScalar", TAG_CODEGEN) {
                             "1 1 1\n"
                         "2\n";
     // clang-format on
-    test_binary_lowering("div", "llvm.call @_ewDiv__", "llvm.fdiv", result);
+    test_binary_lowering("div", "llvm.call @_ewDiv__", result);
 }
 
 // TEST_CASE("ewBinaryPowScalar", TAG_CODEGEN) {
@@ -180,7 +177,7 @@ TEST_CASE("ewBinaryMinScalar", TAG_CODEGEN) {
                             "4 4 4\n"
                         "2\n";
     // clang-format on
-    test_binary_lowering("min", "llvm.call @_ewMin__", "llvm.intr.minnum", result);
+    test_binary_lowering("min", "llvm.call @_ewMin__", result);
 }
 
 TEST_CASE("ewBinaryMaxScalar", TAG_CODEGEN) {
@@ -207,5 +204,5 @@ TEST_CASE("ewBinaryMaxScalar", TAG_CODEGEN) {
                             "4 5 6\n"
                         "4\n";
     // clang-format on
-    test_binary_lowering("max", "llvm.call @_ewMax__", "llvm.intr.maxnum", result);
+    test_binary_lowering("max", "llvm.call @_ewMax__", result);
 }

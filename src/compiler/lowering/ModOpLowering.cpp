@@ -54,9 +54,9 @@ class EwModOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwModOp> 
 
         SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
         SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
-        buildAffineLoopNest(
+        mlir::affine::buildAffineLoopNest(
             rewriter, loc, lowerBounds, shape, steps, [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
-                mlir::Value load = nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+                mlir::Value load = nestedBuilder.create<mlir::affine::AffineLoadOp>(loc, memRef, ivs);
                 mlir::Value res{};
 
                 Value castedLhs = this->typeConverter->materializeTargetConversion(
@@ -67,7 +67,7 @@ class EwModOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwModOp> 
                 Value castedRes = this->typeConverter->materializeSourceConversion(nestedBuilder, loc,
                                                                                    divisor.getType(), ValueRange{res});
 
-                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef, ivs);
+                nestedBuilder.create<mlir::affine::AffineStoreOp>(loc, castedRes, memRef, ivs);
             });
     }
 
@@ -75,16 +75,16 @@ class EwModOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwModOp> 
                       ConversionPatternRewriter &rewriter, Location loc) const {
         SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
         SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
-        buildAffineLoopNest(
+        mlir::affine::buildAffineLoopNest(
             rewriter, loc, lowerBounds, shape, steps, [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
-                mlir::Value load = nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+                mlir::Value load = nestedBuilder.create<mlir::affine::AffineLoadOp>(loc, memRef, ivs);
                 mlir::Value res{};
 
                 // this is enough since divisor will be casted to float if
                 // matrix is float
                 if (llvm::isa<mlir::FloatType>(divisor.getType())) {
                     res = nestedBuilder.create<arith::RemFOp>(loc, load, divisor);
-                    nestedBuilder.create<AffineStoreOp>(loc, res, memRef, ivs);
+                    nestedBuilder.create<mlir::affine::AffineStoreOp>(loc, res, memRef, ivs);
                     return;
                 }
 
@@ -100,13 +100,13 @@ class EwModOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwModOp> 
                 Value castedRes = this->typeConverter->materializeSourceConversion(nestedBuilder, loc,
                                                                                    divisor.getType(), ValueRange{res});
 
-                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef, ivs);
+                nestedBuilder.create<mlir::affine::AffineStoreOp>(loc, castedRes, memRef, ivs);
             });
     }
 
     mlir::LogicalResult matchAndRewrite(mlir::daphne::EwModOp op, OpAdaptor adaptor,
                                         mlir::ConversionPatternRewriter &rewriter) const override {
-        mlir::daphne::MatrixType lhsTensor = adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType lhsTensor = llvm::dyn_cast<mlir::daphne::MatrixType>(adaptor.getLhs().getType());
         auto lhsRows = lhsTensor.getNumRows();
         auto lhsCols = lhsTensor.getNumCols();
 
@@ -141,7 +141,7 @@ struct ModOpLoweringPass : public mlir::PassWrapper<ModOpLoweringPass, mlir::Ope
     explicit ModOpLoweringPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect,
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::affine::AffineDialect, mlir::memref::MemRefDialect,
                         mlir::daphne::DaphneDialect>();
     }
     void runOnOperation() final;
@@ -164,13 +164,13 @@ void ModOpLoweringPass::runOnOperation() {
     typeConverter.addConversion(convertInteger);
     typeConverter.addConversion(convertFloat);
     typeConverter.addConversion([](Type type) { return type; });
-    typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+    // typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
     target.addLegalDialect<mlir::memref::MemRefDialect>();
     target.addLegalDialect<mlir::arith::ArithDialect>();
-    target.addLegalDialect<mlir::AffineDialect>();
+    target.addLegalDialect<mlir::affine::AffineDialect>();
     target.addLegalDialect<mlir::LLVM::LLVMDialect>();
     target.addLegalDialect<mlir::BuiltinDialect>();
     target.addLegalDialect<mlir::daphne::DaphneDialect>();

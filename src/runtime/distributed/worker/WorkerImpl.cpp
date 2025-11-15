@@ -158,7 +158,7 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
 // distributed::WorkData::DataCase WorkerImpl::dataCaseForType(mlir::Type type)
 // {
 //     distributed::WorkData::DataCase dataCase;
-//     if (type.isa<mlir::daphne::MatrixType>()) {
+//     if (llvm::isa<mlir::daphne::MatrixType>(type)) {
 //         dataCase = distributed::WorkData::kStored;
 //     }
 //     else {
@@ -209,7 +209,7 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput) 
     bool isFloat = false;
     bool isScalar = false;
     if (llvm::isa<mlir::daphne::MatrixType>(mlirType)) {
-        auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();
+        auto matTy = llvm::dyn_cast<mlir::daphne::MatrixType>(mlirType);
         isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;
         isFloat = llvm::isa<mlir::Float64Type>(matTy.getElementType());
     } else

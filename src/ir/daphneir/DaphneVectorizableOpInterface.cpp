@@ -32,12 +32,11 @@ using namespace mlir;
 
 // Elementwise binary
 template <class EwBinaryOp> std::vector<daphne::VectorSplit> getVectorSplits_EwBinaryOp(EwBinaryOp *op) {
-    bool isLhsMatrix = op->getLhs().getType().template isa<daphne::MatrixType>();
-    bool isRhsMatrix = op->getRhs().getType().template isa<daphne::MatrixType>();
+    auto isLhsMatrix = llvm::isa<daphne::MatrixType>(op->getLhs().getType());
+    auto isRhsMatrix = llvm::isa<daphne::MatrixType>(op->getRhs().getType());
 
     auto lhsSplit = isLhsMatrix ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
     auto rhsSplit = isRhsMatrix ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
-
     return {lhsSplit, rhsSplit};
 }
 template <class EwBinaryOp> std::vector<daphne::VectorCombine> getVectorCombines_EwBinaryOp(EwBinaryOp *op) {

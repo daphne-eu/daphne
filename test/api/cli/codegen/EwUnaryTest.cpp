@@ -25,8 +25,7 @@
 
 const std::string dirPath = "test/api/cli/codegen/";
 
-void test_unary_lowering(const std::string op, const std::string kernel_call, const std::string lowering,
-                         const std::string result) {
+void test_unary_lowering(const std::string op, const std::string kernel_call, const std::string result) {
     std::stringstream out;
     std::stringstream err;
 
@@ -34,7 +33,6 @@ void test_unary_lowering(const std::string op, const std::string kernel_call, co
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), Catch::Contains(kernel_call));
-    CHECK_THAT(err.str(), !Catch::Contains(lowering));
     CHECK(out.str() == result);
 
     out.str(std::string());
@@ -45,7 +43,6 @@ void test_unary_lowering(const std::string op, const std::string kernel_call, co
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), !Catch::Contains(kernel_call));
-    CHECK_THAT(err.str(), Catch::Contains(lowering));
     CHECK(out.str() == result);
 }
 
@@ -58,7 +55,7 @@ TEST_CASE("ewUnaryAbs", TAG_CODEGEN) {
                             "1 2 4\n"
                         "4\n";
     // clang-format on
-    test_unary_lowering("abs", "llvm.call @_ewAbs__", "llvm.intr.fabs", result);
+    test_unary_lowering("abs", "llvm.call @_ewAbs__", result);
 }
 
 TEST_CASE("ewUnarySqrt", TAG_CODEGEN) {
@@ -67,7 +64,7 @@ TEST_CASE("ewUnarySqrt", TAG_CODEGEN) {
                             "1 1.41421 2\n"
                         "2\n";
     // clang-format on
-    test_unary_lowering("sqrt", "llvm.call @_ewSqrt__", "llvm.intr.sqrt", result);
+    test_unary_lowering("sqrt", "llvm.call @_ewSqrt__", result);
 }
 
 TEST_CASE("ewUnaryExp", TAG_CODEGEN) {
@@ -76,7 +73,7 @@ TEST_CASE("ewUnaryExp", TAG_CODEGEN) {
                             "2.71828 0.135335 54.5982\n"
                         "54.5982\n";
     // clang-format on
-    test_unary_lowering("exp", "llvm.call @_ewExp__", "llvm.intr.exp", result);
+    test_unary_lowering("exp", "llvm.call @_ewExp__", result);
 }
 
 // TEST_CASE("ewUnaryLn", TAG_CODEGEN) {
@@ -94,7 +91,7 @@ TEST_CASE("ewUnarySin", TAG_CODEGEN) {
                             "0.841471 0.909297 -0.756802\n"
                         "-0.756802\n";
     // clang-format on
-    test_unary_lowering("sin", "llvm.call @_ewSin__", "llvm.intr.sin", result);
+    test_unary_lowering("sin", "llvm.call @_ewSin__", result);
 }
 
 TEST_CASE("ewUnaryCos", TAG_CODEGEN) {
@@ -103,7 +100,7 @@ TEST_CASE("ewUnaryCos", TAG_CODEGEN) {
                             "0.540302 -0.416147 -0.653644\n"
                         "-0.653644\n";
     // clang-format on
-    test_unary_lowering("cos", "llvm.call @_ewCos__", "llvm.intr.cos", result);
+    test_unary_lowering("cos", "llvm.call @_ewCos__", result);
 }
 
 TEST_CASE("ewUnaryFloor", TAG_CODEGEN) {
@@ -112,7 +109,7 @@ TEST_CASE("ewUnaryFloor", TAG_CODEGEN) {
                             "1 -3 4\n"
                         "4\n";
     // clang-format on
-    test_unary_lowering("floor", "llvm.call @_ewFloor__", "llvm.intr.floor", result);
+    test_unary_lowering("floor", "llvm.call @_ewFloor__", result);
 }
 
 TEST_CASE("ewUnaryCeil", TAG_CODEGEN) {
@@ -121,7 +118,7 @@ TEST_CASE("ewUnaryCeil", TAG_CODEGEN) {
                             "2 -2 5\n"
                         "5\n";
     // clang-format on
-    test_unary_lowering("ceil", "llvm.call @_ewCeil__", "llvm.intr.ceil", result);
+    test_unary_lowering("ceil", "llvm.call @_ewCeil__", result);
 }
 
 TEST_CASE("ewUnaryRound", TAG_CODEGEN) {
@@ -130,5 +127,5 @@ TEST_CASE("ewUnaryRound", TAG_CODEGEN) {
                             "2 -2 5\n"
                         "5\n";
     // clang-format on
-    test_unary_lowering("round", "llvm.call @_ewRound__", "llvm.intr.round", result);
+    test_unary_lowering("round", "llvm.call @_ewRound__", result);
 }

@@ -81,7 +81,7 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
 
     LogicalResult matchAndRewrite(AggOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
-        daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
+        daphne::MatrixType matrixType = llvm::dyn_cast<daphne::MatrixType>(adaptor.getArg().getType());
         if (!matrixType) {
             return failure();
         }
@@ -204,8 +204,8 @@ class AggAllOpLowering : public OpConversionPattern<AggOp> {
 // ****************************************************************************
 
 using SumAllOpLowering = AggAllOpLowering<daphne::AllAggSumOp, arith::AddIOp, arith::AddIOp, arith::AddFOp>;
-using MinAllOpLowering = AggAllOpLowering<daphne::AllAggMinOp, arith::MinSIOp, arith::MinUIOp, arith::MinFOp>;
-using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>;
+using MinAllOpLowering = AggAllOpLowering<daphne::AllAggMinOp, arith::MinSIOp, arith::MinUIOp, arith::MinimumFOp>;
+using MaxAllOpLowering = AggAllOpLowering<daphne::AllAggMaxOp, arith::MaxSIOp, arith::MaxUIOp, arith::MaximumFOp>;
 
 namespace {
 /**
@@ -242,16 +242,16 @@ void AggAllLoweringPass::runOnOperation() {
     typeConverter.addConversion(convertInteger);
     typeConverter.addConversion(convertFloat);
     typeConverter.addConversion([](Type type) { return type; });
-    typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+    // typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target.addLegalDialect<AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
+    target.addLegalDialect<affine::AffineDialect, arith::ArithDialect, BuiltinDialect, daphne::DaphneDialect,
                            linalg::LinalgDialect, LLVM::LLVMDialect, memref::MemRefDialect>();
 
     target.addDynamicallyLegalOp<daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>([](Operation *op) {
         Type operand = op->getOperand(0).getType();
-        auto matType = operand.dyn_cast<daphne::MatrixType>();
+        auto matType = llvm::dyn_cast<daphne::MatrixType>(operand);
         if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
             return false;
         }

@@ -52,7 +52,7 @@ class RecordPropertiesPass : public PassWrapper<RecordPropertiesPass, OperationP
         auto recordResults = [&](Operation *op) {
             SmallVector<Attribute, 4> valueIDs;
             for (Value result : op->getResults())
-                if (result.getType().isa<daphne::MatrixType>()) {
+                if (llvm::isa<daphne::MatrixType>(result.getType())) {
                     uint32_t id = generateUniqueID();
                     valueIDs.push_back(builder.getUI32IntegerAttr(id));
                     builder.setInsertionPointAfter(op);

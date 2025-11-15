@@ -39,6 +39,8 @@ ARG TZ
 RUN apt-get -qq -y update && apt-get -y upgrade \
     && apt-get -y --no-install-recommends install  \
     ca-certificates file git openssh-client unzip wget tar \
+    libbz2-dev liblz4-dev libzstd-dev libsnappy-dev libre2-dev libutf8proc-dev \
+    libnsl-dev \
     libgsasl-dev libkrb5-dev libomp-dev  libpfm4-dev libssl-dev libxml2-dev uuid-dev zlib1g-dev \
     build-essential clang gfortran lld llvm llvm-18-tools ninja-build openjdk-11-jdk-headless pkg-config python3 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
