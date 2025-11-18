@@ -36,7 +36,7 @@ class PrintIRPass : public PassWrapper<PrintIRPass, OperationPass<ModuleOp>> {
 
     void runOnOperation() final;
 
-    StringRef getArgument() const final { return "print-ir"; }
+    StringRef getArgument() const final { return "daphne-print-ir"; }
     StringRef getDescription() const final {
         return "Pass for debugging purposes, prints the IR at the current "
                "stage in the compilation pipeline.";

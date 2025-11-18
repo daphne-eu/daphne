@@ -39,7 +39,7 @@ class SelectMatrixRepresentationsPass
             if (!isScfOp) {
                 // Set the matrix representation for all result types
                 for (auto res : op->getResults()) {
-                    if (auto matTy = res.getType().dyn_cast<daphne::MatrixType>()) {
+                    if (auto matTy = mlir::dyn_cast<daphne::MatrixType>(res.getType())) {
                         const double sparsity = matTy.getSparsity();
                         if (sparsity < cfg.sparsity_threshold) {
                             res.setType(matTy.withRepresentation(daphne::MatrixRepresentation::Sparse));
@@ -91,8 +91,8 @@ class SelectMatrixRepresentationsPass
                 const size_t numIndVars = forOp.getNumInductionVars();
                 // Transfer the ForOp's operand types to the block arguments
                 // and results to fulfill constraints on the ForOp.
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                    Type t = forOp.getIterOperands()[i].getType();
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
+                    Type t = forOp.getInitArgs()[i].getType();
                     block.getArgument(i + numIndVars).setType(t);
                     forOp.getResult(i).setType(t);
                 }
@@ -106,7 +106,7 @@ class SelectMatrixRepresentationsPass
                 // verification, but here, we want to throw a readable error
                 // message.
                 Operation *yieldOp = block.getTerminator();
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
                     if (yieldedTy != resultTy)
@@ -164,7 +164,7 @@ class SelectMatrixRepresentationsPass
 
     static bool returnsKnownProperties(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type rt) {
-            if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+            if (auto mt = mlir::dyn_cast<daphne::MatrixType>(rt))
                 return mt.getSparsity() != -1.0;
             return false;
         });

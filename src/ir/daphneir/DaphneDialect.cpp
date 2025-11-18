@@ -16,6 +16,7 @@
 
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
+#include <ir/daphneir/DaphneTypeStorage.h>
 #include <util/ErrorHandler.h>
 
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
@@ -27,6 +28,7 @@
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APSInt.h>
 #include <llvm/ADT/BitVector.h>
+#include <llvm/ADT/TypeSwitch.h>
 
 #include <ir/daphneir/DaphneOpsDialect.cpp.inc>
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
@@ -37,7 +39,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
-#include "mlir/IR/FunctionImplementation.h"
+// #include "mlir/IR/FunctionImplementation.h" // Removed in newer LLVM
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
@@ -72,7 +74,7 @@ struct DaphneInlinerInterface : public mlir::DialectInlinerInterface {
 
     bool isLegalToInline(mlir::Region *, mlir::Region *, bool, mlir::IRMapping &) const final { return true; }
 
-    void handleTerminator(mlir::Operation *op, mlir::ArrayRef<mlir::Value> valuesToRepl) const final {
+    void handleTerminator(mlir::Operation *op, mlir::ValueRange valuesToRepl) const override {
         auto returnOp = mlir::dyn_cast<mlir::daphne::ReturnOp>(op);
 
         // Replace the values directly with the return operands.
@@ -83,8 +85,11 @@ struct DaphneInlinerInterface : public mlir::DialectInlinerInterface {
                                                   " do not match size " + std::to_string(valuesToRepl.size()));
         }
 
-        for (const auto &it : llvm::enumerate(returnOp.getOperands()))
-            valuesToRepl[it.index()].replaceAllUsesWith(it.value());
+        for (const auto &it : llvm::enumerate(returnOp.getOperands())) {
+            // Need to use const_cast because valuesToRepl is const
+            auto t = valuesToRepl[it.index()];
+            const_cast<mlir::Value &>(t).replaceAllUsesWith(it.value());
+        }
     }
 
     mlir::Operation *materializeCallConversion(mlir::OpBuilder &builder, mlir::Value input, mlir::Type resultType,
@@ -242,9 +247,9 @@ std::string unknownStrIf(ssize_t val) { return (val == -1) ? "?" : std::to_strin
 std::string unknownStrIf(double val) { return (val == -1.0) ? "?" : std::to_string(val); }
 
 void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPrinter &os) const {
-    if (type.isa<mlir::daphne::StructureType>())
+    if (llvm::isa<mlir::daphne::StructureType>(type))
         os << "Structure";
-    else if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+    else if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(type)) {
         os << "Matrix<" << unknownStrIf(t.getNumRows()) << 'x' << unknownStrIf(t.getNumCols()) << 'x'
            << t.getElementType();
         auto sparsity = t.getSparsity();
@@ -261,7 +266,7 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
             os << ":symmetric[" << boolOrUnknownToString(symmetric) << ']';
         }
         os << '>';
-    } else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
+    } else if (auto t = llvm::dyn_cast<mlir::daphne::FrameType>(type)) {
         os << "Frame<" << unknownStrIf(t.getNumRows()) << "x[" << unknownStrIf(t.getNumCols()) << ": ";
         // Column types.
         std::vector<mlir::Type> cts = t.getColumnTypes();
@@ -284,25 +289,25 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type, mlir::DialectAsmPri
         } else
             os << '?';
         os << '>';
-    } else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
+    } else if (auto t = llvm::dyn_cast<mlir::daphne::ColumnType>(type)) {
         os << "Column<" << unknownStrIf(t.getNumRows()) << "x" << t.getValueType() << '>';
-    } else if (auto t = type.dyn_cast<mlir::daphne::ListType>()) {
+    } else if (auto t = llvm::dyn_cast<mlir::daphne::ListType>(type)) {
         os << "List<" << t.getElementType() << '>';
-    } else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
+    } else if (auto handle = llvm::dyn_cast<mlir::daphne::HandleType>(type)) {
         os << "Handle<" << handle.getDataType() << ">";
-    } else if (isa<mlir::daphne::StringType>(type))
+    } else if (llvm::isa<mlir::daphne::StringType>(type))
         os << "String";
-    else if (auto t = type.dyn_cast<mlir::daphne::VariadicPackType>())
+    else if (auto t = llvm::dyn_cast<mlir::daphne::VariadicPackType>(type))
         os << "VariadicPack<" << t.getContainedType() << '>';
-    else if (isa<mlir::daphne::DaphneContextType>(type))
+    else if (llvm::isa<mlir::daphne::DaphneContextType>(type))
         os << "DaphneContext";
-    else if (isa<mlir::daphne::FileType>(type))
+    else if (llvm::isa<mlir::daphne::FileType>(type))
         os << "File";
-    else if (isa<mlir::daphne::DescriptorType>(type))
+    else if (llvm::isa<mlir::daphne::DescriptorType>(type))
         os << "Descriptor";
-    else if (isa<mlir::daphne::TargetType>(type))
+    else if (llvm::isa<mlir::daphne::TargetType>(type))
         os << "Target";
-    else if (isa<mlir::daphne::UnknownType>(type))
+    else if (llvm::isa<mlir::daphne::UnknownType>(type))
         os << "Unknown";
 }
 
@@ -352,60 +357,50 @@ BoolOrUnknown mlir::daphne::stringToBoolOrUnknown(const std::string &str) {
 
 namespace mlir::daphne {
 namespace detail {
-struct MatrixTypeStorage : public ::mlir::TypeStorage {
-    // TODO: adapt epsilon for equality check (I think the only use is saving
-    // memory for the MLIR-IR representation of this type)
-    //  the choosen epsilon directly defines how accurate our sparsity inference
-    //  can be
-    constexpr static const double epsilon = 1e-6;
-    MatrixTypeStorage(::mlir::Type elementType, ssize_t numRows, ssize_t numCols, double sparsity,
-                      MatrixRepresentation representation, BoolOrUnknown symmetric)
-        : elementType(elementType), numRows(numRows), numCols(numCols), sparsity(sparsity),
-          representation(representation), symmetric(symmetric) {}
 
-    /// The hash key is a tuple of the parameter types.
-    using KeyTy = std::tuple<::mlir::Type, ssize_t, ssize_t, double, MatrixRepresentation, BoolOrUnknown>;
-    bool operator==(const KeyTy &tblgenKey) const {
-        if (!(elementType == std::get<0>(tblgenKey)))
-            return false;
-        if (numRows != std::get<1>(tblgenKey))
-            return false;
-        if (numCols != std::get<2>(tblgenKey))
-            return false;
-        if (std::fabs(sparsity - std::get<3>(tblgenKey)) >= epsilon)
-            return false;
-        if (representation != std::get<4>(tblgenKey))
-            return false;
-        if (symmetric != std::get<5>(tblgenKey))
-            return false;
-        return true;
-    }
-    static ::llvm::hash_code hashKey(const KeyTy &tblgenKey) {
-        auto float_hashable = static_cast<ssize_t>(std::get<3>(tblgenKey) / epsilon);
-        return ::llvm::hash_combine(std::get<0>(tblgenKey), std::get<1>(tblgenKey), std::get<2>(tblgenKey),
-                                    float_hashable, std::get<4>(tblgenKey), std::get<5>(tblgenKey));
-    }
+// Constructor implementation
+MatrixTypeStorage::MatrixTypeStorage(::mlir::Type elementType, ssize_t numRows, ssize_t numCols, double sparsity,
+                                     MatrixRepresentation representation, BoolOrUnknown symmetric)
+    : elementType(elementType), numRows(numRows), numCols(numCols), sparsity(sparsity), representation(representation),
+      symmetric(symmetric) {}
 
-    /// Define a construction method for creating a new instance of this
-    /// storage.
-    static MatrixTypeStorage *construct(::mlir::TypeStorageAllocator &allocator, const KeyTy &tblgenKey) {
-        auto elementType = std::get<0>(tblgenKey);
-        auto numRows = std::get<1>(tblgenKey);
-        auto numCols = std::get<2>(tblgenKey);
-        auto sparsity = std::get<3>(tblgenKey);
-        auto representation = std::get<4>(tblgenKey);
-        auto symmetric = std::get<5>(tblgenKey);
+// Equality operator implementation
+bool MatrixTypeStorage::operator==(const KeyTy &tblgenKey) const {
+    if (!(elementType == std::get<0>(tblgenKey)))
+        return false;
+    if (numRows != std::get<1>(tblgenKey))
+        return false;
+    if (numCols != std::get<2>(tblgenKey))
+        return false;
+    if (std::fabs(sparsity - std::get<3>(tblgenKey)) >= epsilon)
+        return false;
+    if (representation != std::get<4>(tblgenKey))
+        return false;
+    if (symmetric != std::get<5>(tblgenKey))
+        return false;
+    return true;
+}
 
-        return new (allocator.allocate<MatrixTypeStorage>())
-            MatrixTypeStorage(elementType, numRows, numCols, sparsity, representation, symmetric);
-    }
-    ::mlir::Type elementType;
-    ssize_t numRows;
-    ssize_t numCols;
-    double sparsity;
-    MatrixRepresentation representation;
-    BoolOrUnknown symmetric;
-};
+// Hash key implementation
+::llvm::hash_code MatrixTypeStorage::hashKey(const KeyTy &tblgenKey) {
+    auto float_hashable = static_cast<ssize_t>(std::get<3>(tblgenKey) / epsilon);
+    return ::llvm::hash_combine(std::get<0>(tblgenKey), std::get<1>(tblgenKey), std::get<2>(tblgenKey), float_hashable,
+                                std::get<4>(tblgenKey), std::get<5>(tblgenKey));
+}
+
+// Construct implementation
+MatrixTypeStorage *MatrixTypeStorage::construct(::mlir::TypeStorageAllocator &allocator, const KeyTy &tblgenKey) {
+    auto elementType = std::get<0>(tblgenKey);
+    auto numRows = std::get<1>(tblgenKey);
+    auto numCols = std::get<2>(tblgenKey);
+    auto sparsity = std::get<3>(tblgenKey);
+    auto representation = std::get<4>(tblgenKey);
+    auto symmetric = std::get<5>(tblgenKey);
+
+    return new (allocator.allocate<MatrixTypeStorage>())
+        MatrixTypeStorage(elementType, numRows, numCols, sparsity, representation, symmetric);
+}
+
 } // namespace detail
 ::mlir::Type MatrixType::getElementType() const { return getImpl()->elementType; }
 ssize_t MatrixType::getNumRows() const { return getImpl()->numRows; }

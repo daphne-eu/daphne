@@ -48,7 +48,7 @@ include "mlir/IR/AttrTypeBase.td"
 // The type of `mat` is a matrix whose value type is the type of `sca`.
 class TypeIsMatrixOf<string mat, string sca> : And<[
     TypeIs<mat, Matrix>.predicate,
-    TypesMatchWith<"", mat, sca, "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()">.predicate
+    TypesMatchWith<"", mat, sca, "llvm::dyn_cast<::mlir::daphne::MatrixType>($_self).getElementType()">.predicate
 ]>;
 
 // The types of `a` and `b` must either be the same (e.g. both are matrices of
@@ -1527,8 +1527,8 @@ def Daphne_CastOp : Daphne_Op<"cast", [
         bool isTrivialCast() {
             Type argTy = getArg().getType();
             Type resTy = getRes().getType();
-            auto argFrmTy = argTy.dyn_cast<FrameType>();
-            auto resFrmTy = resTy.dyn_cast<FrameType>();
+            auto argFrmTy = llvm::dyn_cast<FrameType>(argTy);
+            auto resFrmTy = llvm::dyn_cast<FrameType>(resTy);
             if(argFrmTy && resFrmTy) {
                 // TODO avoid such a special case for frames, represent the optionality of labels in a different
                 // way than a pointer (maybe llvm::Option/std::optional), sth that supports op== to be true on different instances
@@ -1559,10 +1559,10 @@ def Daphne_CastOp : Daphne_Op<"cast", [
         bool isRemovePropertyCast() {
             Type argTy = getArg().getType();
             Type resTy = getRes().getType();
-            auto argMatTy = argTy.dyn_cast<daphne::MatrixType>();
-            auto resMatTy = resTy.dyn_cast<daphne::MatrixType>();
-            auto argFrmTy = argTy.dyn_cast<daphne::FrameType>();
-            auto resFrmTy = resTy.dyn_cast<daphne::FrameType>();
+            auto argMatTy = llvm::dyn_cast<daphne::MatrixType>(argTy);
+            auto resMatTy = llvm::dyn_cast<daphne::MatrixType>(resTy);
+            auto argFrmTy = llvm::dyn_cast<daphne::FrameType>(argTy);
+            auto resFrmTy = llvm::dyn_cast<daphne::FrameType>(resTy);
             return (argMatTy && resMatTy && argMatTy.isSpecializationOf(resMatTy))
                 || (argFrmTy && resFrmTy && argFrmTy.isSpecializationOf(resFrmTy));
         }
@@ -1571,13 +1571,13 @@ def Daphne_CastOp : Daphne_Op<"cast", [
             Type argTy = getArg().getType();
             Type resTy = getRes().getType();
 
-            auto argMatTy = argTy.dyn_cast<daphne::MatrixType>();
-            auto argFrmTy = argTy.dyn_cast<daphne::FrameType>();
-            auto argColTy = argTy.dyn_cast<daphne::ColumnType>();
+            auto argMatTy = llvm::dyn_cast<daphne::MatrixType>(argTy);
+            auto argFrmTy = llvm::dyn_cast<daphne::FrameType>(argTy);
+            auto argColTy = llvm::dyn_cast<daphne::ColumnType>(argTy);
 
-            auto resMatTy = resTy.dyn_cast<daphne::MatrixType>();
-            auto resFrmTy = resTy.dyn_cast<daphne::FrameType>();
-            auto resColTy = resTy.dyn_cast<daphne::ColumnType>();
+            auto resMatTy = llvm::dyn_cast<daphne::MatrixType>(resTy);
+            auto resFrmTy = llvm::dyn_cast<daphne::FrameType>(resTy);
+            auto resColTy = llvm::dyn_cast<daphne::ColumnType>(resTy);
 
             // Note: We only consider data/value types, but not the properties.
             // TODO What if "b" has more property info that would be important for further inference (is that possible)?
@@ -1701,7 +1701,7 @@ def Daphne_DistributedCollectOp : Daphne_Op<"distributedCollect", [Pure]> {
 
     let builders = [
         OpBuilder<(ins "Value":$value), [{
-            build($_builder, $_state, value.getType().cast<HandleType>().getDataType(), value);
+            build($_builder, $_state, llvm::cast<HandleType>(value.getType()).getDataType(), value);
         }]>,
     ];
 }

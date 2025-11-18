@@ -25,7 +25,9 @@ include "mlir/IR/EnumAttr.td"
 // ****************************************************************************
 
 // The base for all DaphneIR-specific types.
-class Daphne_Type<string name> : TypeDef<Daphne_Dialect, name>;
+class Daphne_Type<string name> : TypeDef<Daphne_Dialect, name> {
+    let typeName = name;
+}
 
 // ****************************************************************************
 // Unknown type
@@ -67,7 +69,7 @@ def Matrix : Daphne_Type<"Matrix"> {
         // Creates a MatrixType from mere element type information, with all
         // other parameters reset.
         TypeBuilder<(ins "::mlir::Type":$elementType), [{
-            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Default, BoolOrUnknown::Unknown);
+            return Base::get($_ctxt, elementType, -1, -1, -1.0, ::mlir::daphne::MatrixRepresentation::Default, ::mlir::daphne::BoolOrUnknown::Unknown);
         }]>,
     ];
 
@@ -104,7 +106,7 @@ def Matrix : Daphne_Type<"Matrix"> {
         }
 
         ::mlir::daphne::MatrixType withSameElementTypeAndRepr() {
-            return get(getContext(), getElementType(), -1, -1, -1.0, getRepresentation(), BoolOrUnknown::Unknown);
+            return get(getContext(), getElementType(), -1, -1, -1.0, getRepresentation(), ::mlir::daphne::BoolOrUnknown::Unknown);
         }
 
         /**
@@ -129,7 +131,7 @@ def Matrix : Daphne_Type<"Matrix"> {
                 && getRepresentation() != other.getRepresentation())
                 return false;
 
-            if (other.getSymmetric() != BoolOrUnknown::Unknown
+            if (other.getSymmetric() != ::mlir::daphne::BoolOrUnknown::Unknown
                 && getSymmetric() != other.getSymmetric())
                 return false;
 
@@ -146,7 +148,7 @@ class MatrixOf<list<Type> allowedTypes> : AnyTypeOf<[
         ContainerType<
                 AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
                 Matrix.predicate,
-                "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()",
+                "mlir::dyn_cast<::mlir::daphne::MatrixType>($_self).getElementType()",
                 "matrix"
         >,
         Unknown
@@ -276,7 +278,7 @@ def Column : Daphne_Type<"Column"> {
         bool isSpecializationOf(::mlir::daphne::ColumnType other) {
             auto valueType = getValueType();
             auto otherValueType = other.getValueType();
-            if(!otherValueType.isa<mlir::daphne::UnknownType>() && valueType != otherValueType)
+            if(!llvm::isa<mlir::daphne::UnknownType>(otherValueType) && valueType != otherValueType)
                 return false;
 
             if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())

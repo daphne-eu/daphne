@@ -67,6 +67,7 @@
 #include <ir/daphneir/DaphneAdaptTypesToKernelsTraits.h>
 #include <ir/daphneir/DaphneDistributableOpInterface.h>
 #include <ir/daphneir/DaphneOpsEnums.h.inc>
+#include <ir/daphneir/DaphneTypeStorage.h>
 #include <ir/daphneir/DaphneVectorizableOpInterface.h>
 
 // Custom C++ types used to represent the data properties of DAPHNE data objects (e.g., matrices, frames) must be

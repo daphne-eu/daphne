@@ -25,6 +25,7 @@
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Value.h"
+#include <optional>
 
 /// Insert an allocation for the given MemRefType.
 mlir::Value insertMemRefAlloc(mlir::MemRefType type, mlir::Location loc, mlir::PatternRewriter &rewriter) {
@@ -48,7 +49,7 @@ void affineFillMemRef(mlir::Value value, mlir::ConversionPatternRewriter &rewrit
     constexpr int COL = 1;
     llvm::SmallVector<mlir::Value, 4> loopIvs;
 
-    auto outerLoop = rewriter.create<mlir::AffineForOp>(loc, 0, shape[ROW], 1);
+    auto outerLoop = rewriter.create<mlir::affine::AffineForOp>(loc, 0, shape[ROW], 1);
     for (mlir::Operation &nested : *outerLoop.getBody()) {
         rewriter.eraseOp(&nested);
     }
@@ -56,16 +57,16 @@ void affineFillMemRef(mlir::Value value, mlir::ConversionPatternRewriter &rewrit
 
     // outer loop body
     rewriter.setInsertionPointToStart(outerLoop.getBody());
-    auto innerLoop = rewriter.create<mlir::AffineForOp>(loc, 0, shape[COL], 1);
+    auto innerLoop = rewriter.create<mlir::affine::AffineForOp>(loc, 0, shape[COL], 1);
     for (mlir::Operation &nested : *innerLoop.getBody()) {
         rewriter.eraseOp(&nested);
     }
     loopIvs.push_back(innerLoop.getInductionVar());
-    rewriter.create<mlir::AffineYieldOp>(loc);
+    rewriter.create<mlir::affine::AffineYieldOp>(loc);
     rewriter.setInsertionPointToStart(innerLoop.getBody());
-    rewriter.create<mlir::AffineStoreOp>(loc, value, memRef, loopIvs);
+    rewriter.create<mlir::affine::AffineStoreOp>(loc, value, memRef, loopIvs);
 
-    rewriter.create<mlir::AffineYieldOp>(loc);
+    rewriter.create<mlir::affine::AffineYieldOp>(loc);
     rewriter.setInsertionPointAfter(outerLoop);
 }
 
@@ -93,24 +94,24 @@ mlir::Type convertInteger(mlir::IntegerType intType) {
     return mlir::IntegerType::get(intType.getContext(), intType.getIntOrFloatBitWidth());
 }
 
-llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
-                                                       mlir::ValueRange inputs, mlir::Location loc) {
+mlir::Value materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
+                                       mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
     if ((!fromType.isSignedInteger() && !fromType.isUnsignedInteger()) || !toType.isSignlessInteger())
-        return std::nullopt;
+        return mlir::Value();
     // Use unrealized conversion casts to do signful->signless conversions.
     return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])->getResult(0);
 }
 
-llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
-                                                     mlir::Location loc) {
+mlir::Value materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type, mlir::ValueRange inputs,
+                                     mlir::Location loc) {
     mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
     mlir::Type toType = getElementTypeOrSelf(type);
 
     if (!fromType.isSignlessInteger() || (!toType.isSignedInteger() && !toType.isUnsignedInteger()))
-        return std::nullopt;
+        return mlir::Value();
     // Use unrealized conversion casts to do signless->signful conversions.
     return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])->getResult(0);
 }
@@ -129,6 +130,13 @@ mlir::Operation *findLastUseOfSSAValue(mlir::Value &v) {
     }
 
     return lastUseOp;
+}
+
+mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc,
+                                 const mlir::TypeConverter *const typeConverter, mlir::Value origVal,
+                                 mlir::Type targetType) {
+    return typeConverter->materializeTargetConversion(
+        rewriter, loc, rewriter.getIntegerType(targetType.getIntOrFloatBitWidth()), origVal);
 }
 
 mlir::Value convertToSignlessInt(mlir::OpBuilder &rewriter, mlir::Location loc, mlir::TypeConverter *typeConverter,

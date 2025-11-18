@@ -84,7 +84,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
         auto opSize = 0ul;
         for (auto operand : op->getOperands()) {
             auto type = operand.getType();
-            if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+            if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(type)) {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if (rows < 0 || cols < 0) {
@@ -106,7 +106,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
         logger->trace("op input size: {} kb", opSize / 1024);
         for (auto result : op->getResults()) {
             auto type = result.getType();
-            if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+            if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(type)) {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if (rows < 0 || cols < 0) {
@@ -134,7 +134,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
     // ToDo: requirements should be set per operator in tablegen
     bool hasReqMinDims(mlir::Operation *op) const {
         auto checkDims = [this, op](const mlir::Type &type) -> bool {
-            if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+            if (auto t = llvm::dyn_cast<mlir::daphne::MatrixType>(type)) {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if (rows < 0 || cols < 0) {

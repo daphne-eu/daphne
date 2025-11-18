@@ -280,12 +280,12 @@ void VectorizeComputationsPass::runOnOperation() {
         // Remove information on certain data characteristics from the operands inside the pipeline.
         for (size_t i = 0u; i < operands.size(); ++i) {
             auto argTy = operands[i].getType();
-            switch (vSplitAttrs[i].cast<daphne::VectorSplitAttr>().getValue()) {
+            switch (llvm::cast<daphne::VectorSplitAttr>(vSplitAttrs[i]).getValue()) {
             case daphne::VectorSplit::ROWS: {
                 // Remove information on the number of rows, because the number of rows of individual chunks is subject
                 // to run-time scheduling.
                 // TODO Other information (e.g., symmetry) could also become invalid on individual chunks.
-                auto matTy = argTy.cast<daphne::MatrixType>();
+                auto matTy = llvm::cast<daphne::MatrixType>(argTy);
                 argTy = matTy.withShape(-1, matTy.getNumCols());
                 break;
             }
@@ -372,7 +372,7 @@ void VectorizeComputationsPass::runOnOperation() {
         // TODO Maybe we could benefit from another InferencePass inside the pipeline.
         bodyBlock->walk([](Operation *op) {
             for (auto resVal : op->getResults()) {
-                if (auto ty = resVal.getType().dyn_cast<daphne::MatrixType>()) {
+                if (auto ty = llvm::dyn_cast<daphne::MatrixType>(resVal.getType())) {
                     resVal.setType(ty.withShape(-1, -1));
                 }
             }

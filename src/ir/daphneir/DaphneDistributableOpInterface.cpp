@@ -34,11 +34,11 @@ using namespace mlir;
 
 Type getWrappedType(Value v) {
     // Get the type wrapped into this distributed handle.
-    Type wrappedType = v.getType().cast<daphne::HandleType>().getDataType();
+    Type wrappedType = llvm::cast<daphne::HandleType>(v.getType()).getDataType();
     // Remove all information on interesting properties except for the type.
     // This is necessary since these properties do not necessarily hold for a
     // distributed partition of the whole data object.
-    return wrappedType.dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
+    return llvm::dyn_cast<daphne::MatrixType>(wrappedType).withSameElementTypeAndRepr();
 }
 
 template <class EwBinaryOp>
@@ -56,7 +56,7 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
         builder.setInsertionPoint(&block, block.begin());
 
         mlir::Type resTyOrig = op->getType();
-        mlir::Type resTy = resTyOrig.dyn_cast<mlir::daphne::MatrixType>().withSameElementTypeAndRepr();
+        mlir::Type resTy = llvm::dyn_cast<mlir::daphne::MatrixType>(resTyOrig).withSameElementTypeAndRepr();
         auto addOp = builder.create<EwBinaryOp>(loc, resTy, argLhs, argRhs);
         builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{addOp});
     }
@@ -67,9 +67,9 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
 
 template <class EwBinaryOp> std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
     Type tL0 = op->getLhs().getType();
-    auto tL = tL0.dyn_cast<daphne::MatrixType>();
+    auto tL = llvm::dyn_cast<daphne::MatrixType>(tL0);
     Type tR0 = op->getRhs().getType();
-    auto tR = tR0.dyn_cast<daphne::MatrixType>();
+    auto tR = llvm::dyn_cast<daphne::MatrixType>(tR0);
     const ssize_t nrL = tL.getNumRows();
     const ssize_t ncL = tL.getNumCols();
     const ssize_t nrR = tR.getNumRows();
@@ -154,7 +154,7 @@ std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(OpB
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(&block, block.begin());
 
-        mlir::Type resTy = getType().dyn_cast<mlir::daphne::MatrixType>().withSameElementTypeAndRepr();
+        mlir::Type resTy = llvm::dyn_cast<mlir::daphne::MatrixType>(getType()).withSameElementTypeAndRepr();
         auto aggOp = builder.create<RowAggMaxOp>(loc, resTy, arg);
         builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{aggOp});
     }

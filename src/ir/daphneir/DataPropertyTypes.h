@@ -21,4 +21,9 @@
  * and frames). These types are used in both, the IR/compiler and the runtime.
  */
 
+namespace mlir::daphne {
 enum class BoolOrUnknown { Unknown = -1, False = 0, True = 1 };
+} // namespace mlir::daphne
+
+// Make it available in the global namespace for backward compatibility if needed
+using mlir::daphne::BoolOrUnknown;

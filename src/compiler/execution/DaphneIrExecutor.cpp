@@ -20,22 +20,25 @@
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h.inc>
 #include <ir/daphneir/Passes.h>
+#include <mlir/Dialect/Func/Extensions/InlinerExtension.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <mlir/Dialect/LLVMIR/Transforms/InlinerInterfaceImpl.h>
 #include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 
 #include <filesystem>
 
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
-#include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
+#include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
-#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
+#include "mlir/Dialect/Func/Extensions/InlinerExtension.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Math/IR/Math.h"
@@ -46,6 +49,7 @@
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Support/LogicalResult.h"
+#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Transforms/Passes.h"
 #include "llvm/Support/TargetSelect.h"
@@ -56,12 +60,17 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserC
     if (userConfig_.log_ptr != nullptr)
         userConfig_.log_ptr->registerLoggers();
 
+    mlir::DialectRegistry registry;
+    mlir::LLVM::registerInlinerInterface(registry);
+    mlir::func::registerInlinerExtension(registry);
+    context_.appendDialectRegistry(registry);
+
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::arith::ArithDialect>();
     context_.getOrLoadDialect<mlir::func::FuncDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
     context_.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
-    context_.getOrLoadDialect<mlir::AffineDialect>();
+    context_.getOrLoadDialect<mlir::affine::AffineDialect>();
     context_.getOrLoadDialect<mlir::memref::MemRefDialect>();
     context_.getOrLoadDialect<mlir::linalg::LinalgDialect>();
     context_.getOrLoadDialect<mlir::math::MathDialect>();
@@ -215,8 +224,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_kernels)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
 
-    pm.addPass(mlir::createConvertSCFToCFPass());
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
+    pm.addPass(mlir::createSCFToControlFlowPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createLLVMRequestCWrappersPass());
     pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
     pm.addPass(mlir::createReconcileUnrealizedCastsPass());
     if (userConfig_.explain_llvm)
@@ -264,11 +273,12 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         }
 
     registerLLVMDialectTranslation(context_);
+    mlir::registerBuiltinDialectTranslation(context_);
     // module.dump();
     mlir::ExecutionEngineOptions options;
     options.llvmModuleBuilder = nullptr;
     options.transformer = optPipeline;
-    options.jitCodeGenOptLevel = llvm::CodeGenOpt::Level::Default;
+    options.jitCodeGenOptLevel = llvm::CodeGenOptLevel::Default;
     options.sharedLibPaths = llvm::ArrayRef<llvm::StringRef>(sharedLibRefs);
     options.enableObjectDump = true;
     options.enableGDBNotificationListener = true;
@@ -302,7 +312,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::daphne::createTransposeOpLoweringPass());
     pm.addPass(mlir::createInlinerPass());
 
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::affine::createLoopFusionPass());
 
     if (!userConfig_.use_mlir_hybrid_codegen) {
         pm.addPass(mlir::daphne::createMatMulOpLoweringPass(
@@ -322,16 +332,16 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
     pm.addPass(mlir::createCanonicalizerPass());
     pm.addPass(mlir::createCSEPass());
 
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizationPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizeNamedOpsPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToAffineLoopsPass());
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::memref::createFoldMemRefAliasOpsPass());
     pm.addPass(mlir::memref::createNormalizeMemRefsPass());
 
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineScalarReplacementPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::affine::createAffineScalarReplacementPass());
     pm.addPass(mlir::createLowerAffinePass());
-    mlir::LowerVectorToLLVMOptions lowerVectorToLLVMOptions;
-    pm.addPass(mlir::createConvertVectorToLLVMPass(lowerVectorToLLVMOptions));
+    // Vector to LLVM conversion
+    pm.addPass(mlir::createConvertVectorToLLVMPass());
 
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after codegen pipeline"));

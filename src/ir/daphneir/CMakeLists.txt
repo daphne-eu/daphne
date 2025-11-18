@@ -50,6 +50,13 @@ add_mlir_dialect_library(MLIRDaphne
     DEPENDS
     MLIRDaphneOpsIncGen
     MLIRDaphneTransformsIncGen
+    MLIRDaphneDistributableOpInterfaceIncGen
+    MLIRDaphneInferFrameLabelsOpInterfaceIncGen
+    MLIRDaphneInferSymmetricOpInterfaceIncGen
+    MLIRDaphneInferShapeOpInterfaceIncGen
+    MLIRDaphneInferSparsityOpInterfaceIncGen
+    MLIRDaphneInferTypesOpInterfaceIncGen
+    MLIRDaphneVectorizableOpInterfaceIncGen
 
     LINK_COMPONENTS
     Core

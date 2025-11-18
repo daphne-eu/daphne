@@ -57,10 +57,10 @@ void castOperandIf(OpBuilder &builder, Operation *op, size_t operandIdx, Type ty
 Type getTypeWithCommonInfo(Type t1, Type t2) {
     MLIRContext *ctx = t1.getContext();
     Type u = daphne::UnknownType::get(ctx);
-    auto mat1 = t1.dyn_cast<daphne::MatrixType>();
-    auto mat2 = t2.dyn_cast<daphne::MatrixType>();
-    auto frm1 = t1.dyn_cast<daphne::FrameType>();
-    auto frm2 = t2.dyn_cast<daphne::FrameType>();
+    auto mat1 = mlir::dyn_cast<daphne::MatrixType>(t1);
+    auto mat2 = mlir::dyn_cast<daphne::MatrixType>(t2);
+    auto frm1 = mlir::dyn_cast<daphne::FrameType>(t1);
+    auto frm2 = mlir::dyn_cast<daphne::FrameType>(t2);
 
     if (mat1 && mat2) { // both types are matrices
         const Type vt1 = mat1.getElementType();
@@ -134,11 +134,11 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
         // unknown.
         for (size_t i = 0; i < op->getNumResults(); i++) {
             Type t = op->getResult(i).getType();
-            if (auto mt = t.dyn_cast<daphne::MatrixType>())
+            if (auto mt = mlir::dyn_cast<daphne::MatrixType>(t))
                 t = mt.withSameElementType();
-            else if (auto ft = t.dyn_cast<daphne::FrameType>())
+            else if (auto ft = mlir::dyn_cast<daphne::FrameType>(t))
                 t = ft.withSameColumnTypes();
-            else if (auto ct = t.dyn_cast<daphne::ColumnType>())
+            else if (auto ct = mlir::dyn_cast<daphne::ColumnType>(t))
                 t = ct.withSameValueType();
             op->getResult(i).setType(t);
         }
@@ -194,9 +194,9 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         const ssize_t numCols = shapes[i].second;
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
-                        if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+                        if (auto mt = mlir::dyn_cast<daphne::MatrixType>(rt))
                             rv.setType(mt.withShape(numRows, numCols));
-                        else if (auto ft = rt.dyn_cast<daphne::FrameType>())
+                        else if (auto ft = mlir::dyn_cast<daphne::FrameType>(rt))
                             rv.setType(ft.withShape(numRows, numCols));
                         else
                             throw ErrorHandler::compilerError(op, "InferencePass.cpp:" + std::to_string(__LINE__),
@@ -227,8 +227,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         llvm::isa<mlir::daphne::FrameType>(op->getResultTypes()[i])) {
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
-                        auto mt = rt.dyn_cast<daphne::MatrixType>();
-                        auto ft = rt.dyn_cast<daphne::FrameType>();
+                        auto mt = mlir::dyn_cast<daphne::MatrixType>(rt);
+                        auto ft = mlir::dyn_cast<daphne::FrameType>(rt);
                         if (mt)
                             rv.setType(mt.withSparsity(sparsity));
                         else if ((ft && sparsity != -1) || !ft)
@@ -268,7 +268,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     if (llvm::isa<mlir::daphne::MatrixType>(op->getResultTypes()[i])) {
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
-                        if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+                        if (auto mt = mlir::dyn_cast<daphne::MatrixType>(rt))
                             rv.setType(mt.withSymmetric(symmetric));
                     }
                 }
@@ -401,8 +401,8 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
 
                 // Transfer the ForOp's operand types to the block arguments
                 // and results to fulfill constraints on the ForOp.
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                    Type t = forOp.getIterOpOperands()[i].get().getType();
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
+                    Type t = forOp.getInitArgs()[i].getType();
                     block.getArgument(i + numIndVars).setType(t);
                     forOp.getResult(i).setType(t);
                 }
@@ -418,7 +418,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 // If any interesting properties were changed inside the loop
                 // body, we set them to unknown to make the type comparison
                 // pass.
-                for (size_t i = 0; i < forOp.getNumIterOperands(); i++) {
+                for (size_t i = 0; i < forOp.getInitArgs().size(); i++) {
                     Type yieldedTy = yieldOp->getOperand(i).getType();
                     Type resultTy = op->getResult(i).getType();
                     if (yieldedTy != resultTy) {
@@ -507,32 +507,32 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
         return llvm::any_of(op->getResultTypes(), [](Type resType) {
             if (llvm::isa<daphne::UnknownType>(resType))
                 return true;
-            if (auto mt = resType.dyn_cast<daphne::MatrixType>())
+            if (auto mt = mlir::dyn_cast<daphne::MatrixType>(resType))
                 return llvm::isa<daphne::UnknownType>(mt.getElementType());
-            if (auto ft = resType.dyn_cast<daphne::FrameType>()) {
+            if (auto ft = mlir::dyn_cast<daphne::FrameType>(resType)) {
                 for (Type ct : ft.getColumnTypes())
                     if (llvm::isa<daphne::UnknownType>(ct))
                         return true;
                 return false;
             }
-            if (auto ct = resType.dyn_cast<daphne::ColumnType>())
-                return ct.getValueType().isa<daphne::UnknownType>();
+            if (auto ct = mlir::dyn_cast<daphne::ColumnType>(resType))
+                return llvm::isa<daphne::UnknownType>(ct.getValueType());
             return false;
         });
     }
 
     static bool returnsFrameWithUnknownLabels(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type resultType) {
-            auto ft = resultType.dyn_cast<daphne::FrameType>();
+            auto ft = mlir::dyn_cast<daphne::FrameType>(resultType);
             return ft && !ft.getLabels();
         });
     }
 
     static bool returnsUnknownShape(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type rt) {
-            if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+            if (auto mt = mlir::dyn_cast<daphne::MatrixType>(rt))
                 return mt.getNumRows() == -1 || mt.getNumCols() == -1;
-            if (auto ft = rt.dyn_cast<daphne::FrameType>())
+            if (auto ft = mlir::dyn_cast<daphne::FrameType>(rt))
                 return ft.getNumRows() == -1 || ft.getNumCols() == -1;
             return false;
         });
@@ -540,7 +540,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
 
     static bool returnsUnknownSparsity(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type rt) {
-            if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+            if (auto mt = mlir::dyn_cast<daphne::MatrixType>(rt))
                 return mt.getSparsity() == -1.0;
             return false;
         });
@@ -548,7 +548,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
 
     static bool returnsUnknownSymmetric(Operation *op) {
         return llvm::any_of(op->getResultTypes(), [](Type rt) {
-            if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+            if (auto mt = mlir::dyn_cast<daphne::MatrixType>(rt))
                 return mt.getSymmetric() == BoolOrUnknown::Unknown;
             return false;
         });

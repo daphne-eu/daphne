@@ -128,7 +128,8 @@ void HorizontalFusionPass::runOnOperation() {
                         // same split
                         vpOp1.getSplits()[i1] == vpOp2.getSplits()[i2] &&
                         // not broadcasted
-                        vpOp1.getSplits()[i1].cast<daphne::VectorSplitAttr>().getValue() != daphne::VectorSplit::NONE
+                        llvm::cast<daphne::VectorSplitAttr>(vpOp1.getSplits()[i1]).getValue() !=
+                            daphne::VectorSplit::NONE
                         //
                     ) {
                         horFusionPairs.push_back({vpOp1, vpOp2});
