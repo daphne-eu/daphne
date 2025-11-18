@@ -716,18 +716,22 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
     clock::time_point tpBegExec;
+    std::unique_ptr<mlir::ExecutionEngine> engine;
     try {
-        auto engine = executor.createExecutionEngine(moduleOp);
+        engine = executor.createExecutionEngine(moduleOp);
         tpBegExec = clock::now();
 
         // set jump address for catching exceptions in kernel libraries via
         // signal handling
         if (setjmp(return_from_handler) == 0) {
-            auto error = engine->invoke("main");
-            if (error) {
-                llvm::errs() << "JIT-Engine invocation failed: " << error;
+            // Call main directly by looking up function pointer since it takes no args/returns void
+            auto expectedFPtr = engine->lookup("main");
+            if (!expectedFPtr) {
+                llvm::errs() << "Failed to lookup main function: " << expectedFPtr.takeError();
                 return StatusCode::EXECUTION_ERROR;
             }
+            auto mainFn = reinterpret_cast<void (*)()>(*expectedFPtr);
+            mainFn();
         } else {
             logErrorDaphneLibAware(daphneLibRes, "Got an abort signal from the execution engine. Most likely an "
                                                  "exception in a shared library. Check logs!\n"
@@ -735,6 +739,8 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                                      std::to_string(gSignalStatus));
             return StatusCode::EXECUTION_ERROR;
         }
+        // Explicitly reset the engine before any other cleanup happens
+        engine.reset();
     } catch (std::runtime_error &re) {
         logErrorDaphneLibAware(daphneLibRes, "Execution error: " + std::string(re.what()));
         return StatusCode::EXECUTION_ERROR;

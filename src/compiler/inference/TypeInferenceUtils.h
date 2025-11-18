@@ -166,7 +166,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
             // We need to make sure that the value type of the input matrix is
             // repeated in the column value types of the output frame to match
             // the number of columns of the input matrix.
-            const ssize_t numCols = op->getOperand(0).getType().template dyn_cast<daphne::MatrixType>().getNumCols();
+            const ssize_t numCols = llvm::dyn_cast<daphne::MatrixType>(op->getOperand(0).getType()).getNumCols();
             if (numCols == -1)
                 // The input's number of columns is unknown.
                 resVts = {u}; // TODO How to properly represent such cases (see #421)?
@@ -186,7 +186,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
             // We need to make sure that the value type of the input matrix is
             // repeated in the column value types of the output frame to match
             // the number of columns of the input matrix.
-            const ssize_t numCols = op->getOperand(2).getType().template dyn_cast<daphne::MatrixType>().getNumCols();
+            const ssize_t numCols = llvm::dyn_cast<daphne::MatrixType>(op->getOperand(2).getType()).getNumCols();
             if (numCols == -1)
                 // The input's number of columns is unknown.
                 resVts = {u}; // TODO How to properly represent such cases (see #421)?
@@ -207,7 +207,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
         // necessary.
         for (size_t i = 0; i < resVts.size(); i++)
             if (!llvm::isa<FloatType>(resVts[i]) && !llvm::isa<daphne::UnknownType>(resVts[i]))
-                resVts[i] = FloatType::getF64(ctx);
+                resVts[i] = mlir::Float64Type::get(ctx);
     } else if (op->template hasTrait<ValueTypeFromArgsInt>()) {
         // Get the most general value types...
         resVts = inferValueTypeFromArgs(argDtc, argVts);
@@ -237,7 +237,7 @@ template <class O> mlir::Type inferTypeByTraits(O *op) {
                     break;
                 case DataTypeCode::MATRIX: {
                     const ssize_t numCols =
-                        op->getOperand(i).getType().template dyn_cast<daphne::MatrixType>().getNumCols();
+                        llvm::dyn_cast<daphne::MatrixType>(op->getOperand(i).getType()).getNumCols();
                     if (numCols == -1) {
                         // The number of columns of this input matrix
                         // is unknown, so it is unclear how often its

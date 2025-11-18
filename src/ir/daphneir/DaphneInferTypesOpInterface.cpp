@@ -66,12 +66,12 @@ Type getFrameColumnTypeByLabel(Operation *op, daphne::FrameType ft, Value labelV
 std::vector<Type> daphne::CastOp::inferTypes() {
     Type argumentType = getArg().getType();
     Type resultType = getRes().getType();
-    auto matrixArgument = argumentType.dyn_cast<daphne::MatrixType>();
-    auto frameArgument = argumentType.dyn_cast<daphne::FrameType>();
-    auto columnArgument = argumentType.dyn_cast<daphne::ColumnType>();
-    auto matrixResult = resultType.dyn_cast<daphne::MatrixType>();
-    auto frameResult = resultType.dyn_cast<daphne::FrameType>();
-    auto columnResult = resultType.dyn_cast<daphne::ColumnType>();
+    auto matrixArgument = llvm::dyn_cast<daphne::MatrixType>(argumentType);
+    auto frameArgument = llvm::dyn_cast<daphne::FrameType>(argumentType);
+    auto columnArgument = llvm::dyn_cast<daphne::ColumnType>(argumentType);
+    auto matrixResult = llvm::dyn_cast<daphne::MatrixType>(resultType);
+    auto frameResult = llvm::dyn_cast<daphne::FrameType>(resultType);
+    auto columnResult = llvm::dyn_cast<daphne::ColumnType>(resultType);
 
     if (matrixResult) {
         if (!llvm::isa<daphne::UnknownType>(matrixResult.getElementType()))
@@ -196,15 +196,15 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
     Type selTy = getSelectedCols().getType();
     Type resTy;
 
-    if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>())
+    if (auto srcMatTy = llvm::dyn_cast<daphne::MatrixType>(srcTy))
         // Extracting columns from a matrix retains the value type.
         resTy = srcMatTy.withSameElementType();
-    else if (auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+    else if (auto srcFrmTy = llvm::dyn_cast<daphne::FrameType>(srcTy)) {
         // Extracting columns from a frame may change the list of column value
         // types (schema).
         std::vector<Type> resColTys;
 
-        if (auto selStrTy = selTy.dyn_cast<daphne::StringType>()) {
+        if (auto selStrTy = llvm::dyn_cast<daphne::StringType>(selTy)) {
             std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
             std::string delimiter = ".";
             const std::string frameName = label.substr(0, label.find(delimiter));
@@ -222,7 +222,7 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
                 // Extracting a single column by its string label.
                 resColTys = {getFrameColumnTypeByLabel(this->getOperation(), srcFrmTy, getSelectedCols())};
             }
-        } else if (auto selMatTy = selTy.dyn_cast<daphne::MatrixType>()) {
+        } else if (auto selMatTy = llvm::dyn_cast<daphne::MatrixType>(selTy)) {
             // Extracting columns by their positions (given as a column matrix).
 
             // We don't know the result column types, but if the shape of
@@ -259,7 +259,7 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
 }
 
 std::vector<Type> daphne::FilterColOp::inferTypes() {
-    if (auto mt = getSource().getType().dyn_cast<daphne::MatrixType>())
+    if (auto mt = llvm::dyn_cast<daphne::MatrixType>(getSource().getType()))
         return {mt.withSameElementType()};
     else
         // TODO See #484.
@@ -270,7 +270,7 @@ std::vector<Type> daphne::FilterColOp::inferTypes() {
 std::vector<Type> daphne::CreateFrameOp::inferTypes() {
     std::vector<Type> colTypes;
     for (Value col : getCols())
-        colTypes.push_back(col.getType().dyn_cast<daphne::MatrixType>().getElementType());
+        colTypes.push_back(llvm::dyn_cast<daphne::MatrixType>(col.getType()).getElementType());
     return {daphne::FrameType::get(getContext(), colTypes)};
 }
 
@@ -290,13 +290,13 @@ std::vector<Type> daphne::RandMatrixOp::inferTypes() {
 }
 
 std::vector<Type> daphne::EigenOp::inferTypes() {
-    auto evMatType = getArg().getType().dyn_cast<daphne::MatrixType>();
+    auto evMatType = llvm::dyn_cast<daphne::MatrixType>(getArg().getType());
     return {evMatType.withSameElementType(), evMatType};
 }
 
 std::vector<Type> daphne::GroupJoinOp::inferTypes() {
-    auto lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
-    auto rhsFt = getRhs().getType().dyn_cast<daphne::FrameType>();
+    auto lhsFt = llvm::dyn_cast<daphne::FrameType>(getLhs().getType());
+    auto rhsFt = llvm::dyn_cast<daphne::FrameType>(getRhs().getType());
     Type lhsOnType = getFrameColumnTypeByLabel(this->getOperation(), lhsFt, getLhsOn());
     Type rhsAggType = getFrameColumnTypeByLabel(this->getOperation(), rhsFt, getRhsAgg());
 
@@ -306,7 +306,7 @@ std::vector<Type> daphne::GroupJoinOp::inferTypes() {
 }
 
 std::vector<Type> daphne::SemiJoinOp::inferTypes() {
-    auto lhsFt = getLhs().getType().dyn_cast<daphne::FrameType>();
+    auto lhsFt = llvm::dyn_cast<daphne::FrameType>(getLhs().getType());
     Type lhsOnType = getFrameColumnTypeByLabel(this->getOperation(), lhsFt, getLhsOn());
 
     MLIRContext *ctx = getContext();
@@ -318,7 +318,7 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
     MLIRContext *ctx = getContext();
     Builder builder(ctx);
 
-    auto arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+    auto arg = llvm::dyn_cast<daphne::FrameType>(getFrame().getType());
 
     std::vector<Type> newColumnTypes;
     std::vector<Value> aggColValues;
@@ -356,7 +356,7 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
     }
     // Function names get collected in an easier to use data structure
     for (Attribute t : getAggFuncs()) {
-        GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
+        GroupEnum aggFuncValue = llvm::dyn_cast<GroupEnumAttr>(t).getValue();
         aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
     }
     // New Types get computed
@@ -400,18 +400,18 @@ std::vector<Type> daphne::ExtractOp::inferTypes() {
 std::vector<Type> daphne::OneHotOp::inferTypes() {
     Type srcType = getArg().getType();
     Builder builder(getContext());
-    if (srcType.dyn_cast<daphne::MatrixType>().getElementType().isa<mlir::daphne::StringType>())
-        return {srcType.dyn_cast<daphne::MatrixType>().withElementType(builder.getIntegerType(64, true))};
+    if (llvm::isa<mlir::daphne::StringType>(llvm::dyn_cast<daphne::MatrixType>(srcType).getElementType()))
+        return {llvm::dyn_cast<daphne::MatrixType>(srcType).withElementType(builder.getIntegerType(64, true))};
     else
-        return {srcType.dyn_cast<daphne::MatrixType>().withSameElementType()};
+        return {llvm::dyn_cast<daphne::MatrixType>(srcType).withSameElementType()};
 }
 
 std::vector<Type> daphne::GenericCallOp::inferTypes() {
     std::vector<Type> resTypes;
     for (auto rt : getResultTypes()) {
-        if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+        if (auto mt = llvm::dyn_cast<daphne::MatrixType>(rt))
             resTypes.push_back(mt.withSameElementType());
-        else if (auto ft = rt.dyn_cast<daphne::FrameType>())
+        else if (auto ft = llvm::dyn_cast<daphne::FrameType>(rt))
             resTypes.push_back(ft.withSameColumnTypes());
         else
             resTypes.push_back(rt);
@@ -423,9 +423,9 @@ std::vector<Type> daphne::OrderOp::inferTypes() {
     // TODO Take into account if indexes or data shall be returned.
     Type srcType = getArg().getType();
     Type t;
-    if (auto mt = srcType.dyn_cast<daphne::MatrixType>())
+    if (auto mt = llvm::dyn_cast<daphne::MatrixType>(srcType))
         t = mt.withSameElementType();
-    else if (auto ft = srcType.dyn_cast<daphne::FrameType>())
+    else if (auto ft = llvm::dyn_cast<daphne::FrameType>(srcType))
         t = ft.withSameColumnTypes();
     return {t};
 }
@@ -474,7 +474,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
         } else {
             return {matrixType.withElementType(daphne::UnknownType::get(getContext()))};
         }
-    } else if (getRes().getType().dyn_cast<daphne::FrameType>()) {
+    } else if (llvm::dyn_cast<daphne::FrameType>(getRes().getType())) {
         if (p.first) {
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
             std::vector<mlir::Type> cts;
@@ -500,10 +500,10 @@ std::vector<Type> daphne::SliceColOp::inferTypes() {
     Type srcTy = getSource().getType();
     Type resTy;
 
-    if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>())
+    if (auto srcMatTy = llvm::dyn_cast<daphne::MatrixType>(srcTy))
         // Slicing columns from a matrix retains the value type.
         resTy = srcMatTy.withSameElementType();
-    else if (auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+    else if (auto srcFrmTy = llvm::dyn_cast<daphne::FrameType>(srcTy)) {
         // Extracting columns from a frame may change the list of column value
         // types (schema).
         auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
@@ -565,7 +565,7 @@ std::vector<Type> daphne::CondOp::inferTypes() {
     Type condTy = getCond().getType();
     if (llvm::isa<daphne::UnknownType>(condTy))
         return {daphne::UnknownType::get(getContext())};
-    if (auto condMatTy = condTy.dyn_cast<daphne::MatrixType>()) {
+    if (auto condMatTy = llvm::dyn_cast<daphne::MatrixType>(condTy)) {
         Type thenTy = getThenVal().getType();
         Type elseTy = getElseVal().getType();
 
@@ -583,7 +583,7 @@ std::vector<Type> daphne::CondOp::inferTypes() {
                                               "the then/else-values of CondOp must have the same value type");
 
         return {condMatTy.withElementType(thenValTy)};
-    } else if (auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
+    } else if (auto condFrmTy = llvm::dyn_cast<daphne::FrameType>(condTy))
         throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",
                                           "CondOp does not support frames for the condition yet");
     else if (CompilerUtils::isScaType(condTy)) { // cond is a scalar
@@ -593,13 +593,13 @@ std::vector<Type> daphne::CondOp::inferTypes() {
         // Remove any properties of matrix/frame except for the value types,
         // such that they don't interfere with the type comparison below,
         // and since we don't want them in the inferred type.
-        if (auto thenMatTy = thenTy.dyn_cast<daphne::MatrixType>())
+        if (auto thenMatTy = llvm::dyn_cast<daphne::MatrixType>(thenTy))
             thenTy = thenMatTy.withSameElementType();
-        else if (auto thenFrmTy = thenTy.dyn_cast<daphne::FrameType>())
+        else if (auto thenFrmTy = llvm::dyn_cast<daphne::FrameType>(thenTy))
             thenTy = thenFrmTy.withSameColumnTypes();
-        if (auto elseMatTy = elseTy.dyn_cast<daphne::MatrixType>())
+        if (auto elseMatTy = llvm::dyn_cast<daphne::MatrixType>(elseTy))
             elseTy = elseMatTy.withSameElementType();
-        else if (auto elseFrmTy = elseTy.dyn_cast<daphne::FrameType>())
+        else if (auto elseFrmTy = llvm::dyn_cast<daphne::FrameType>(elseTy))
             elseTy = elseFrmTy.withSameColumnTypes();
 
         if (thenTy != elseTy) {
@@ -714,11 +714,11 @@ std::vector<Type> daphne::CreateListOp::inferTypes() {
     Type etRes = nullptr;
     for (size_t i = 0; i < numElems; i++) {
         Type etCur = elems[i].getType();
-        if (etCur.isa<daphne::UnknownType>())
+        if (llvm::isa<daphne::UnknownType>(etCur))
             continue;
-        if (auto mtCur = etCur.dyn_cast<daphne::MatrixType>()) {
+        if (auto mtCur = llvm::dyn_cast<daphne::MatrixType>(etCur)) {
             Type vtCur = mtCur.getElementType();
-            if (vtCur.isa<daphne::UnknownType>())
+            if (llvm::isa<daphne::UnknownType>(vtCur))
                 continue;
             else if (!etRes)
                 etRes = mtCur.withSameElementType();
@@ -738,7 +738,7 @@ std::vector<Type> daphne::RemoveOp::inferTypes() {
     // The type of the first result is the same as that of the argument list.
     // The type of the second result is the element type of the argument list.
     Type argListTy = getArgList().getType();
-    if (auto lt = argListTy.dyn_cast<daphne::ListType>())
+    if (auto lt = llvm::dyn_cast<daphne::ListType>(argListTy))
         return {lt, lt.getElementType()};
     else
         throw ErrorHandler::compilerError(getLoc(), "InferTypesOpInterface",

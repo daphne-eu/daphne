@@ -40,11 +40,11 @@ using namespace mlir::OpTrait;
 
 std::pair<ssize_t, ssize_t> getShape(Value v) {
     Type t = v.getType();
-    if (auto mt = t.dyn_cast<daphne::MatrixType>())
+    if (auto mt = llvm::dyn_cast<daphne::MatrixType>(t))
         return std::make_pair(mt.getNumRows(), mt.getNumCols());
-    if (auto ft = t.dyn_cast<daphne::FrameType>())
+    if (auto ft = llvm::dyn_cast<daphne::FrameType>(t))
         return std::make_pair(ft.getNumRows(), ft.getNumCols());
-    if (auto ct = t.dyn_cast<daphne::ColumnType>())
+    if (auto ct = llvm::dyn_cast<daphne::ColumnType>(t))
         return std::make_pair(ct.getNumRows(), 1);
     if (CompilerUtils::isScaType(t))
         return std::make_pair(1, 1);
@@ -133,8 +133,8 @@ ssize_t inferNumColsFromSumOfArgs(ValueRange vs) {
 // ****************************************************************************
 
 ssize_t daphne::CartesianOp::inferNumRows() {
-    auto ftLhs = getLhs().getType().dyn_cast<daphne::FrameType>();
-    auto ftRhs = getRhs().getType().dyn_cast<daphne::FrameType>();
+    auto ftLhs = llvm::dyn_cast<daphne::FrameType>(getLhs().getType());
+    auto ftRhs = llvm::dyn_cast<daphne::FrameType>(getRhs().getType());
     return ftLhs.getNumRows() * ftRhs.getNumRows();
 }
 
@@ -197,12 +197,12 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
         const std::string colLabel = keyLabel.substr(keyLabel.find(delimiter) + delimiter.length(), keyLabel.length());
 
         if (keyLabel == "*") {
-            daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+            daphne::FrameType arg = llvm::dyn_cast<daphne::FrameType>(getFrame().getType());
             for (std::string frameLabel : *arg.getLabels()) {
                 newLabels.push_back(frameLabel);
             }
         } else if (colLabel.compare("*") == 0) {
-            daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+            daphne::FrameType arg = llvm::dyn_cast<daphne::FrameType>(getFrame().getType());
             std::vector<std::string> labels = *arg.getLabels();
             for (std::string label : labels) {
                 std::string labelFrameName = label.substr(0, label.find(delimiter));
@@ -251,11 +251,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
     size_t numCols = -1;
 
     Type t = getArg().getType();
-    if (auto mt = t.dyn_cast<daphne::MatrixType>()) {
+    if (auto mt = llvm::dyn_cast<daphne::MatrixType>(t)) {
         numRows = mt.getNumRows();
         numCols = mt.getNumCols();
     }
-    if (auto ft = t.dyn_cast<daphne::FrameType>()) {
+    if (auto ft = llvm::dyn_cast<daphne::FrameType>(t)) {
         numRows = ft.getNumRows();
         numCols = ft.getNumCols();
     }
@@ -278,9 +278,9 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
         // even get called. Nevertheless, returning unknown will probably
         // not hurt in case anyone ever calls this from somewhere else.
         return {{-1, -1}};
-    if (auto condMatTy = condTy.dyn_cast<daphne::MatrixType>())
+    if (auto condMatTy = llvm::dyn_cast<daphne::MatrixType>(condTy))
         return {{condMatTy.getNumRows(), condMatTy.getNumCols()}};
-    else if (auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
+    else if (auto condFrmTy = llvm::dyn_cast<daphne::FrameType>(condTy))
         throw ErrorHandler::compilerError(getLoc(), "InferShapeOpInterface (daphne::CondOp::inferShape)",
                                           "CondOp does not support frames for the condition yet");
     else if (CompilerUtils::isScaType(condTy)) { // cond is a scalar
@@ -291,10 +291,10 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
         ssize_t thenNumCols = -1;
         ssize_t elseNumRows = -1;
         ssize_t elseNumCols = -1;
-        auto thenMatTy = thenTy.dyn_cast<daphne::MatrixType>();
-        auto thenFrmTy = thenTy.dyn_cast<daphne::FrameType>();
-        auto elseMatTy = elseTy.dyn_cast<daphne::MatrixType>();
-        auto elseFrmTy = elseTy.dyn_cast<daphne::FrameType>();
+        auto thenMatTy = llvm::dyn_cast<daphne::MatrixType>(thenTy);
+        auto thenFrmTy = llvm::dyn_cast<daphne::FrameType>(thenTy);
+        auto elseMatTy = llvm::dyn_cast<daphne::MatrixType>(elseTy);
+        auto elseFrmTy = llvm::dyn_cast<daphne::FrameType>(elseTy);
         if (thenMatTy) {
             thenNumRows = thenMatTy.getNumRows();
             thenNumCols = thenMatTy.getNumCols();
@@ -413,10 +413,10 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
     if (llvm::isa<daphne::UnknownType>(srcTy)) {
         srcNumRows = -1;
         srcNumCols = -1;
-    } else if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
+    } else if (auto srcMatTy = llvm::dyn_cast<daphne::MatrixType>(srcTy)) {
         srcNumRows = srcMatTy.getNumRows();
         srcNumCols = srcMatTy.getNumCols();
-    } else if (auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+    } else if (auto srcFrmTy = llvm::dyn_cast<daphne::FrameType>(srcTy)) {
         srcNumRows = srcFrmTy.getNumRows();
         srcNumCols = srcFrmTy.getNumCols();
     } else
@@ -469,13 +469,14 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     Type srcTy = getSource().getType();
     ssize_t srcNumRows;
     ssize_t srcNumCols;
+
     if (llvm::isa<daphne::UnknownType>(srcTy)) {
         srcNumRows = -1;
         srcNumCols = -1;
-    } else if (auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
+    } else if (auto srcMatTy = llvm::dyn_cast<daphne::MatrixType>(srcTy)) {
         srcNumRows = srcMatTy.getNumRows();
         srcNumCols = srcMatTy.getNumCols();
-    } else if (auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+    } else if (auto srcFrmTy = llvm::dyn_cast<daphne::FrameType>(srcTy)) {
         srcNumRows = srcFrmTy.getNumRows();
         srcNumCols = srcFrmTy.getNumCols();
     } else
@@ -525,9 +526,9 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ExtractColOp::inferShape() {
-    auto ft = getSource().getType().dyn_cast<daphne::FrameType>();
+    auto ft = llvm::dyn_cast<daphne::FrameType>(getSource().getType());
     auto srcNumRows = getShape(getOperand(0)).first;
-    auto st = getSelectedCols().getType().dyn_cast<daphne::StringType>();
+    auto st = llvm::dyn_cast<daphne::StringType>(getSelectedCols().getType());
 
     if (ft && st) {
         std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());

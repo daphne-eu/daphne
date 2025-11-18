@@ -35,10 +35,10 @@ struct CompilerUtils {
     template <typename ValT, typename AttrT>
     static std::pair<bool, ValT> isConstantHelper(mlir::Value v, const std::function<ValT(const AttrT &)> &func) {
         if (auto co = v.getDefiningOp<mlir::daphne::ConstantOp>())
-            if (auto attr = co.getValue().dyn_cast<AttrT>())
+            if (auto attr = llvm::dyn_cast<AttrT>(co.getValue()))
                 return std::make_pair(true, func(attr));
         if (auto co = v.getDefiningOp<mlir::arith::ConstantOp>())
-            if (auto attr = co.getValue().dyn_cast<AttrT>())
+            if (auto attr = llvm::dyn_cast<AttrT>(co.getValue()))
                 return std::make_pair(true, func(attr));
         return std::make_pair(false, ValT(0));
     }
@@ -77,7 +77,7 @@ struct CompilerUtils {
      * @return `true` if the attribute is present and has the value `true`; or `false`, otherwise
      */
     static bool isAttrTrue(mlir::Operation *op, const std::string &attr) {
-        return op->hasAttr(attr) ? op->getAttr(attr).dyn_cast<mlir::BoolAttr>().getValue() : false;
+        return op->hasAttr(attr) ? llvm::dyn_cast<mlir::BoolAttr>(op->getAttr(attr)).getValue() : false;
     }
 
     /**
@@ -176,16 +176,16 @@ struct CompilerUtils {
             return "bool";
         if (t.isIndex())
             return "size_t";
-        if (t.isa<mlir::daphne::StructureType>())
+        if (llvm::isa<mlir::daphne::StructureType>(t))
             return "Structure";
-        if (auto matTy = t.dyn_cast<mlir::daphne::MatrixType>()) {
+        if (auto matTy = llvm::dyn_cast<mlir::daphne::MatrixType>(t)) {
             if (generalizeToStructure)
                 return "Structure";
             // For matrices of strings we use `std::string` as the value type, while for string scalars we use
             // `const char *` as the value type. Thus, we need this special case here. Maybe we can do it without a
             // special case in the future.
             std::string vtName;
-            if (matTy.getElementType().isa<mlir::daphne::StringType>())
+            if (llvm::isa<mlir::daphne::StringType>(matTy.getElementType()))
                 vtName = "std::string";
             else
                 vtName = mlirTypeToCppTypeName(matTy.getElementType(), angleBrackets, false);
@@ -199,19 +199,19 @@ struct CompilerUtils {
             if (generalizeToStructure)
                 return "Structure";
             return "Frame";
-        } else if (auto colTy = t.dyn_cast<mlir::daphne::ColumnType>()) {
+        } else if (auto colTy = llvm::dyn_cast<mlir::daphne::ColumnType>(t)) {
             if (generalizeToStructure)
                 return "Structure";
             // For columns of strings we use `std::string` as the value type, while for string scalars we use
             // `const char *` as the value type. Thus, we need this special case here. Maybe we can do it without a
             // special case in the future.
             std::string vtName;
-            if (colTy.getValueType().isa<mlir::daphne::StringType>())
+            if (llvm::isa<mlir::daphne::StringType>((colTy.getValueType())))
                 vtName = "std::string";
             else
                 vtName = mlirTypeToCppTypeName(colTy.getValueType(), angleBrackets, false);
             return angleBrackets ? ("Column<" + vtName + ">") : ("Column_" + vtName);
-        } else if (auto lstTy = t.dyn_cast<mlir::daphne::ListType>()) {
+        } else if (auto lstTy = llvm::dyn_cast<mlir::daphne::ListType>(t)) {
             if (generalizeToStructure)
                 return "Structure";
             const std::string dtName = mlirTypeToCppTypeName(lstTy.getElementType(), angleBrackets, false);
@@ -223,7 +223,7 @@ struct CompilerUtils {
             return "char";
         else if (llvm::isa<mlir::daphne::DaphneContextType>(t))
             return "DaphneContext";
-        else if (auto handleTy = t.dyn_cast<mlir::daphne::HandleType>()) {
+        else if (auto handleTy = llvm::dyn_cast<mlir::daphne::HandleType>(t)) {
             const std::string tName =
                 mlirTypeToCppTypeName(handleTy.getDataType(), angleBrackets, generalizeToStructure);
             return angleBrackets ? ("Handle<" + tName + ">") : ("Handle_" + tName);
@@ -233,7 +233,7 @@ struct CompilerUtils {
             return "Descriptor";
         else if (llvm::isa<mlir::daphne::TargetType>(t))
             return "Target";
-        else if (auto memRefType = t.dyn_cast<mlir::MemRefType>()) {
+        else if (auto memRefType = llvm::dyn_cast<mlir::MemRefType>(t)) {
             const std::string vtName = mlirTypeToCppTypeName(memRefType.getElementType(), angleBrackets, false);
             const std::string rankStr = std::to_string(memRefType.getRank());
             return angleBrackets ? ("StridedMemRefType<" + vtName + "," + rankStr + ">")
@@ -290,7 +290,7 @@ struct CompilerUtils {
      * @brief Returns `true` if the given type is a DAPHNE matrix that has exactly one column; or `false`, otherwise.
      */
     static bool isMatTypeWithSingleCol(mlir::Type t) {
-        auto mt = t.dyn_cast<mlir::daphne::MatrixType>();
+        auto mt = llvm::dyn_cast<mlir::daphne::MatrixType>(t);
         return mt && mt.getNumCols() == 1;
     }
 
@@ -335,14 +335,14 @@ struct CompilerUtils {
     static mlir::Type getValueType(mlir::Type t) {
         if (llvm::isa<mlir::daphne::UnknownType>(t))
             return t;
-        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+        if (auto mt = llvm::dyn_cast<mlir::daphne::MatrixType>(t))
             return mt.getElementType();
-        if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+        if (auto ft = llvm::dyn_cast<mlir::daphne::FrameType>(t))
             throw std::runtime_error(
                 "getValueType() doesn't support frames yet"); // TODO maybe use the most general value type
-        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+        if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
             return ct.getValueType();
-        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+        if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
             return getValueType(lt.getElementType());
         if (isScaType(t))
             return t;
@@ -370,13 +370,13 @@ struct CompilerUtils {
     static std::vector<mlir::Type> getValueTypes(mlir::Type t) {
         if (llvm::isa<mlir::daphne::UnknownType>(t))
             return {t};
-        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+        if (auto mt = llvm::dyn_cast<mlir::daphne::MatrixType>(t))
             return {mt.getElementType()};
-        if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+        if (auto ft = llvm::dyn_cast<mlir::daphne::FrameType>(t))
             return ft.getColumnTypes();
-        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+        if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
             return {ct.getValueType()};
-        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+        if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
             return getValueTypes(lt.getElementType());
         if (isScaType(t))
             return {t};
@@ -406,13 +406,13 @@ struct CompilerUtils {
     static mlir::Type setValueType(mlir::Type t, mlir::Type vt) {
         if (llvm::isa<mlir::daphne::UnknownType>(t))
             throw std::runtime_error("setValueType(): cannot set the set the value type of an unknown type");
-        if (auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+        if (auto mt = llvm::dyn_cast<mlir::daphne::MatrixType>(t))
             return mt.withElementType(vt);
-        if (auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+        if (auto ft = llvm::dyn_cast<mlir::daphne::FrameType>(t))
             throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
-        if (auto ct = t.dyn_cast<mlir::daphne::ColumnType>())
+        if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
             return ct.withValueType(vt);
-        if (auto lt = t.dyn_cast<mlir::daphne::ListType>())
+        if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
             return setValueType(lt.getElementType(), vt);
         if (isScaType(t))
             return vt;
@@ -439,8 +439,8 @@ struct CompilerUtils {
      */
     static bool equalUnknownAware(mlir::Type t1, mlir::Type t2) {
         using mlir::daphne::UnknownType;
-        auto matT1 = t1.dyn_cast<mlir::daphne::MatrixType>();
-        auto matT2 = t2.dyn_cast<mlir::daphne::MatrixType>();
+        auto matT1 = llvm::dyn_cast<mlir::daphne::MatrixType>(t1);
+        auto matT2 = llvm::dyn_cast<mlir::daphne::MatrixType>(t2);
         // The two given types are considered equal, iff:
         return (
             // The two types are exactly the same...

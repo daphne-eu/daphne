@@ -28,6 +28,7 @@ set(SOURCES
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+get_property(extension_libs GLOBAL PROPERTY MLIR_EXTENSION_LIBS)
 
 if(USE_HDFS)
         find_library(LIBHDFS3 NAMES libhdfs3.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
@@ -38,9 +39,11 @@ endif()
 set(LIBS
         ${dialect_libs}
         ${conversion_libs}
+        ${extension_libs}
         MLIRDaphne
         MLIRDaphneTransforms
         MLIRExecutionEngine
+        MLIRReconcileUnrealizedCasts
         #DaphneIrExecutor
         DataStructures
         IO        

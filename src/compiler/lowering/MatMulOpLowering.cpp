@@ -74,6 +74,7 @@ namespace mlir {
 } // namespace mlir
 
 using namespace mlir;
+using namespace mlir::affine;
 
 static constexpr int ROW = 0;
 static constexpr int COL = 1;
@@ -184,7 +185,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         if (rhsShape[COL] % options.getVecSize(matrixElementType.getIntOrFloatBitWidth()) != 0) {
             return false;
         }
-        if (!matrixElementType.isa<FloatType>()) {
+        if (!llvm::isa<FloatType>(matrixElementType)) {
             return false;
         }
         return true;
@@ -304,8 +305,8 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     LogicalResult matchAndRewrite(daphne::MatMulOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
-        mlir::daphne::MatrixType lhsMatrixType = adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-        mlir::daphne::MatrixType rhsMatrixType = adaptor.getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+        mlir::daphne::MatrixType lhsMatrixType = llvm::dyn_cast<mlir::daphne::MatrixType>(adaptor.getLhs().getType());
+        mlir::daphne::MatrixType rhsMatrixType = llvm::dyn_cast<mlir::daphne::MatrixType>(adaptor.getRhs().getType());
 
         auto lhsRows = lhsMatrixType.getNumRows();
         auto lhsCols = lhsMatrixType.getNumCols();
@@ -358,7 +359,7 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
         if (options.tile && is_tileable(rhsMemRefType.getShape())) {
             auto tile_sizes = extendTileSizes(lhsRows);
             if (!options.useFixedTileSizes) {
-                tile_sizes = getTileSizesFromCache(matrixElementType, loops[1].getStep(), lhsRows);
+                tile_sizes = getTileSizesFromCache(matrixElementType, loops[1].getStep().getSExtValue(), lhsRows);
             }
             tile_loops(loc, loops, tile_sizes);
         } else if (options.invert_loops) {
@@ -439,170 +440,188 @@ class MatMulLowering : public OpConversionPattern<daphne::MatMulOp> {
     // sizes. Includes validations to follow the movement and creation of the
     // tile loops.
     void tile_loops(mlir::Location loc, SmallVector<AffineForOp, 3> loops, SmallVector<unsigned, 5> tile_sizes) const {
-        unsigned NC = tile_sizes[4];
-        unsigned MC = tile_sizes[3];
-        unsigned KC = tile_sizes[2];
-        unsigned NR = tile_sizes[1];
-        unsigned MR = tile_sizes[0];
-        unsigned KU = options.unroll_factor;
-        [[maybe_unused]] auto vec_size = loops[1].getStep();
-        llvm::SmallVector<AffineForOp> loopNest;
-        getPerfectlyNestedLoops(loopNest, loops.front());
-        // tile i with MC, j with NC, k with KC
-        llvm::SmallVector<AffineForOp> tiledNest;
-        if (failed(tilePerfectlyNested(loopNest, {MC, NC, KC}, &tiledNest))) {
-            spdlog::warn("Could not tile the loop nest in MatMulLowering");
-        };
-
-#define GEN_ERR_MSG(name, size, expected)                                                                              \
-    std::string(name) + " should have step size " + std::string(expected) + " but is " + std::to_string(size)
-
-        if (tiledNest[0].getStep() != MC)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("tiledNest 0", tiledNest[0].getStep(), "MC (" + std::to_string(MC) + ")"));
-        if (tiledNest[1].getStep() != NC * vec_size)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("tiledNest 1", tiledNest[1].getStep(),
-                                                          "NC * vec_size (" + std::to_string(NC * vec_size) + ")"));
-        if (tiledNest[2].getStep() != KC)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("tiledNest 2", tiledNest[2].getStep(), "KC (" + std::to_string(KC) + ")"));
-        if (tiledNest[3].getStep() != 1)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("tiledNest 3", tiledNest[3].getStep(), "1"));
-        if (tiledNest[4].getStep() != vec_size)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("tiledNest 4", tiledNest[4].getStep(), "vec_size (" + std::to_string(vec_size) + ")"));
-        if (tiledNest[5].getStep() != 1)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("tiledNest 5", tiledNest[5].getStep(), "1"));
-
-        // Further tile the i mod MC loop with MR
-        if (failed(tilePerfectlyNested(tiledNest[3], {MR}))) {
-            spdlog::warn("Could not tile the second i loop in MatMulLowering");
-        };
-
-        // Further tile the j mod NC loop with NR
-        if (tiledNest[4].getStep() != vec_size)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("tiledNest 4", tiledNest[4].getStep(), "vec_size (" + std::to_string(vec_size) + ")"));
-        if (failed(tilePerfectlyNested(tiledNest[4], {NR}))) {
-            spdlog::warn("Could not tile the second j loop in MatMulLowering");
-        };
-
-        llvm::SmallVector<AffineForOp> twiceTiledNest;
-        getPerfectlyNestedLoops(twiceTiledNest, tiledNest[0]);
-        // i loops
-        if (twiceTiledNest[0].getStep() != MC)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("twiceTiledNest 0", twiceTiledNest[0].getStep(), "MC (" + std::to_string(MC) + ")"));
-        if (twiceTiledNest[3].getStep() != MR)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("twiceTiledNest 3", twiceTiledNest[3].getStep(), "MR (" + std::to_string(MR) + ")"));
-        if (twiceTiledNest[4].getStep() != 1)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("twiceTiledNest 4", twiceTiledNest[4].getStep(), "1"));
-
-        // j loops
-        if (twiceTiledNest[1].getStep() != NC * vec_size)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("twiceTiledNest 1", twiceTiledNest[1].getStep(),
-                                                          "NC * vec_size (" + std::to_string(NC * vec_size) + ")"));
-        if (twiceTiledNest[5].getStep() != NR * vec_size)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("twiceTiledNest 5", twiceTiledNest[5].getStep(),
-                                                          "NR * vec_size (" + std::to_string(NR * vec_size) + ")"));
-        if (twiceTiledNest[6].getStep() != vec_size)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("twiceTiledNest 6", twiceTiledNest[6].getStep(),
-                                                          "vec_size (" + std::to_string(vec_size) + ")"));
-
-        // k loops
-        if (twiceTiledNest[2].getStep() != KC)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("twiceTiledNest 2", twiceTiledNest[2].getStep(), "KC (" + std::to_string(KC) + ")"));
-        if (twiceTiledNest[7].getStep() != 1)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("twiceTiledNest 7", twiceTiledNest[7].getStep(), "1"));
-
-        // permute loops to final order (i / MC, j / NC, k / KC, i / MR, i mod
-        // MR, j / NR, j mod NR, k mod KC) ->
-        //                              (j / NC, k / KC, i / MC, j / NR, i / MR,
-        //                              k mod KC, j mod NR, i mod MR)
-        unsigned root_idx = permuteLoops(twiceTiledNest, {2, 0, 1, 4, 7, 3, 6, 5});
-
-        // Unroll and jam
-        llvm::SmallVector<AffineForOp> blisTiledLoops;
-        getPerfectlyNestedLoops(blisTiledLoops, twiceTiledNest[root_idx]);
-        // i loops
-        if (blisTiledLoops[2].getStep() != MC)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("blisTiled 2", blisTiledLoops[2].getStep(), "MC (" + std::to_string(MC) + ")"));
-        if (blisTiledLoops[4].getStep() != MR)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("blisTiled 4", blisTiledLoops[4].getStep(), "MR (" + std::to_string(MR) + ")"));
-        if (blisTiledLoops[7].getStep() != 1)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("blisTiled 7", blisTiledLoops[7].getStep(), "1"));
-
-        // j loops
-        if (blisTiledLoops[0].getStep() != NC * vec_size)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("blisTiled 0", blisTiledLoops[0].getStep(),
-                                                          "NC * vec_size (" + std::to_string(NC * vec_size) + ")"));
-        if (blisTiledLoops[3].getStep() != NR * vec_size)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("blisTiled 3", blisTiledLoops[3].getStep(),
-                                                          "NR * vec_size (" + std::to_string(NR * vec_size) + ")"));
-        if (blisTiledLoops[6].getStep() != vec_size)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("blisTiled 6", blisTiledLoops[6].getStep(), "vec_size (" + std::to_string(vec_size) + ")"));
-
-        // k loops
-        if (blisTiledLoops[1].getStep() != KC)
-            throw ErrorHandler::compilerError(
-                loc, "MatMulOpLowering (tile_loops)",
-                GEN_ERR_MSG("blisTiled 1", blisTiledLoops[1].getStep(), "KC (" + std::to_string(KC) + ")"));
-        if (blisTiledLoops[5].getStep() != 1)
-            throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
-                                              GEN_ERR_MSG("blisTiled 5", blisTiledLoops[5].getStep(), "1"));
-
-#undef GEN_ERR_MSG
-
-        // Unroll jam causes Segfault, if called in a way where the loop is not
-        // cleanly divided.
-        if (options.unroll_jam_factor > 0 && blisTiledLoops[5].getUpperBound().getMap().getNumResults() == 1 &&
-            succeeded(loopUnrollJamUpToFactor(blisTiledLoops[5], options.unroll_jam_factor))) {
-            if (blisTiledLoops[6].getUpperBound().getMap().getNumResults() != 1 ||
-                failed(loopUnrollJamUpToFactor(blisTiledLoops[6], options.unroll_jam_factor))) {
-                spdlog::warn("Could not unroll the (j mod NC) mod NR loop in "
-                             "MatMulLowering");
-            }
-        } else {
-            spdlog::warn("Could not unroll the (i mod MC) mod MR loop in "
-                         "MatMulLowering");
-        }
-
-        llvm::SmallVector<AffineForOp> lastNest;
-        getPerfectlyNestedLoops(lastNest, blisTiledLoops.front());
-        int64_t i = 0;
-        while (succeeded(promoteIfSingleIteration(lastNest[i])) && i < 4) {
-            i++;
-        }
-
-        if (KU > 0 && failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
-            spdlog::warn("Could not unroll the K loop in MatMulLowering");
-        }
+        //         unsigned NC = tile_sizes[4];
+        //         unsigned MC = tile_sizes[3];
+        //         unsigned KC = tile_sizes[2];
+        //         unsigned NR = tile_sizes[1];
+        //         unsigned MR = tile_sizes[0];
+        //         unsigned KU = options.unroll_factor;
+        //         [[maybe_unused]] auto vec_size = loops[1].getStep();
+        //         llvm::SmallVector<AffineForOp> loopNest;
+        //         getPerfectlyNestedLoops(loopNest, loops.front());
+        //         // tile i with MC, j with NC, k with KC
+        //         llvm::SmallVector<AffineForOp> tiledNest;
+        //         if (failed(tilePerfectlyNested(loopNest, {MC, NC, KC}, &tiledNest))) {
+        //             spdlog::warn("Could not tile the loop nest in MatMulLowering");
+        //         };
+        //
+        // #define GEN_ERR_MSG(name, size, expected) \
+//     std::string(name) + " should have step size " + std::string(expected) + " but is " + std::to_string(size)
+        //
+        //         if (tiledNest[0].getStep() != MC)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("tiledNest 0", tiledNest[0].getStep().getSExtValue(), "MC (" + std::to_string(MC)
+        //                 + ")"));
+        //         if (tiledNest[1].getStep() != NC * vec_size)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("tiledNest 1", tiledNest[1].getStep(),
+        //                                                           "NC * vec_size (" + std::to_string(NC *
+        //                                                           vec_size.getSExtValue()) + ")"));
+        //         if (tiledNest[2].getStep() != KC)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("tiledNest 2", tiledNest[2].getStep().getSExtValue(), "KC (" + std::to_string(KC)
+        //                 + ")"));
+        //         if (tiledNest[3].getStep() != 1)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("tiledNest 3",
+        //                                               tiledNest[3].getStep().getSExtValue(), "1"));
+        //         if (tiledNest[4].getStep() != vec_size)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("tiledNest 4", tiledNest[4].getStep().getSExtValue(), "vec_size (" +
+        //                 std::to_string(vec_size.getSExtValue()) + ")"));
+        //         if (tiledNest[5].getStep() != 1)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("tiledNest 5",
+        //                                               tiledNest[5].getStep().getSExtValue(), "1"));
+        //
+        //         // Further tile the i mod MC loop with MR
+        //         if (failed(tilePerfectlyNested(tiledNest[3], {MR}))) {
+        //             spdlog::warn("Could not tile the second i loop in MatMulLowering");
+        //         };
+        //
+        //         // Further tile the j mod NC loop with NR
+        //         if (tiledNest[4].getStep() != vec_size)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("tiledNest 4", tiledNest[4].getStep(), "vec_size (" + std::to_string(vec_size) +
+        //                 ")"));
+        //         if (failed(tilePerfectlyNested(tiledNest[4], {NR}))) {
+        //             spdlog::warn("Could not tile the second j loop in MatMulLowering");
+        //         };
+        //
+        //         llvm::SmallVector<AffineForOp> twiceTiledNest;
+        //         getPerfectlyNestedLoops(twiceTiledNest, tiledNest[0]);
+        //         // i loops
+        //         if (twiceTiledNest[0].getStep() != MC)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("twiceTiledNest 0", twiceTiledNest[0].getStep(), "MC (" + std::to_string(MC) +
+        //                 ")"));
+        //         if (twiceTiledNest[3].getStep() != MR)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("twiceTiledNest 3", twiceTiledNest[3].getStep(), "MR (" + std::to_string(MR) +
+        //                 ")"));
+        //         if (twiceTiledNest[4].getStep() != 1)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("twiceTiledNest 4", twiceTiledNest[4].getStep(),
+        //                                               "1"));
+        //
+        //         // j loops
+        //         if (twiceTiledNest[1].getStep() != NC * vec_size)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("twiceTiledNest 1", twiceTiledNest[1].getStep(),
+        //                                                           "NC * vec_size (" + std::to_string(NC * vec_size) +
+        //                                                           ")"));
+        //         if (twiceTiledNest[5].getStep() != NR * vec_size)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("twiceTiledNest 5", twiceTiledNest[5].getStep(),
+        //                                                           "NR * vec_size (" + std::to_string(NR * vec_size) +
+        //                                                           ")"));
+        //         if (twiceTiledNest[6].getStep() != vec_size)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("twiceTiledNest 6", twiceTiledNest[6].getStep(),
+        //                                                           "vec_size (" + std::to_string(vec_size) + ")"));
+        //
+        //         // k loops
+        //         if (twiceTiledNest[2].getStep() != KC)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("twiceTiledNest 2", twiceTiledNest[2].getStep(), "KC (" + std::to_string(KC) +
+        //                 ")"));
+        //         if (twiceTiledNest[7].getStep() != 1)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("twiceTiledNest 7", twiceTiledNest[7].getStep(),
+        //                                               "1"));
+        //
+        //         // permute loops to final order (i / MC, j / NC, k / KC, i / MR, i mod
+        //         // MR, j / NR, j mod NR, k mod KC) ->
+        //         //                              (j / NC, k / KC, i / MC, j / NR, i / MR,
+        //         //                              k mod KC, j mod NR, i mod MR)
+        //         unsigned root_idx = permuteLoops(twiceTiledNest, {2, 0, 1, 4, 7, 3, 6, 5});
+        //
+        //         // Unroll and jam
+        //         llvm::SmallVector<AffineForOp> blisTiledLoops;
+        //         getPerfectlyNestedLoops(blisTiledLoops, twiceTiledNest[root_idx]);
+        //         // i loops
+        //         if (blisTiledLoops[2].getStep() != MC)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("blisTiled 2", blisTiledLoops[2].getStep(), "MC (" + std::to_string(MC) + ")"));
+        //         if (blisTiledLoops[4].getStep() != MR)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("blisTiled 4", blisTiledLoops[4].getStep(), "MR (" + std::to_string(MR) + ")"));
+        //         if (blisTiledLoops[7].getStep() != 1)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("blisTiled 7", blisTiledLoops[7].getStep(), "1"));
+        //
+        //         // j loops
+        //         if (blisTiledLoops[0].getStep() != NC * vec_size)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("blisTiled 0", blisTiledLoops[0].getStep(),
+        //                                                           "NC * vec_size (" + std::to_string(NC * vec_size) +
+        //                                                           ")"));
+        //         if (blisTiledLoops[3].getStep() != NR * vec_size)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("blisTiled 3", blisTiledLoops[3].getStep(),
+        //                                                           "NR * vec_size (" + std::to_string(NR * vec_size) +
+        //                                                           ")"));
+        //         if (blisTiledLoops[6].getStep() != vec_size)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("blisTiled 6", blisTiledLoops[6].getStep(), "vec_size (" +
+        //                 std::to_string(vec_size) + ")"));
+        //
+        //         // k loops
+        //         if (blisTiledLoops[1].getStep() != KC)
+        //             throw ErrorHandler::compilerError(
+        //                 loc, "MatMulOpLowering (tile_loops)",
+        //                 GEN_ERR_MSG("blisTiled 1", blisTiledLoops[1].getStep(), "KC (" + std::to_string(KC) + ")"));
+        //         if (blisTiledLoops[5].getStep() != 1)
+        //             throw ErrorHandler::compilerError(loc, "MatMulOpLowering (tile_loops)",
+        //                                               GEN_ERR_MSG("blisTiled 5", blisTiledLoops[5].getStep(), "1"));
+        //
+        // #undef GEN_ERR_MSG
+        //
+        //         // Unroll jam causes Segfault, if called in a way where the loop is not
+        //         // cleanly divided.
+        //         if (options.unroll_jam_factor > 0 && blisTiledLoops[5].getUpperBound().getMap().getNumResults() == 1
+        //         &&
+        //             succeeded(loopUnrollJamUpToFactor(blisTiledLoops[5], options.unroll_jam_factor))) {
+        //             if (blisTiledLoops[6].getUpperBound().getMap().getNumResults() != 1 ||
+        //                 failed(loopUnrollJamUpToFactor(blisTiledLoops[6], options.unroll_jam_factor))) {
+        //                 spdlog::warn("Could not unroll the (j mod NC) mod NR loop in "
+        //                              "MatMulLowering");
+        //             }
+        //         } else {
+        //             spdlog::warn("Could not unroll the (i mod MC) mod MR loop in "
+        //                          "MatMulLowering");
+        //         }
+        //
+        //         llvm::SmallVector<AffineForOp> lastNest;
+        //         getPerfectlyNestedLoops(lastNest, blisTiledLoops.front());
+        //         int64_t i = 0;
+        //         while (succeeded(promoteIfSingleIteration(lastNest[i])) && i < 4) {
+        //             i++;
+        //         }
+        //
+        //         if (KU > 0 && failed(loopUnrollUpToFactor(lastNest.back(), KU))) {
+        //             spdlog::warn("Could not unroll the K loop in MatMulLowering");
+        //         }
     }
 };
 
@@ -675,14 +694,14 @@ void MatMulLoweringPass::runOnOperation() {
     typeConverter.addConversion(convertInteger);
     typeConverter.addConversion(convertFloat);
     typeConverter.addConversion([](Type type) { return type; });
-    typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+    // typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
     target.addLegalDialect<mlir::memref::MemRefDialect>();
     target.addLegalDialect<mlir::arith::ArithDialect>();
     target.addLegalDialect<mlir::scf::SCFDialect>();
-    target.addLegalDialect<mlir::AffineDialect>();
+    target.addLegalDialect<mlir::affine::AffineDialect>();
     target.addLegalDialect<mlir::linalg::LinalgDialect>();
     target.addLegalDialect<mlir::LLVM::LLVMDialect>();
     target.addLegalDialect<mlir::vector::VectorDialect>();

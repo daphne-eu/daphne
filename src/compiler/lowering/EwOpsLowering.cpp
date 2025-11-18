@@ -51,7 +51,7 @@ using namespace mlir;
 // Rewriter Templates (Elemwise Unary, Elemwise Binary)
 // ****************************************************************************
 
-using unaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value arg);
+using unaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value arg);
 
 /**
  * @brief template for lowering elemwise unary functions.
@@ -80,7 +80,7 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
     LogicalResult matchAndRewrite(UnaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const override {
 
         Location loc = op->getLoc();
-        daphne::MatrixType matrixType = adaptor.getArg().getType().template dyn_cast<daphne::MatrixType>();
+        daphne::MatrixType matrixType = llvm::dyn_cast<daphne::MatrixType>(adaptor.getArg().getType());
 
         // Scalar values are handled separately. Otherwise assume input is DenseMatrix.
         if (!matrixType) {
@@ -121,7 +121,8 @@ template <class UnaryOp, unaryFuncType unaryFunc> struct UnaryOpLowering : publi
     }
 };
 
-using binaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs);
+using binaryFuncType = Value (*)(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs,
+                                 Value rhs);
 
 /**
  * @brief template for lowering elemwise binary functions.
@@ -210,7 +211,7 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Location loc = op->getLoc();
         Value lhs = adaptor.getLhs();
 
-        auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto lhsMatrixType = llvm::dyn_cast<daphne::MatrixType>(lhs.getType());
         ssize_t lhsRows = lhsMatrixType.getNumRows();
         ssize_t lhsCols = lhsMatrixType.getNumCols();
 
@@ -243,8 +244,8 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         Value lhs = adaptor.getLhs();
         Value rhs = adaptor.getRhs();
 
-        auto lhsMatrixType = lhs.getType().template dyn_cast<daphne::MatrixType>();
-        auto rhsMatrixType = rhs.getType().template dyn_cast<daphne::MatrixType>();
+        auto lhsMatrixType = llvm::dyn_cast<daphne::MatrixType>(lhs.getType());
+        auto rhsMatrixType = llvm::dyn_cast<daphne::MatrixType>(rhs.getType());
 
         // Match Scalar-Scalar and Matrix-Scalar broadcasting (assuming scalar values are always switched to
         // rhs). Broadcasting where either Matrix is a singleton or vector needs to be handled separately below.
@@ -320,14 +321,14 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
 // ----------------------------------------------------------------------------
 
 template <typename IOp, typename FOp>
-Value unaryNoConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value arg) {
+Value unaryNoConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value arg) {
     Value res = llvm::isa<mlir::IntegerType>(arg.getType()) ? rewriter.create<IOp>(loc, arg).getResult()
                                                             : rewriter.create<FOp>(loc, arg).getResult();
     return res;
 }
 
 template <typename IOp, typename FOp>
-Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value arg) {
+Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value arg) {
     Type resType = arg.getType();
     Value res = arg;
     if (llvm::isa<mlir::IntegerType>(resType)) {
@@ -341,7 +342,8 @@ Value unaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *
 }
 
 template <typename IOp, typename FOp>
-Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) {
+Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs,
+                               Value rhs) {
     Type resType = lhs.getType();
     Value res{};
     if (llvm::isa<mlir::IntegerType>(resType)) {
@@ -356,7 +358,8 @@ Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter 
 }
 
 template <typename SIOp, typename UIOp, typename FOp>
-Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) {
+Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs,
+                               Value rhs) {
     Type resType = lhs.getType();
     Value res{};
     if (llvm::isa<IntegerType>(resType)) {
@@ -376,7 +379,7 @@ Value binaryWithConversionFunc(OpBuilder &rewriter, Location loc, TypeConverter 
 // ----------------------------------------------------------------------------
 
 // powOp has different specializations for certain combinations of value types
-Value ewPowOpComputeRes(OpBuilder &rewriter, Location loc, TypeConverter *typeConverter, Value lhs, Value rhs) {
+Value ewPowOpComputeRes(OpBuilder &rewriter, Location loc, const TypeConverter *typeConverter, Value lhs, Value rhs) {
     Value resValue;
     Type rhsMatrixElementType = rhs.getType();
     Type resMatrixElementType = lhs.getType();
@@ -437,10 +440,10 @@ using DivOpLowering =
 
 // Binary Comparison
 // Min/Max
-using MaxOpLowering =
-    BinaryOpLowering<daphne::EwMinOp, binaryWithConversionFunc<arith::MinSIOp, arith::MinUIOp, arith::MinFOp>>;
 using MinOpLowering =
-    BinaryOpLowering<daphne::EwMaxOp, binaryWithConversionFunc<arith::MaxSIOp, arith::MaxUIOp, arith::MaxFOp>>;
+    BinaryOpLowering<daphne::EwMinOp, binaryWithConversionFunc<arith::MinSIOp, arith::MinUIOp, arith::MinimumFOp>>;
+using MaxOpLowering =
+    BinaryOpLowering<daphne::EwMaxOp, binaryWithConversionFunc<arith::MaxSIOp, arith::MaxUIOp, arith::MaximumFOp>>;
 
 // Logical
 // using AndOpLowering =
@@ -465,9 +468,9 @@ struct EwOpLoweringPass : public mlir::PassWrapper<EwOpLoweringPass, mlir::Opera
     explicit EwOpLoweringPass() = default;
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry
-            .insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect,
-                    daphne::DaphneDialect, mlir::math::MathDialect, mlir::arith::ArithDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::affine::AffineDialect, memref::MemRefDialect,
+                        mlir::linalg::LinalgDialect, daphne::DaphneDialect, mlir::math::MathDialect,
+                        mlir::arith::ArithDialect>();
     }
     void runOnOperation() final;
 
@@ -522,11 +525,11 @@ void EwOpLoweringPass::runOnOperation() {
     typeConverter.addConversion(convertInteger);
     typeConverter.addConversion(convertFloat);
     typeConverter.addConversion([](Type type) { return type; });
-    typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+    // typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
-    target.addLegalDialect<mlir::arith::ArithDialect, memref::MemRefDialect, mlir::AffineDialect,
+    target.addLegalDialect<mlir::arith::ArithDialect, memref::MemRefDialect, mlir::affine::AffineDialect,
                            mlir::LLVM::LLVMDialect, daphne::DaphneDialect, mlir::BuiltinDialect,
                            mlir::math::MathDialect, mlir::linalg::LinalgDialect>();
 
@@ -540,7 +543,7 @@ void EwOpLoweringPass::runOnOperation() {
         if (llvm::isa<IntegerType>(operand) || llvm::isa<FloatType>(operand)) {
             return false;
         }
-        auto matType = operand.dyn_cast<daphne::MatrixType>();
+        auto matType = llvm::dyn_cast<daphne::MatrixType>(operand);
         if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
             return false;
         }
@@ -554,8 +557,8 @@ void EwOpLoweringPass::runOnOperation() {
             [](Operation *op) {
                 Type lhs = op->getOperand(0).getType();
                 Type rhs = op->getOperand(1).getType();
-                auto lhsMatType = lhs.dyn_cast<daphne::MatrixType>();
-                auto rhsMatType = rhs.dyn_cast<daphne::MatrixType>();
+                auto lhsMatType = llvm::dyn_cast<daphne::MatrixType>(lhs);
+                auto rhsMatType = llvm::dyn_cast<daphne::MatrixType>(rhs);
                 // Rhs is scalar and lhs is scalar or dense matrix (rhs is broadcasted)
                 if ((llvm::isa<IntegerType>(rhs) || llvm::isa<FloatType>(rhs)) &&
                     ((llvm::isa<IntegerType>(lhs) || llvm::isa<FloatType>(lhs)) ||

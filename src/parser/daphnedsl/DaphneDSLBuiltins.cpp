@@ -202,9 +202,9 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
         rightOn.push_back(utils.castSizeIf(args[2 + numCols + i]));
     }
     std::vector<mlir::Type> colTypes;
-    for (mlir::Type t : lhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+    for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(lhs.getType()).getColumnTypes())
         colTypes.push_back(t);
-    for (mlir::Type t : rhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+    for (mlir::Type t : llvm::dyn_cast<mlir::daphne::FrameType>(rhs.getType()).getColumnTypes())
         colTypes.push_back(t);
     mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
     return static_cast<mlir::Value>(builder.create<JoinOp>(loc, t, lhs, rhs, leftOn, rightOn));
@@ -343,7 +343,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         bool expectCol = true;
         for (auto arg : args) {
             mlir::Type t = arg.getType();
-            auto mt = t.dyn_cast<MatrixType>();
+            auto mt = llvm::dyn_cast<MatrixType>(t);
             if (expectCol && mt) {
                 colTypes.push_back(mt.getElementType());
                 cols.push_back(arg);
@@ -998,7 +998,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         checkNumArgsExact(loc, func, numArgs, 2);
         std::vector<mlir::Type> colTypes;
         for (auto arg : args)
-            for (mlir::Type t : arg.getType().dyn_cast<FrameType>().getColumnTypes())
+            for (mlir::Type t : llvm::dyn_cast<FrameType>(arg.getType()).getColumnTypes())
                 colTypes.push_back(t);
         return static_cast<mlir::Value>(
             builder.create<CartesianOp>(loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]));
@@ -1008,7 +1008,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         std::vector<mlir::Type> colTypes;
         mlir::Value numRowRes;
         for (int i = 0; i < 2; i++)
-            for (mlir::Type t : args[i].getType().dyn_cast<FrameType>().getColumnTypes())
+            for (mlir::Type t : llvm::dyn_cast<FrameType>(args[i].getType()).getColumnTypes())
                 colTypes.push_back(t);
         if (numArgs == 5)
             numRowRes = utils.castSI64If(args[4]);
@@ -1104,12 +1104,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         for (size_t i = 1; i < numArgs; i++)
             labels.push_back(args[i]);
         return static_cast<mlir::Value>(builder.create<SetColLabelsOp>(
-            loc, args[0].getType().dyn_cast<FrameType>().withSameColumnTypes(), args[0], labels));
+            loc, llvm::dyn_cast<FrameType>(args[0].getType()).withSameColumnTypes(), args[0], labels));
     }
     if (func == "setColLabelsPrefix") {
         checkNumArgsExact(loc, func, numArgs, 2);
         return static_cast<mlir::Value>(builder.create<SetColLabelsPrefixOp>(
-            loc, args[0].getType().dyn_cast<FrameType>().withSameColumnTypes(), args[0], args[1]));
+            loc, llvm::dyn_cast<FrameType>(args[0].getType()).withSameColumnTypes(), args[0], args[1]));
     }
 
     // ********************************************************************
@@ -1310,7 +1310,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Attribute attr = co.getValue();
 
         return static_cast<mlir::Value>(
-            builder.create<MapOp>(loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()));
+            builder.create<MapOp>(loc, source.getType(), source, llvm::dyn_cast<mlir::StringAttr>(attr)));
     }
 
     // ****************************************************************************

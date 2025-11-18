@@ -148,7 +148,7 @@ template <class FrmOp> LogicalResult replaceExtractRowOp(PatternRewriter &rewrit
 
     Value src = op.getSource();
 
-    auto srcFrmTy = src.getType().dyn_cast<daphne::FrameType>();
+    auto srcFrmTy = llvm::dyn_cast<daphne::FrameType>(src.getType());
     // For now, we only replace the op, if it is applied to a frame.
     // TODO We could also support matrices as source.
     if (!srcFrmTy)
@@ -285,8 +285,8 @@ struct ColumnarOpReplacement : public RewritePattern {
             Value lhsOn = ijOp.getLhsOn(); // key column label in the left input
             Value rhsOn = ijOp.getRhsOn(); // key column label in the rifht input
 
-            auto lhsFrmTy = lhs.getType().dyn_cast<daphne::FrameType>();
-            auto rhsFrmTy = rhs.getType().dyn_cast<daphne::FrameType>();
+            auto lhsFrmTy = llvm::dyn_cast<daphne::FrameType>(lhs.getType());
+            auto rhsFrmTy = llvm::dyn_cast<daphne::FrameType>(rhs.getType());
             // Both inputs must be frames.
             if (!lhsFrmTy || !rhsFrmTy)
                 return failure();
@@ -330,8 +330,8 @@ struct ColumnarOpReplacement : public RewritePattern {
             Value lhsOn = sjOp.getLhsOn(); // key column label in the left input
             Value rhsOn = sjOp.getRhsOn(); // key column label in the rifht input
 
-            auto lhsFrmTy = lhs.getType().dyn_cast<daphne::FrameType>();
-            auto rhsFrmTy = rhs.getType().dyn_cast<daphne::FrameType>();
+            auto lhsFrmTy = llvm::dyn_cast<daphne::FrameType>(lhs.getType());
+            auto rhsFrmTy = llvm::dyn_cast<daphne::FrameType>(rhs.getType());
             // Both inputs must be frames.
             if (!lhsFrmTy || !rhsFrmTy)
                 return failure();
@@ -373,7 +373,7 @@ struct ColumnarOpReplacement : public RewritePattern {
             ValueRange keyLabels = gOp.getKeyCol(); // labels of the columns to group on
             ValueRange aggLabels = gOp.getAggCol(); // labels of the columns to aggregate
 
-            auto argFrmTy = arg.getType().dyn_cast<daphne::FrameType>();
+            auto argFrmTy = llvm::dyn_cast<daphne::FrameType>(arg.getType());
             // The input must be a frame.
             if (!argFrmTy)
                 return failure();
@@ -494,8 +494,8 @@ void RewriteToColumnarOpsPass::runOnOperation() {
             if (auto plbmcOp = arg.getDefiningOp<daphne::ConvertPosListToBitmapOp>()) {
                 // In case the inputs have already been rewritten.
                 if (auto cOp = plbmcOp.getArg().getDefiningOp<daphne::CastOp>()) {
-                    bool isArgColTy = cOp.getArg().getType().isa<daphne::ColumnType>();
-                    bool isResMatTy = cOp.getRes().getType().isa<daphne::MatrixType>();
+                    bool isArgColTy = llvm::isa<daphne::ColumnType>(cOp.getArg().getType());
+                    bool isResMatTy = llvm::isa<daphne::MatrixType>(cOp.getRes().getType());
                     if (isArgColTy && isResMatTy) {
                         if (auto defOp = cOp.getArg().getDefiningOp()) {
                             // TODO We could define a trait for these ops.
@@ -544,7 +544,7 @@ void RewriteToColumnarOpsPass::runOnOperation() {
         auto gOp = llvm::dyn_cast<daphne::GroupOp>(op);
         ArrayAttr aggFuncs = gOp.getAggFuncs();
         return !llvm::all_of(aggFuncs.getValue(), [](Attribute af) {
-            return af.dyn_cast<daphne::GroupEnumAttr>().getValue() == daphne::GroupEnum::SUM;
+            return llvm::dyn_cast<daphne::GroupEnumAttr>(af).getValue() == daphne::GroupEnum::SUM;
         });
         ;
     });

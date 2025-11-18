@@ -69,7 +69,7 @@ class TransposeOpLowering : public OpConversionPattern<daphne::TransposeOp> {
     LogicalResult matchAndRewrite(daphne::TransposeOp op, OpAdaptor adaptor,
                                   ConversionPatternRewriter &rewriter) const override {
 
-        daphne::MatrixType matrixType = adaptor.getArg().getType().dyn_cast<daphne::MatrixType>();
+        daphne::MatrixType matrixType = llvm::dyn_cast<daphne::MatrixType>(adaptor.getArg().getType());
         if (!matrixType) {
             return failure();
         }
@@ -131,7 +131,7 @@ void TransposeLoweringPass::runOnOperation() {
     typeConverter.addConversion(convertInteger);
     typeConverter.addConversion(convertFloat);
     typeConverter.addConversion([](Type type) { return type; });
-    typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
+    // typeConverter.addArgumentMaterialization(materializeCastFromIllegal);
     typeConverter.addSourceMaterialization(materializeCastToIllegal);
     typeConverter.addTargetMaterialization(materializeCastFromIllegal);
 
@@ -139,7 +139,7 @@ void TransposeLoweringPass::runOnOperation() {
 
     target.addDynamicallyLegalOp<daphne::TransposeOp>([](Operation *op) {
         Type operand = op->getOperand(0).getType();
-        daphne::MatrixType matType = operand.dyn_cast<daphne::MatrixType>();
+        daphne::MatrixType matType = llvm::dyn_cast<daphne::MatrixType>(operand);
         if (matType && matType.getRepresentation() == daphne::MatrixRepresentation::Dense) {
             return false;
         }

@@ -111,7 +111,7 @@ void InsertPropertiesPass::runOnOperation() {
                         continue;
                     }
 
-                    if (auto mt = res.getType().dyn_cast<daphne::MatrixType>()) {
+                    if (auto mt = mlir::dyn_cast<daphne::MatrixType>(res.getType())) {
                         double sparsity = value.get<double>();
                         if ((llvm::isa<scf::ForOp>(op) || llvm::isa<scf::WhileOp>(op) || llvm::isa<scf::IfOp>(op))) {
                             builder.setInsertionPointAfter(op);
