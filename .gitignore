@@ -6,6 +6,9 @@ build_*/
 /lib
 /tmp
 
+*.patch
+*.out
+
 # runtime dump
 **/*.ll
 
