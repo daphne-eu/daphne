@@ -18,12 +18,14 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_CONDMATMATSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -81,13 +83,17 @@ struct CondMatMatSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, DenseMatrix<VTVal>
     }
 };
 
+template <class T>
+concept MatrixLike = requires { typename std::remove_cvref_t<T>::value_type; } &&
+                     std::is_base_of_v<Matrix<typename std::remove_cvref_t<T>::value_type>, std::remove_cvref_t<T>>;
+
 // ----------------------------------------------------------------------------
-// Matrix <- Matrix, Matrix, scalar
+// Matrix-like <- Matrix-like, Matrix-like, scalar
 // ----------------------------------------------------------------------------
 
-template <typename VTVal, typename VTCond> struct CondMatMatSca<Matrix<VTVal>, Matrix<VTCond>, Matrix<VTVal>, VTVal> {
-    static void apply(Matrix<VTVal> *&res, const Matrix<VTCond> *cond, const Matrix<VTVal> *thenVal, VTVal elseVal,
-                      DCTX(ctx)) {
+template <MatrixLike DTRes, MatrixLike DTCond, MatrixLike DTThen, typename VTElse>
+struct CondMatMatSca<DTRes, DTCond, DTThen, VTElse> {
+    static void apply(DTRes *&res, const DTCond *cond, const DTThen *thenVal, VTElse elseVal, DCTX(ctx)) {
         const size_t numRows = cond->getNumRows();
         const size_t numCols = cond->getNumCols();
 
@@ -100,8 +106,14 @@ template <typename VTVal, typename VTCond> struct CondMatMatSca<Matrix<VTVal>, M
             throw std::runtime_error(errMsg.str());
         }
 
-        if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTVal>>(numRows, numCols, false);
+        if (res == nullptr) {
+            if constexpr (std::is_same_v<std::remove_cvref_t<DTRes>, CSRMatrix<VTElse>>)
+                // TODO: Either use estimation or scratch pad to figure out sparse output allocation. Maybe only in
+                // template specialization for sparse matrix types.
+                res = DataObjectFactory::create<DTRes>(numRows, numCols, numRows * numCols, false);
+            else
+                res = DataObjectFactory::create<DenseMatrix<VTElse>>(numRows, numCols, false);
+        }
 
         res->prepareAppend();
         for (size_t r = 0; r < numRows; ++r)
