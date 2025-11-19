@@ -84,8 +84,8 @@ struct CondMatMatSca<DenseMatrix<VTVal>, DenseMatrix<VTCond>, DenseMatrix<VTVal>
 };
 
 template <class T>
-concept MatrixLike = requires { typename std::remove_cvref_t<T>::value_type; } &&
-                     std::is_base_of_v<Matrix<typename std::remove_cvref_t<T>::value_type>, std::remove_cvref_t<T>>;
+concept MatrixLike = requires { typename std::remove_cvref_t<T>::VT; } &&
+                     std::is_base_of_v<Matrix<typename std::remove_cvref_t<T>::VT>, std::remove_cvref_t<T>>;
 
 // ----------------------------------------------------------------------------
 // Matrix-like <- Matrix-like, Matrix-like, scalar
