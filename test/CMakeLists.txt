@@ -167,13 +167,14 @@ set(TEST_SOURCES
         runtime/local/kernels/SetColLabelsPrefixTest.cpp
         runtime/local/kernels/SliceColTest.cpp
         runtime/local/kernels/SliceRowTest.cpp
+        runtime/local/kernels/SoftmaxTest.cpp
         runtime/local/kernels/SolveTest.cpp
         runtime/local/kernels/StopTest.cpp
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/ThetaJoinTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
-        
+
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
 
         util/RecordPropertiesTest.cpp

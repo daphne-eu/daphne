@@ -5852,6 +5852,23 @@
                         ["DenseMatrix", "double"]
                     ]
                 ]
+            },
+            {
+                "name": ["CPP"],
+                "instantiations":[
+                    [
+                        ["DenseMatrix", "float"],
+                        ["DenseMatrix", "float"]
+                    ],
+                    [
+                        ["DenseMatrix", "double"],
+                        ["DenseMatrix", "double"]
+                    ],
+                    [
+                        ["DenseMatrix", "double"],
+                        ["CSRMatrix", "double"]
+                    ]
+                ]
             }
         ]
     },
