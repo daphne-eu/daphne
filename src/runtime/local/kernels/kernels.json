@@ -2083,17 +2083,6 @@
                 ]
             },
             {
-                "name": ["example_for_commented_or_unimplemented"],
-                "instantiations": [
-                    [
-                        ["DenseMatrix", "uint32_t"],
-                        ["DenseMatrix", "uint32_t"],
-                        ["DenseMatrix", "uint32_t"]
-                    ]
-                ],
-                "opCodes": ["BIT_AND", "BIT_OR"]
-            },
-            {
                 "name": ["CPP"],
                 "instantiations": [
                     [
