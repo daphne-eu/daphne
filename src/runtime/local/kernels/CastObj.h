@@ -214,18 +214,41 @@ template <typename VT> class CastObj<DenseMatrix<VT>, CSRMatrix<VT>> {
     static void apply(DenseMatrix<VT> *&res, const CSRMatrix<VT> *arg, DCTX(ctx)) {
         const size_t numCols = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
+        const size_t numNonZeros = arg->getNumNonZeros();
 
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
 
-        // TODO This could be done more efficiently by avoiding the get()/set()
-        // calls (use append() or direct access to the underlying arrays).
-        VT temp;
-        for (size_t r = 0; r < numRows; r++) {
-            for (size_t c = 0; c < numCols; c++) {
-                temp = arg->get(r, c);
-                res->set(r, c, temp);
+        VT *valuesRes = res->getValues();
+
+        if (numNonZeros == 0)
+            // Special case: The arg has no non-zeros.
+            // We can simply fill the entire res with zeros, no need to read even the arg's rowOffsets.
+            std::fill(valuesRes, valuesRes + numRows * numCols, 0);
+        else if (numNonZeros == numRows * numCols) {
+            // Special case: The arg has no zeros.
+            // We can simply use the arg's values as-is for the res.
+            // TODO We could even share the arg's values array with the res to avoid copying.
+            const VT *valuesArg = arg->getValues(0);
+            std::copy(valuesArg, valuesArg + numNonZeros, valuesRes);
+        } else {
+            // General case: The arg has zeros and non-zeros.
+            // We transfer the arg's non-zeros to the res and fill the gaps with zeros.
+            size_t prevPosRes = 0;
+            size_t posResRow = 0;
+            for (size_t r = 0; r < numRows; r++) {
+                const size_t numNonZerosRow = arg->getNumNonZeros(r);
+                const VT *valuesArgRow = arg->getValues(r);
+                const size_t *colIdxsArgRow = arg->getColIdxs(r);
+                for (size_t i = 0; i < numNonZerosRow; i++) {
+                    const size_t posRes = posResRow + colIdxsArgRow[i];
+                    std::fill(valuesRes + prevPosRes, valuesRes + posRes, 0);
+                    valuesRes[posRes] = valuesArgRow[i];
+                    prevPosRes = posRes + 1;
+                }
+                posResRow += numCols;
             }
+            std::fill(valuesRes + prevPosRes, valuesRes + numRows * numCols, 0);
         }
     }
 };
