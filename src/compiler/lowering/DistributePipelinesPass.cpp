@@ -70,7 +70,9 @@ struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipeli
                 newSplits.push_back(op.getSplits()[idx]);
             }
         }
-        funcOp.eraseArguments(eraseVector);
+        auto eraseResult = funcOp.eraseArguments(eraseVector);
+        if (eraseResult.failed())
+            return failure();
 
         std::string s;
         llvm::raw_string_ostream stream(s);
