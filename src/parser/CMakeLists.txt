@@ -71,7 +71,7 @@ include(GNUInstallDirs) # for ${CMAKE_INSTALL_LIBDIR}
 find_package(antlr4-generator REQUIRED)
 find_package(antlr4-runtime REQUIRED)
 
-include_directories(${PROJECT_BINARY_DIR} ${ANTLR4_INCLUDE_DIR})
+include_directories(SYSTEM ${PROJECT_BINARY_DIR} ${ANTLR4_INCLUDE_DIR})
 
 # *****************************************************************************
 # Descend to subdirectories
