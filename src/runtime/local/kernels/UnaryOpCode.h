@@ -147,4 +147,108 @@ SUPPORT_STRING(const char *)
 #undef SUPPORT_NUMERIC
 #undef SUPPORT_STRING
 
+// ****************************************************************************
+// Additional utilities for unary op codes
+// ****************************************************************************
+
+struct UnaryOpCodeUtils {
+    /**
+     * @brief Returns `true` if the given unary operation maps every non-zero floating-point value to a non-zero
+     * floating-point value (never to zero); and `false`, otherwise.
+     *
+     * @param opCode The unary operation.
+     * @return
+     */
+    static bool mapsNonZeroToNonZeroFloat(UnaryOpCode opCode) {
+        switch (opCode) {
+        // Op codes returning true:
+        // Arithmetic/general math.
+        case UnaryOpCode::MINUS:
+        case UnaryOpCode::ABS:
+        case UnaryOpCode::SIGN:
+        case UnaryOpCode::SQRT:
+        case UnaryOpCode::EXP:
+        // Trigonometric/hyperbolic.
+        case UnaryOpCode::ASIN:
+        case UnaryOpCode::ATAN:
+        case UnaryOpCode::SINH:
+        case UnaryOpCode::COSH:
+        case UnaryOpCode::TANH:
+        // String.
+        case UnaryOpCode::UPPER:
+        case UnaryOpCode::LOWER:
+            return true;
+        // Op codes returning false:
+        // Arithmetic/general math.
+        case UnaryOpCode::LN:
+        // Trigonometric/hyperbolic.
+        case UnaryOpCode::SIN:
+        case UnaryOpCode::COS:
+        case UnaryOpCode::TAN:
+        case UnaryOpCode::ACOS:
+        // Rounding.
+        case UnaryOpCode::FLOOR:
+        case UnaryOpCode::CEIL:
+        case UnaryOpCode::ROUND:
+        // Comparison.
+        case UnaryOpCode::ISNAN:
+            return false;
+        default:
+            throw std::runtime_error("unsupported UnaryOpCode");
+        }
+    }
+
+    /**
+     * @brief Returns `true` if the given unary operation maps every non-zero integer value to a non-zero integer value
+     * (never to zero); and `false`, otherwise.
+     *
+     * Note that some unary operations that map all non-zero floating-point values to non-zero floating-point values do
+     * not map non-zero integer values to non-zero integer values, because storing the result as an integer usually
+     * implies rounding down.
+     *
+     * @param opCode The unary operation.
+     * @return
+     */
+    static bool mapsNonZeroToNonZeroInt(UnaryOpCode opCode) {
+        switch (opCode) {
+        // Op codes returning true:
+        // Arithmetic/general math.
+        case UnaryOpCode::MINUS:
+        case UnaryOpCode::ABS:
+        case UnaryOpCode::SIGN:
+        case UnaryOpCode::SQRT:
+        case UnaryOpCode::EXP:
+        // Trigonometric/hyperbolic.
+        case UnaryOpCode::ASIN: // asin(1) ≈ 1.571 -> 1
+        case UnaryOpCode::SINH: // sinh(1) ≈ 1.175 -> 1
+        case UnaryOpCode::COSH: // cosh(1) ≈ 1.543 -> 1
+#if 0
+        // String.
+        case UnaryOpCode::UPPER: // n/a
+        case UnaryOpCode::LOWER: // n/a
+#endif
+            return true;
+        // Op codes returning false:
+        // Arithmetic/general math.
+        case UnaryOpCode::LN:
+        // Trigonometric/hyperbolic.
+        case UnaryOpCode::SIN:
+        case UnaryOpCode::COS:
+        case UnaryOpCode::TAN:
+        case UnaryOpCode::ACOS:
+        case UnaryOpCode::ATAN: // atan(1) ≈ 0.785 -> 0
+        case UnaryOpCode::TANH: // tanh(1) ≈ 0.761 -> 0
+        // Rounding.
+        case UnaryOpCode::FLOOR:
+        case UnaryOpCode::CEIL:
+        case UnaryOpCode::ROUND:
+        // Comparison.
+        case UnaryOpCode::ISNAN:
+            return false;
+        default:
+            throw std::runtime_error("unsupported UnaryOpCode");
+        }
+    }
+};
+
 #endif // SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

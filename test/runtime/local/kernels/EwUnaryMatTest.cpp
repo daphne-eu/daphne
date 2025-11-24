@@ -31,7 +31,7 @@
 #include <cstdint>
 
 #define TEST_NAME(opName) "EwUnaryMat (" opName ")"
-#define DATA_TYPES DenseMatrix, Matrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES int32_t, double
 
 template <typename DTRes, typename DTArg> void checkEwUnaryMat(UnaryOpCode opCode, const DTArg *arg, const DTRes *exp) {
