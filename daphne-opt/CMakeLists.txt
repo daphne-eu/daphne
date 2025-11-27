@@ -19,6 +19,9 @@ set(LIBS
         ${conversion_libs}
 
         MLIRDaphne
+        MLIRBufferizationDialect
+        MLIRBufferizationTransforms
+        MLIRDaphneToLinalg
         MLIRAnalysis
         MLIRCallInterfaces
         MLIRCastInterfaces
