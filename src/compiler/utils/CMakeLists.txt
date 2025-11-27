@@ -17,6 +17,7 @@ add_library(CompilerUtils STATIC
         LoweringUtils.cpp
         TypePrinting.cpp
         VectorizationUtils.cpp
+        DaphneTypeConverter.cpp
 )
 
 target_link_libraries(CompilerUtils PUBLIC
