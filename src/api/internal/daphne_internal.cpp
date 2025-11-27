@@ -254,7 +254,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
                                    "(typically, but not necessarily, along with the kernel shared "
                                    "libraries)"));
 
-    static opt<bool> mlirCodegen("mlir-codegen", cat(daphneOptions),
+    static opt<bool> mlirCodegen("codegen", cat(daphneOptions),
                                  desc("Enables lowering of certain DaphneIR operations on DenseMatrix "
                                       "to low-level MLIR operations."));
     static opt<int> matmul_vec_size_bits("matmul-vec-size-bits", cat(daphneOptions),
@@ -306,7 +306,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         type_adaptation,
         vectorized,
         obj_ref_mgnt,
-        mlir_codegen,
+        codegen,
         mlir_codegen_sparsity_exploiting_op_fusion,
         mlir_codegen_daphneir_to_mlir,
         mlir_codegen_mlir_specific
@@ -331,7 +331,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(mlir_codegen, "Show DaphneIR after MLIR codegen"),
+            clEnumVal(codegen, "Show DaphneIR after MLIR codegen"),
             clEnumVal(mlir_codegen_sparsity_exploiting_op_fusion,
                       "Show DaphneIR after MLIR codegen (sparsity-exploiting operator fusion)"),
             clEnumVal(mlir_codegen_daphneir_to_mlir, "Show DaphneIR after MLIR codegen (DaphneIR to MLIR)"),
@@ -534,7 +534,7 @@ int startDAPHNE(int argc, const char **argv, DaphneLibResult *daphneLibRes, int 
         case obj_ref_mgnt:
             user_config.explain_obj_ref_mgnt = true;
             break;
-        case mlir_codegen:
+        case codegen:
             user_config.explain_mlir_codegen = true;
             break;
         case mlir_codegen_sparsity_exploiting_op_fusion:

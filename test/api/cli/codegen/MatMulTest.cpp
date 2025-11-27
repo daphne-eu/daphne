@@ -29,7 +29,7 @@ TEST_CASE("matmul", TAG_CODEGEN TAG_MATMUL) {
                          "45 45 45\n";
 
     compareDaphneToStr(result, dirPath + "matmul.daphne");
-    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "matmul.daphne", "--codegen");
 }
 TEST_CASE("matmul vectorized", TAG_CODEGEN TAG_MATMUL) {
     std::string result = "DenseMatrix(3x3, double)\n"
@@ -37,8 +37,8 @@ TEST_CASE("matmul vectorized", TAG_CODEGEN TAG_MATMUL) {
                          "45 45 45\n"
                          "45 45 45\n";
 
-    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--matmul-vec-size-bits=64");
-    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--no-obj-ref-mgnt",
+    compareDaphneToStr(result, dirPath + "matmul.daphne", "--codegen", "--matmul-vec-size-bits=64");
+    compareDaphneToStr(result, dirPath + "matmul.daphne", "--codegen", "--no-obj-ref-mgnt",
                        "--matmul-vec-size-bits=128");
 }
 TEST_CASE("matmul tiled", TAG_CODEGEN TAG_MATMUL) {
@@ -47,7 +47,7 @@ TEST_CASE("matmul tiled", TAG_CODEGEN TAG_MATMUL) {
                          "45 45 45\n"
                          "45 45 45\n";
 
-    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--matmul-fixed-tile-sizes=2,2,2");
+    compareDaphneToStr(result, dirPath + "matmul.daphne", "--codegen", "--matmul-fixed-tile-sizes=2,2,2");
 }
 TEST_CASE("matmul tiled and vectorized", TAG_CODEGEN TAG_MATMUL) {
     std::string result = "DenseMatrix(3x3, double)\n"
@@ -55,7 +55,7 @@ TEST_CASE("matmul tiled and vectorized", TAG_CODEGEN TAG_MATMUL) {
                          "45 45 45\n"
                          "45 45 45\n";
 
-    compareDaphneToStr(result, dirPath + "matmul.daphne", "--mlir-codegen", "--matmul-vec-size-bits=64",
+    compareDaphneToStr(result, dirPath + "matmul.daphne", "--codegen", "--matmul-vec-size-bits=64",
                        "--matmul-fixed-tile-sizes=2,2,2");
 }
 TEST_CASE("matmul single", TAG_CODEGEN TAG_MATMUL) {
@@ -65,7 +65,7 @@ TEST_CASE("matmul single", TAG_CODEGEN TAG_MATMUL) {
                          "45 45 45\n";
 
     compareDaphneToStr(result, dirPath + "matmul_single.daphne");
-    compareDaphneToStr(result, dirPath + "matmul_single.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "matmul_single.daphne", "--codegen");
 }
 TEST_CASE("matmul si64", TAG_CODEGEN TAG_MATMUL) {
     std::string result = "DenseMatrix(3x3, int64_t)\n"
@@ -74,7 +74,7 @@ TEST_CASE("matmul si64", TAG_CODEGEN TAG_MATMUL) {
                          "45 45 45\n";
 
     compareDaphneToStr(result, dirPath + "matmul_si64.daphne");
-    compareDaphneToStr(result, dirPath + "matmul_si64.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "matmul_si64.daphne", "--codegen");
 }
 TEST_CASE("matmul ui64", TAG_CODEGEN TAG_MATMUL) {
     std::string result = "DenseMatrix(3x3, uint64_t)\n"
@@ -82,7 +82,7 @@ TEST_CASE("matmul ui64", TAG_CODEGEN TAG_MATMUL) {
                          "45 45 45\n"
                          "45 45 45\n";
 
-    compareDaphneToStr(result, dirPath + "matmul_ui64.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "matmul_ui64.daphne", "--codegen");
 }
 TEST_CASE("matmul non square", TAG_CODEGEN TAG_MATMUL) {
     std::string result = "DenseMatrix(3x3, double)\n"
@@ -91,7 +91,7 @@ TEST_CASE("matmul non square", TAG_CODEGEN TAG_MATMUL) {
                          "60 60 60\n";
 
     compareDaphneToStr(result, dirPath + "matmul_non_square.daphne");
-    compareDaphneToStr(result, dirPath + "matmul_non_square.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "matmul_non_square.daphne", "--codegen");
 }
 
 TEST_CASE("matvec", TAG_CODEGEN) {
@@ -101,5 +101,5 @@ TEST_CASE("matvec", TAG_CODEGEN) {
                          "45\n";
 
     compareDaphneToStr(result, dirPath + "matvec.daphne");
-    compareDaphneToStr(result, dirPath + "matvec.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "matvec.daphne", "--codegen");
 }

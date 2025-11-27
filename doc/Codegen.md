@@ -45,7 +45,7 @@ are found in `src/compiler/lowering/`.
 ## Guidelines
 
 Currently, the code generation pipeline is enabled with the CLI flag
-`--mlir-codegen`. This adds the following passes that perform transformations and
+`--codegen`. This adds the following passes that perform transformations and
 lowerings:
 
 - [DenseMatrixOptPass](/src/compiler/lowering/DaphneOptPass.cpp)
@@ -80,7 +80,7 @@ passed to a kernel and how a kernel can return a `StridedMemRefType`.
 #### Debugging
 
 In order to enable our debug `PrintIRPass` pass, one has to add `--explain
-mlir_code_gen` when running `daphne`. Additionally, it is recommended to use the
+codegen` when running `daphne`. Additionally, it is recommended to use the
 `daphne-opt` tool to test passes in isolation. One just has to provide the
 input IR for a pass to `daphne-opt` and the correct flag to run the pass (or
 multiple passes) on the IR. `daphne-opt` provides all the functionality of the

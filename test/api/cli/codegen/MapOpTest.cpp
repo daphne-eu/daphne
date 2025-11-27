@@ -31,5 +31,5 @@ TEST_CASE("mapOp", TAG_CODEGEN) {
                          "6.5 -1.2\n";
 
     compareDaphneToStr(result, dirPath + "map.daphne");
-    compareDaphneToStr(result, dirPath + "map.daphne", "--mlir-codegen", "--no-obj-ref-mgnt");
+    compareDaphneToStr(result, dirPath + "map.daphne", "--codegen", "--no-obj-ref-mgnt");
 }

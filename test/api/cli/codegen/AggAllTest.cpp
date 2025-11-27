@@ -24,7 +24,7 @@ const std::string dirPath = "test/api/cli/codegen/";
 
 void testAggAllResult(const std::string result, const std::string op) {
     compareDaphneToStr(result, dirPath + "aggall_" + op + ".daphne");
-    compareDaphneToStr(result, dirPath + "aggall_" + op + ".daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "aggall_" + op + ".daphne", "--codegen");
 }
 
 TEST_CASE("aggAll sum", TAG_CODEGEN) { testAggAllResult("100\n100\n100\n", "sum"); }

@@ -36,5 +36,5 @@ TEST_CASE("transposeOp", TAG_CODEGEN) {
                             "3 -6\n";
     // clang-format on
     compareDaphneToStr(result, dirPath + "transpose.daphne");
-    compareDaphneToStr(result, dirPath + "transpose.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "transpose.daphne", "--codegen");
 }

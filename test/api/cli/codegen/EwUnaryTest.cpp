@@ -39,7 +39,7 @@ void test_unary_lowering(const std::string op, const std::string kernel_call, co
     err.str(std::string());
 
     status =
-        runDaphne(out, err, "--explain", "llvm", "--mlir-codegen", (dirPath + "ewunary_" + op + ".daphne").c_str());
+        runDaphne(out, err, "--explain", "llvm", "--codegen", (dirPath + "ewunary_" + op + ".daphne").c_str());
     CHECK(status == StatusCode::SUCCESS);
 
     CHECK_THAT(err.str(), !Catch::Contains(kernel_call));

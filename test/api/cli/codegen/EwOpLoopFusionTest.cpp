@@ -37,5 +37,5 @@ TEST_CASE("ewloopfusion", TAG_CODEGEN) {
                          "9 9\n";
 
     compareDaphneToStr(result, dirPath + "fusion.daphne");
-    compareDaphneToStr(result, dirPath + "fusion.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "fusion.daphne", "--codegen");
 }

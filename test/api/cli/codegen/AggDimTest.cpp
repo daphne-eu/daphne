@@ -41,7 +41,7 @@ TEST_CASE("aggDim sum", TAG_CODEGEN) {
                             "5 7 9\n";
     // clang-format on
     compareDaphneToStr(result, dirPath + "aggdim_sum.daphne");
-    compareDaphneToStr(result, dirPath + "aggdim_sum.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "aggdim_sum.daphne", "--codegen");
 }
 
 TEST_CASE("aggDim min", TAG_CODEGEN) {
@@ -63,7 +63,7 @@ TEST_CASE("aggDim min", TAG_CODEGEN) {
                             "1 2 3\n";
     // clang-format on
     compareDaphneToStr(result, dirPath + "aggdim_min.daphne");
-    compareDaphneToStr(result, dirPath + "aggdim_min.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "aggdim_min.daphne", "--codegen");
 }
 
 TEST_CASE("aggDim max", TAG_CODEGEN) {
@@ -85,7 +85,7 @@ TEST_CASE("aggDim max", TAG_CODEGEN) {
                             "4 5 6\n";
     // clang-format on
     compareDaphneToStr(result, dirPath + "aggdim_max.daphne");
-    compareDaphneToStr(result, dirPath + "aggdim_max.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "aggdim_max.daphne", "--codegen");
 }
 
 TEST_CASE("aggDim argMin", TAG_CODEGEN) {
@@ -109,7 +109,7 @@ TEST_CASE("aggDim argMin", TAG_CODEGEN) {
                             "0 1 0\n";
     // clang-format on
     compareDaphneToStr(result, dirPath + "aggdim_argmin.daphne");
-    compareDaphneToStr(result, dirPath + "aggdim_argmin.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "aggdim_argmin.daphne", "--codegen");
 }
 
 TEST_CASE("aggDim argMax", TAG_CODEGEN) {
@@ -131,5 +131,5 @@ TEST_CASE("aggDim argMax", TAG_CODEGEN) {
                             "1 0 1\n";
     // clang-format on
     compareDaphneToStr(result, dirPath + "aggdim_argmax.daphne");
-    compareDaphneToStr(result, dirPath + "aggdim_argmax.daphne", "--mlir-codegen");
+    compareDaphneToStr(result, dirPath + "aggdim_argmax.daphne", "--codegen");
 }
