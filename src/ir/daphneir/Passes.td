@@ -19,6 +19,15 @@
 
 include "mlir/Pass/PassBase.td"
 
+def ConvertDaphneToLinalg : Pass<"convert-daphne-to-linalg"> {
+  let summary = "Converts certain DaphneOps to ops from the Linalg dialect.";
+  let description = [{
+    Converts certain DaphneOps to ops from the Linalg dialect.
+  }];
+  let constructor = "daphne::createConvertDaphneToLinalgPass()";
+
+}
+
 def DistributeComputations : Pass<"distribute-computations", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createDistributeComputationsPass()";
 }
