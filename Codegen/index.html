@@ -2002,7 +2002,7 @@ both, pre-compiled kernel libraries and code generation. Code generation passes
 are found in <code>src/compiler/lowering/</code>.</p>
 <h2 id="guidelines">Guidelines</h2>
 <p>Currently, the code generation pipeline is enabled with the CLI flag
-<code>--mlir-codegen</code>. This adds the following passes that perform transformations and
+<code>--codegen</code>. This adds the following passes that perform transformations and
 lowerings:</p>
 <ul>
 <li><a href="https://github.com/daphne-eu/daphne/tree/main/src/compiler/lowering/DaphneOptPass.cpp">DenseMatrixOptPass</a></li>
@@ -2031,7 +2031,7 @@ DaphneOps <code>Daphne_ConvertMemRefToDenseMatrix</code> and
 passed to a kernel and how a kernel can return a <code>StridedMemRefType</code>.</p>
 <h4 id="debugging">Debugging</h4>
 <p>In order to enable our debug <code>PrintIRPass</code> pass, one has to add <code>--explain
-mlir_code_gen</code> when running <code>daphne</code>. Additionally, it is recommended to use the
+codegen</code> when running <code>daphne</code>. Additionally, it is recommended to use the
 <code>daphne-opt</code> tool to test passes in isolation. One just has to provide the
 input IR for a pass to <code>daphne-opt</code> and the correct flag to run the pass (or
 multiple passes) on the IR. <code>daphne-opt</code> provides all the functionality of the
