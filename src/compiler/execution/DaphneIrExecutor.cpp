@@ -292,4 +292,12 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
     return std::move(maybeEngine.get());
 }
 
-void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {}
+void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
+    if (userConfig_.explain_mlir_codegen)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
+
+    pm.addPass(mlir::daphne::createConvertDaphneToLinalgPass());
+
+    if (userConfig_.explain_mlir_codegen)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after codegen pipeline"));
+}
