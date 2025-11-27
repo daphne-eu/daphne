@@ -27,6 +27,7 @@ set(LIBS
         MLIRDaphneExplain
         MLIRDaphneInference
         MLIRDaphneTransforms
+        MLIRDaphneToLinalg
         MLIRExecutionEngine
         MLIRReconcileUnrealizedCasts
         )
