@@ -2,8 +2,10 @@
 #include "ir/daphneir/Passes.h"
 
 #include "compiler/utils/DaphneTypeConverter.h"
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/Tensor/IR/Tensor.h>
 
 namespace mlir::daphne {
 #define GEN_PASS_DEF_CONVERTDAPHNETOLINALG
@@ -18,11 +20,17 @@ struct ConvertDaphneToLinalgPass : public impl::ConvertDaphneToLinalgBase<Conver
         populateDaphneToLinalgPatterns(converter, patterns);
 
         ConversionTarget target(getContext());
-        target.addLegalDialect<linalg::LinalgDialect, arith::ArithDialect, memref::MemRefDialect>();
-        target.addIllegalOp<daphne::FillOp>();
+        target.addLegalDialect<tensor::TensorDialect, bufferization::BufferizationDialect, linalg::LinalgDialect,
+                               arith::ArithDialect, memref::MemRefDialect>();
+        target.addIllegalOp<daphne::FillOp, daphne::AllAggSumOp>();
 
         if (failed(applyPartialConversion(getOperation(), target, std::move(patterns))))
             signalPassFailure();
+    }
+
+    void getDependentDialects(DialectRegistry &registry) const override {
+        registry.insert<arith::ArithDialect, memref::MemRefDialect, linalg::LinalgDialect, tensor::TensorDialect,
+                        bufferization::BufferizationDialect>();
     }
 };
 

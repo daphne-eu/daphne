@@ -15,6 +15,9 @@
  */
 
 #include "DaphneIrExecutor.h"
+#include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
 #include <util/ErrorHandler.h>
 
 #include <ir/daphneir/Daphne.h>
@@ -52,6 +55,7 @@
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Transforms/Passes.h"
+#include "mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h"
 #include "llvm/Support/TargetSelect.h"
 
 DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserConfig cfg)
@@ -63,6 +67,11 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserC
     mlir::DialectRegistry registry;
     mlir::LLVM::registerInlinerInterface(registry);
     mlir::func::registerInlinerExtension(registry);
+    mlir::linalg::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::arith::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::tensor::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(registry); // optional
+
     context_.appendDialectRegistry(registry);
 
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
@@ -74,6 +83,7 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserC
     context_.getOrLoadDialect<mlir::memref::MemRefDialect>();
     context_.getOrLoadDialect<mlir::linalg::LinalgDialect>();
     context_.getOrLoadDialect<mlir::math::MathDialect>();
+    context_.getOrLoadDialect<mlir::bufferization::BufferizationDialect>();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -297,6 +307,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
     pm.addPass(mlir::daphne::createConvertDaphneToLinalgPass());
+    pm.addPass(mlir::bufferization::createOneShotBufferizePass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizeNamedOpsPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToAffineLoopsPass());
 
