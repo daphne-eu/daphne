@@ -13,12 +13,26 @@ DaphneTypeConverter::DaphneTypeConverter(MLIRContext *ctx) {
     addTargetMaterialization([](OpBuilder &builder, Type targetType, ValueRange inputs, Location loc) -> Value {
         if (inputs.size() != 1)
             return Value();
+
+        if (auto dstInt = dyn_cast<IntegerType>(targetType)) {
+            if (isa<IntegerType>(inputs[0].getType()))
+                return builder.create<UnrealizedConversionCastOp>(loc, dstInt, inputs[0]).getResult(0);
+        }
+
+        if (!isa<MemRefType>(targetType) || !isa<daphne::MatrixType>(inputs[0].getType()))
+            return Value();
         return builder.create<daphne::ConvertDenseMatrixToMemRef>(loc, targetType, inputs[0]);
     });
 
     addSourceMaterialization([](OpBuilder &builder, Type targetType, ValueRange inputs, Location loc) -> Value {
         if (inputs.size() != 1)
             return Value();
+
+        if (auto dstInt = dyn_cast<IntegerType>(targetType)) {
+            if (isa<IntegerType>(inputs[0].getType()))
+                return builder.create<UnrealizedConversionCastOp>(loc, targetType, inputs[0]).getResult(0);
+        }
+
         auto matrixType = dyn_cast<daphne::MatrixType>(targetType);
         auto memrefType = dyn_cast<MemRefType>(inputs[0].getType());
         if (!matrixType || !memrefType)
@@ -61,7 +75,6 @@ Type DaphneTypeConverter::convertMatrixToMemRef(MLIRContext *ctx, daphne::Matrix
     Type elemTy = matrixType.getElementType();
     if (auto it = dyn_cast<IntegerType>(elemTy))
         elemTy = convertType(elemTy);
-
 
     return MemRefType::get(shape, elemTy);
 }

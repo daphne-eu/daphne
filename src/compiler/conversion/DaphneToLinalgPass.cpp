@@ -22,6 +22,8 @@ struct ConvertDaphneToLinalgPass : public impl::ConvertDaphneToLinalgBase<Conver
         ConversionTarget target(getContext());
         target.addLegalDialect<tensor::TensorDialect, bufferization::BufferizationDialect, linalg::LinalgDialect,
                                arith::ArithDialect, memref::MemRefDialect>();
+        target.addLegalOp<UnrealizedConversionCastOp>();
+
         target.addIllegalOp<daphne::FillOp, daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>();
 
         if (failed(applyPartialConversion(getOperation(), target, std::move(patterns))))
