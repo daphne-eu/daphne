@@ -7,9 +7,9 @@
 using namespace mlir;
 
 DaphneTypeConverter::DaphneTypeConverter(MLIRContext *ctx) {
+    addConversion([](Type type) -> Type { return type; });
     addConversion([ctx](IntegerType it) -> Type { return IntegerType::get(ctx, it.getWidth()); });
     addConversion([this, ctx](daphne::MatrixType type) -> Type { return convertMatrixToMemRef(ctx, type); });
-    addConversion([](Type type) -> Type { return type; });
     addTargetMaterialization([](OpBuilder &builder, Type targetType, ValueRange inputs, Location loc) -> Value {
         if (inputs.size() != 1)
             return Value();
