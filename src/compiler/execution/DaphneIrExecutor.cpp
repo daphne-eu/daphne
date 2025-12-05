@@ -44,6 +44,7 @@
 #include "mlir/Dialect/Func/Extensions/InlinerExtension.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/Passes.h"
+#include "mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/MemRef/Transforms/Passes.h"
@@ -55,7 +56,6 @@
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Transforms/Passes.h"
-#include "mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h"
 #include "llvm/Support/TargetSelect.h"
 
 DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserConfig cfg)
@@ -70,7 +70,7 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserC
     mlir::linalg::registerBufferizableOpInterfaceExternalModels(registry);
     mlir::arith::registerBufferizableOpInterfaceExternalModels(registry);
     mlir::tensor::registerBufferizableOpInterfaceExternalModels(registry);
-    mlir::bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(registry); // optional
+    mlir::bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(registry);
 
     context_.appendDialectRegistry(registry);
 
