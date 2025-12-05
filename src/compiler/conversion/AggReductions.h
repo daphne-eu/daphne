@@ -14,7 +14,7 @@ template <> struct AggReductions<daphne::AllAggSumOp> {
             return rw.create<arith::ConstantOp>(loc, ft, rw.getZeroAttr(ft));
 
         auto logicalTy = cast<IntegerType>(elemTy);
-        auto storageTy = rw.getIntegerType(logicalTy.getWidth()); // use storageTy storage
+        auto storageTy = rw.getIntegerType(logicalTy.getWidth());
         return rw.create<arith::ConstantOp>(loc, storageTy, rw.getIntegerAttr(storageTy, 0));
     }
     static Value combine(Type elemTy, Value acc, Value elem, Location loc, OpBuilder &b) {
