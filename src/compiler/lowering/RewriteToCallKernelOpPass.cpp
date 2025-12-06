@@ -126,7 +126,9 @@ class KernelReplacement : public RewritePattern {
     const DaphneUserConfig &userConfig;
     std::unordered_map<std::string, bool> &usedLibPaths;
 
-    mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
+    // Normalize a type into the form used for kernel lookup when comparing to the `mlir::Type` of a `KernelInfo`. This
+    // may drop certain known shape information, and and optionally generalize some types.
+    mlir::Type normalizeTypeForKernelLookup(mlir::Type t, bool generalizeToStructure) const {
         MLIRContext *mctx = t.getContext();
         if (generalizeToStructure && llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType,
                                                mlir::daphne::ColumnType, mlir::daphne::ListType>(t))
@@ -138,7 +140,8 @@ class KernelReplacement : public RewritePattern {
         if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
             return ct.withSameValueType();
         if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
-            return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
+            return mlir::daphne::ListType::get(
+                mctx, normalizeTypeForKernelLookup(lt.getElementType(), generalizeToStructure));
         if (auto mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
             // Drop concrete shapes; keep rank and element type.
             int64_t mrtRank = mrt.getRank();
@@ -225,7 +228,7 @@ class KernelReplacement : public RewritePattern {
 
         // Append converted op result types to the look-up result types.
         for (size_t i = 0; i < opResTys.size(); i++)
-            lookupResTys.push_back(adaptType(opResTys[i], false));
+            lookupResTys.push_back(normalizeTypeForKernelLookup(opResTys[i], false));
 
         // Append converted op argument types to the look-up argument types.
         // Variadic operands, which can have an arbitrary number of occurrences,
@@ -279,7 +282,7 @@ class KernelReplacement : public RewritePattern {
                                                  op->getName().getStringRef().str());
                 }
 
-                lookupArgTys.push_back(adaptType(odsOperandTy, generalizeInputTypes));
+                lookupArgTys.push_back(normalizeTypeForKernelLookup(odsOperandTy, generalizeInputTypes));
 
                 if (isVariadic) {
                     // Variadic operand.
@@ -302,7 +305,7 @@ class KernelReplacement : public RewritePattern {
             // the type of each operand to the vector of types to use for
             // kernel look-up, and pass all operands to the CallKernelOp as-is.
             for (size_t i = 0; i < opArgTys.size(); i++) {
-                lookupArgTys.push_back(adaptType(opArgTys[i], generalizeInputTypes));
+                lookupArgTys.push_back(normalizeTypeForKernelLookup(opArgTys[i], generalizeInputTypes));
                 kernelArgs.push_back(op->getOperand(i));
             }
 
