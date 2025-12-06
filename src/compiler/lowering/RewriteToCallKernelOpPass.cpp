@@ -309,6 +309,17 @@ class KernelReplacement : public RewritePattern {
                 kernelArgs.push_back(op->getOperand(i));
             }
 
+        if (auto cdm2m = dyn_cast<daphne::ConvertDenseMatrixToMemRef>(op)) {
+            // The kernel for the conversion op is registered with signedness
+            // semantics, but the `DaphneTypeConverter` converst to a signless memref. To still match the proper kernel,
+            // we normalize and set the type to the `daphne.Matrix` element type.
+            auto matTy = llvm::cast<daphne::MatrixType>(cdm2m.getArg().getType());
+            auto resMemRef = llvm::cast<MemRefType>(cdm2m.getResult().getType());
+            auto memRefSignedness = MemRefType::get(resMemRef.getShape(), matTy.getElementType(), resMemRef.getLayout(),
+                                                    resMemRef.getMemorySpace());
+            lookupResTys[0] = normalizeTypeForKernelLookup(memRefSignedness, false);
+        }
+
         if (auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
             // GroupOp carries the aggregation functions to apply as an
             // attribute. Since attributes do not automatically become
