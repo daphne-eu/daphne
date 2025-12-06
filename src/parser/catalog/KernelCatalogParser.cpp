@@ -76,11 +76,12 @@ KernelCatalogParser::KernelCatalogParser(mlir::MLIRContext *mctx) {
         // MemRef type.
         if (!llvm::isa<mlir::daphne::StringType>(st)) {
             // DAPHNE's StringType is not supported as the element type of a
-            // MemRef. The dimensions of the MemRef are irrelevant here.
-            mlir::Type mrt = mlir::MemRefType::get({0, 0}, st);
-            typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mrt), mrt);
-            typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mlir::MemRefType::get({0}, st)),
-                            mlir::MemRefType::get({0}, st));
+            // MemRef. The shape of the MemRef is explicitly set to `ShapedType::kDynamic` for each dimension as the
+            // kernel is shape agnostic and handles shapes dynamically.
+            mlir::Type mrt1d = mlir::MemRefType::get({mlir::ShapedType::kDynamic}, st);
+            mlir::Type mrt2d = mlir::MemRefType::get({mlir::ShapedType::kDynamic, mlir::ShapedType::kDynamic}, st);
+            typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mrt1d), mrt1d);
+            typeMap.emplace(CompilerUtils::mlirTypeToCppTypeName(mrt2d), mrt2d);
         }
     }
 

@@ -140,12 +140,12 @@ class KernelReplacement : public RewritePattern {
         if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
             return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
         if (auto mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
-            // Remove any specific dimension information ({0}), but retain the rank and element type.
+            // Drop concrete shapes; keep rank and element type.
             int64_t mrtRank = mrt.getRank();
             if (mrtRank == 1) {
-                return mlir::MemRefType::get({0}, mrt.getElementType());
+                return mlir::MemRefType::get({ShapedType::kDynamic}, mrt.getElementType());
             } else if (mrtRank == 2) {
-                return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+                return mlir::MemRefType::get({ShapedType::kDynamic, ShapedType::kDynamic}, mrt.getElementType());
             } else {
                 throw std::runtime_error(
                     "RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given " +
