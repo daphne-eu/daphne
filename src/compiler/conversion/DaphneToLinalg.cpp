@@ -29,10 +29,11 @@ template <typename DaphneOp> struct AggAllReduce : OpConversionPattern<DaphneOp>
 
         SmallVector<int64_t> dims(tensorTy.getRank());
         std::iota(dims.begin(), dims.end(), 0);
-        auto red = rw.create<linalg::ReduceOp>(loc, ad.getArg(), initT, dims, [&](OpBuilder &b, Location nl, ValueRange args) {
-            Value comb = AggReductions<DaphneOp>::combine(logicalTy, args[0], args[1], nl, b);
-            b.create<linalg::YieldOp>(nl, comb);
-        });
+        auto red =
+            rw.create<linalg::ReduceOp>(loc, ad.getArg(), initT, dims, [&](OpBuilder &b, Location nl, ValueRange args) {
+                Value comb = AggReductions<DaphneOp>::combine(logicalTy, args[0], args[1], nl, b);
+                b.create<linalg::YieldOp>(nl, comb);
+            });
 
         Value res = rw.create<tensor::ExtractOp>(loc, red.getResult(0));
         rw.replaceOp(op, res);
