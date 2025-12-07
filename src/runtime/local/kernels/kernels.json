@@ -2236,6 +2236,36 @@
             {
                 "name": ["CPP"],
                 "instantiations": [
+                    [
+                        ["CSRMatrix", "int32_t"],
+                        ["CSRMatrix", "int32_t"],
+                        "int32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "int64_t"],
+                        ["CSRMatrix", "int64_t"],
+                        "int64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint32_t"],
+                        ["CSRMatrix", "uint32_t"],
+                        "uint32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint64_t"],
+                        ["CSRMatrix", "uint64_t"],
+                        "uint64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        "float"
+                    ],
+                    [
+                        ["CSRMatrix", "double"],
+                        ["CSRMatrix", "double"],
+                        "double"
+                    ],
                     ["Frame", "Frame", "float"],
                     ["Frame", "Frame", "double"],
                     ["Frame", "Frame", "int64_t"],

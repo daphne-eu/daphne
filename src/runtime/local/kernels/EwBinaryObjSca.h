@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYOBJSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -73,6 +74,71 @@ struct EwBinaryObjSca<DenseMatrix<VTRes>, DenseMatrix<VTLhs>, VTRhs> {
                 valuesRes[c] = func(valuesLhs[c], rhs, ctx);
             valuesLhs += lhs->getRowSkip();
             valuesRes += res->getRowSkip();
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix, scalar
+// ----------------------------------------------------------------------------
+template <typename VTRes, typename VTLhs, typename VTRhs>
+struct EwBinaryObjSca<CSRMatrix<VTRes>, CSRMatrix<VTLhs>, VTRhs> {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VTRes> *&res, const CSRMatrix<VTLhs> *lhs, VTRhs rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        const size_t nnzLhs = lhs->getNumNonZeros();
+
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
+
+        const VTRes zeroRes = func(VTLhs(0), rhs, ctx);
+        const bool isSparsityPreserving = zeroRes == VTRes(0);
+        const size_t maxNnzRes = isSparsityPreserving ? nnzLhs : numRows * numCols;
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VTRes>>(numRows, numCols, maxNnzRes, false);
+
+        VTRes *valuesRes = res->getValues();
+        size_t *colIdxsRes = res->getColIdxs();
+        size_t *rowOffsetsRes = res->getRowOffsets();
+
+        const VTLhs *valuesLhs = lhs->getValues();
+        const size_t *colIdxsLhs = lhs->getColIdxs();
+        const size_t *rowOffsetsLhs = lhs->getRowOffsets();
+
+        size_t nnzRes = 0;
+        rowOffsetsRes[0] = 0;
+
+        if (isSparsityPreserving) {
+            for (size_t r = 0; r < numRows; ++r) {
+                for (size_t i = rowOffsetsLhs[r]; i < rowOffsetsLhs[r + 1]; ++i) {
+                    VTRes tmp = func(valuesLhs[i], rhs, ctx);
+                    if (tmp != VTRes(0)) {
+                        valuesRes[nnzRes] = tmp;
+                        colIdxsRes[nnzRes] = colIdxsLhs[i];
+                        ++nnzRes;
+                    }
+                }
+                rowOffsetsRes[r + 1] = nnzRes;
+            }
+            return;
+        }
+
+        // Sparsity is not preserved.
+        for (size_t r = 0; r < numRows; ++r) {
+            size_t i = rowOffsetsLhs[r];
+            for (size_t c = 0; c < numCols; ++c) {
+                const bool hasVal = (i < rowOffsetsLhs[r + 1] && colIdxsLhs[i] == c);
+                VTLhs lhsVal = hasVal ? valuesLhs[i] : VTLhs(0);
+                if (hasVal)
+                    ++i;
+                VTRes tmp = func(lhsVal, rhs, ctx);
+                if (tmp != VTRes(0)) {
+                    valuesRes[nnzRes] = tmp;
+                    colIdxsRes[nnzRes] = c;
+                    ++nnzRes;
+                }
+            }
+            rowOffsetsRes[r + 1] = nnzRes;
         }
     }
 };
