@@ -322,6 +322,10 @@ std::string mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep)
     }
 }
 
+std::ostream &mlir::daphne::operator<<(std::ostream &os, MatrixRepresentation rep) {
+    return os << matrixRepresentationToString(rep);
+}
+
 mlir::daphne::MatrixRepresentation mlir::daphne::stringToMatrixRepresentation(const std::string &str) {
     if (str == "dense")
         return MatrixRepresentation::Dense;
