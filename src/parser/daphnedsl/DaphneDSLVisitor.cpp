@@ -2028,7 +2028,7 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
     return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
 }
 
-void removeTrailingOperationsAfterReturnOp(mlir::daphne::ReturnOp firstReturnOp, mlir::Block *block) {
+void removeTrailingOperationsAfterReturnOp(mlir::func::ReturnOp firstReturnOp, mlir::Block *block) {
     auto op = &block->getOperations().back();
     // erase in reverse order to ensure no uses will be left
     while (op != firstReturnOp) {
@@ -2103,7 +2103,7 @@ void rectifyIfCaseWithoutReturnOp(mlir::scf::IfOp ifOpWithEarlyReturn, mlir::Blo
     }
 }
 
-mlir::scf::YieldOp replaceReturnWithYield(mlir::daphne::ReturnOp returnOp) {
+mlir::scf::YieldOp replaceReturnWithYield(mlir::func::ReturnOp returnOp) {
     mlir::OpBuilder builder(returnOp);
     auto yieldOp = builder.create<mlir::scf::YieldOp>(returnOp.getLoc(), returnOp.getOperands());
     returnOp->erase();
@@ -2116,7 +2116,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
         auto newThenBlock = nested.getBlock();
         nested.getBlock()->getOperations().splice(nested.getBlock()->end(), ifOp.thenBlock()->getOperations());
 
-        auto returnOps = newThenBlock->getOps<mlir::daphne::ReturnOp>();
+        auto returnOps = newThenBlock->getOps<mlir::func::ReturnOp>();
         if (!returnOps.empty()) {
             // NOTE: we ignore operations after return, could also throw an
             // error
@@ -2124,7 +2124,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
         } else {
             rectifyIfCaseWithoutReturnOp(ifOp, newThenBlock);
         }
-        auto returnOp = llvm::dyn_cast<mlir::daphne::ReturnOp>(newThenBlock->back());
+        auto returnOp = llvm::dyn_cast<mlir::func::ReturnOp>(newThenBlock->back());
         if (!returnOp) {
             // this should never happen, if it does check the
             // `rectifyCaseByAppendingNecessaryOperations` function
@@ -2140,7 +2140,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
         }
         // TODO: check if already final operation is a return
 
-        auto returnOps = newElseBlock->getOps<mlir::daphne::ReturnOp>();
+        auto returnOps = newElseBlock->getOps<mlir::func::ReturnOp>();
         if (!returnOps.empty()) {
             // NOTE: we ignore operations after return, could also throw an
             // error
@@ -2148,7 +2148,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
         } else {
             rectifyIfCaseWithoutReturnOp(ifOp, newElseBlock);
         }
-        auto returnOp = llvm::dyn_cast<mlir::daphne::ReturnOp>(newElseBlock->back());
+        auto returnOp = llvm::dyn_cast<mlir::func::ReturnOp>(newElseBlock->back());
         if (!returnOp) {
             // this should never happen, if it does check the
             // `rectifyCaseByAppendingNecessaryOperations` function
@@ -2161,7 +2161,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
 
     auto newIfOp =
         builder.create<mlir::scf::IfOp>(builder.getUnknownLoc(), ifOp.getCondition(), insertThenBlock, insertElseBlock);
-    builder.create<mlir::daphne::ReturnOp>(ifOp->getLoc(), newIfOp.getResults());
+    builder.create<mlir::func::ReturnOp>(ifOp->getLoc(), newIfOp.getResults());
     ifOp.erase();
 }
 
@@ -2211,8 +2211,8 @@ void rectifyEarlyReturns(mlir::Block *funcBlock) {
         return;
     while (true) {
         size_t levelOfMostNested = 0;
-        mlir::daphne::ReturnOp mostNestedReturn;
-        funcBlock->walk([&](mlir::daphne::ReturnOp returnOp) {
+        mlir::func::ReturnOp mostNestedReturn;
+        funcBlock->walk([&](mlir::func::ReturnOp returnOp) {
             size_t nested = 1;
             auto op = returnOp.getOperation();
             while (op->getBlock() != funcBlock) {
@@ -2306,7 +2306,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
 
     if (funcBlock->getOperations().empty() ||
         !funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
-        builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
+        builder.create<mlir::func::ReturnOp>(utils.getLoc(ctx->stop));
     }
     auto terminator = funcBlock->getTerminator();
     auto returnOpTypes = terminator->getOperandTypes();
@@ -2405,5 +2405,5 @@ antlrcpp::Any DaphneDSLVisitor::visitReturnStatement(DaphneDSLGrammarParser::Ret
     for (auto expr : ctx->expr()) {
         returns.push_back(valueOrErrorOnVisit(expr));
     }
-    return builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->start), returns);
+    return builder.create<mlir::func::ReturnOp>(utils.getLoc(ctx->start), returns);
 }
