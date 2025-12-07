@@ -1,4 +1,5 @@
 #include "compiler/conversion/DaphneToLinalg.h"
+#include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
 #include "compiler/utils/DaphneTypeConverter.h"
@@ -24,7 +25,8 @@ struct ConvertDaphneToLinalgPass : public impl::ConvertDaphneToLinalgBase<Conver
                                arith::ArithDialect, memref::MemRefDialect>();
         target.addLegalOp<UnrealizedConversionCastOp>();
 
-        target.addIllegalOp<daphne::FillOp, daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp>();
+        target.addIllegalOp<daphne::FillOp, daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp,
+                            daphne::EwMulOp>();
 
         if (failed(applyPartialConversion(getOperation(), target, std::move(patterns))))
             signalPassFailure();
