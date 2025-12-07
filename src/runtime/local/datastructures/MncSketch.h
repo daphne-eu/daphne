@@ -8,8 +8,7 @@
 
 #include <runtime/local/datastructures/CSRMatrix.h>
 
-class MncSketch{
-  public:
+struct MncSketch{
     // dimensions
     std::size_t m = 0; // rows
     std::size_t n = 0; // cols
@@ -18,35 +17,20 @@ class MncSketch{
     std::vector<std::uint32_t> hr;   // nnz per row (size m)
     std::vector<std::uint32_t> hc;   // nnz per col (size n)
 
-    // Extended counts (optional; can be empty)
+    // Extended counts (optional, only constructed if maxHr or maxHc > 1)
     std::vector<std::uint32_t> her;  // nnz in row i that lie in columns with hc == 1
     std::vector<std::uint32_t> hec;  // nnz in column j that lie in rows with hr == 1
 
     // Summary statistics
     std::uint32_t maxHr = 0;
     std::uint32_t maxHc = 0;
-    std::uint32_t nnzRows = 0;       // # rows with hr > 0
-    std::uint32_t nnzCols = 0;       // # cols with hc > 0
-    std::uint32_t rowsEq1 = 0;       // # rows with hr == 1
-    std::uint32_t colsEq1 = 0;       // # cols with hc == 1
-    std::uint32_t rowsGtHalf = 0;    // # rows with hr > n/2
-    std::uint32_t colsGtHalf = 0;    // # cols with hc > m/2
+    std::uint32_t nnzRows = 0;       // # n rows with hr > 0
+    std::uint32_t nnzCols = 0;       // # n cols with hc > 0
+    std::uint32_t rowsEq1 = 0;       // # n rows with hr == 1, 
+    std::uint32_t colsEq1 = 0;       // # n cols with hc == 1
+    std::uint32_t rowsGtHalf = 0;    // # n rows with hr > n/2
+    std::uint32_t colsGtHalf = 0;    // # n cols with hc > m/2
     bool isDiagonal = false;         // optional flag if A is (full) diagonal
-
-  
-    size_t getNumRows() const { return m; }
-    size_t getNumCols() const { return n; }
-    const std::vector<std::uint32_t>& getHr() const { return hr; }
-    const std::vector<std::uint32_t>& getHc() const { return hc; }
-    std::uint32_t getMaxHr() const { return maxHr; }
-    std::uint32_t getMaxHc() const { return maxHc; }
-    std::uint32_t getNnzRows() const { return nnzRows; }
-    std::uint32_t getNnzCols() const { return nnzCols; }
-    std::uint32_t getRowsEq1() const { return rowsEq1; }
-    std::uint32_t getColsEq1() const { return colsEq1; }
-    std::uint32_t getRowsGtHalf() const { return rowsGtHalf; }
-    std::uint32_t getColsGtHalf() const { return colsGtHalf; }
-    bool getIsDiagonal() const { return isDiagonal; }    
 };
 
 // Build MNC sketch from a DAPHNE CSRMatrix
@@ -104,6 +88,6 @@ MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
         if(cnt > h.maxHc)
             h.maxHc = cnt;
     }
-
+    
     return h;
 }
