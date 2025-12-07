@@ -16,8 +16,7 @@ using namespace mlir;
 // TODO: Will need to be templated to work with all elementwise binary ops.
 struct EwMulOpConverter : public OpConversionPattern<daphne::EwMulOp> {
     using OpConversionPattern::OpConversionPattern;
-    LogicalResult matchAndRewrite(daphne::EwMulOp op, OpAdaptor adaptor,
-                                  ConversionPatternRewriter &rw) const override {
+    LogicalResult matchAndRewrite(daphne::EwMulOp op, OpAdaptor adaptor, ConversionPatternRewriter &rw) const override {
         auto resTy = dyn_cast<RankedTensorType>(typeConverter->convertType(op.getType()));
         auto lhsTy = dyn_cast<RankedTensorType>(adaptor.getLhs().getType());
         if (!resTy || !lhsTy)
@@ -32,9 +31,8 @@ struct EwMulOpConverter : public OpConversionPattern<daphne::EwMulOp> {
         auto [rhs, rhsMap] = prepareRhs(op, lhsTy, resTy, idMap, adaptor.getRhs(), rw, loc);
         SmallVector<utils::IteratorType> iters(resTy.getRank(), utils::IteratorType::parallel);
         auto generic = rw.create<linalg::GenericOp>(
-            loc, resTy, ValueRange{adaptor.getLhs(), rhs}, ValueRange{init},
-            ArrayRef<AffineMap>{idMap, rhsMap, idMap}, iters,
-            [&](OpBuilder &b, Location nl, ValueRange args) {
+            loc, resTy, ValueRange{adaptor.getLhs(), rhs}, ValueRange{init}, ArrayRef<AffineMap>{idMap, rhsMap, idMap},
+            iters, [&](OpBuilder &b, Location nl, ValueRange args) {
                 Value prod = emitArithMulOp(resTy.getElementType(), b, nl, args[0], args[1]);
                 b.create<linalg::YieldOp>(nl, prod);
             });
