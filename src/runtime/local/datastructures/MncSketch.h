@@ -1,9 +1,15 @@
-#include <runtime/local/datastructures/CSRMatrix.h>
-#include <iostream>
-#include <vector>
-#include <cstddef> // std name space
+#pragma once
 
-struct MncSketch{
+#include <iostream>
+
+#include <vector>
+#include <cstddef>
+#include <cstdint>
+
+#include <runtime/local/datastructures/CSRMatrix.h>
+
+class MncSketch{
+  public:
     // dimensions
     std::size_t m = 0; // rows
     std::size_t n = 0; // cols
@@ -21,12 +27,30 @@ struct MncSketch{
     std::uint32_t maxHc = 0;
     std::uint32_t nnzRows = 0;       // # rows with hr > 0
     std::uint32_t nnzCols = 0;       // # cols with hc > 0
-    std::uint32_t n_rowsHalfFull = 0;    // # rows with hr > n/2
-    std::uint32_t n_colsHalfFull = 0;    // # cols with hc > m/2
+    std::uint32_t rowsEq1 = 0;       // # rows with hr == 1
+    std::uint32_t colsEq1 = 0;       // # cols with hc == 1
+    std::uint32_t rowsGtHalf = 0;    // # rows with hr > n/2
+    std::uint32_t colsGtHalf = 0;    // # cols with hc > m/2
     bool isDiagonal = false;         // optional flag if A is (full) diagonal
+
+  
+    size_t getNumRows() const { return m; }
+    size_t getNumCols() const { return n; }
+    const std::vector<std::uint32_t>& getHr() const { return hr; }
+    const std::vector<std::uint32_t>& getHc() const { return hc; }
+    std::uint32_t getMaxHr() const { return maxHr; }
+    std::uint32_t getMaxHc() const { return maxHc; }
+    std::uint32_t getNnzRows() const { return nnzRows; }
+    std::uint32_t getNnzCols() const { return nnzCols; }
+    std::uint32_t getRowsEq1() const { return rowsEq1; }
+    std::uint32_t getColsEq1() const { return colsEq1; }
+    std::uint32_t getRowsGtHalf() const { return rowsGtHalf; }
+    std::uint32_t getColsGtHalf() const { return colsGtHalf; }
+    bool getIsDiagonal() const { return isDiagonal; }    
 };
 
-template<class VT>
+// Build MNC sketch from a DAPHNE CSRMatrix
+template<typename VT>
 MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
     MncSketch h;
     h.m = A.getNumRows();
@@ -35,12 +59,16 @@ MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
     h.hr.assign(h.m, 0);
     h.hc.assign(h.n, 0);
 
+    const std::size_t *rowOffsets = A.getRowOffsets();
+    const std::size_t *colIdxs    = A.getColIdxs();
+
     // --- 1) per-row nnz (hr) and row stats ---
     for(std::size_t i = 0; i < h.m; ++i) {
-        std::size_t rowStart = A.getRowOffset(i);
-        std::size_t rowEnd   = A.getRowOffset(i + 1);
+        // row i uses indices [rowOffsets[i], rowOffsets[i+1])
+        std::size_t s   = rowOffsets[i];
+        std::size_t e   = rowOffsets[i+1];
+        std::uint32_t cnt = static_cast<std::uint32_t>(e - s);
 
-        std::uint32_t cnt = static_cast<std::uint32_t>(rowEnd - rowStart);
         h.hr[i] = cnt;
 
         if(cnt > 0) {
@@ -54,19 +82,21 @@ MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
             h.maxHr = cnt;
     }
 
-    std::size_t nnzBegin = A.getRowOffset(0);
-    std::size_t nnzEnd   = A.getRowOffset(h.m);
+    // --- 2) per-column nnz (hc) and column stats ---
+    // We must iterate all nnz in this *view*:
+    std::size_t nnzBegin = rowOffsets[0];
+    std::size_t nnzEnd   = rowOffsets[h.m];
 
     for(std::size_t k = nnzBegin; k < nnzEnd; ++k) {
-        std::size_t j = A.getColIdx(k); // column index of this nnz
-        std::uint32_t &cnt = h.hc[j];
+        std::size_t j = colIdxs[k];
+        auto &cnt = h.hc[j];
         if(cnt == 0)
             h.nnzCols++;
         cnt++;
     }
 
     for(std::size_t j = 0; j < h.n; ++j) {
-        std::uint32_t cnt = h.hc[j];
+        auto cnt = h.hc[j];
         if(cnt == 1)
             h.colsEq1++;
         if(cnt > h.m / 2)
