@@ -8,5 +8,5 @@ using namespace mlir;
 class DaphneTypeConverter : public TypeConverter {
   public:
     DaphneTypeConverter(MLIRContext *ctx);
-    Type convertMatrixToMemRef(MLIRContext *ctx, daphne::MatrixType matrixType);
+    Type convertMatrixToTensor(MLIRContext *ctx, daphne::MatrixType matrixType);
 };

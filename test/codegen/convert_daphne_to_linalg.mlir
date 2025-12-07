@@ -1,7 +1,7 @@
 // RUN: daphne-opt --convert-daphne-to-linalg %s | FileCheck %s
 
 module {
-  // Dense fill lowers to memref.alloc + linalg.fill.
+  // Dense fill lowers to tensor.empty + linalg.fill (tensor form).
   func.func @fill_basic() {
     %c4 = "daphne.constant"() {value = 4 : index} : () -> index
     %c3 = "daphne.constant"() {value = 3 : index} : () -> index
@@ -9,12 +9,12 @@ module {
     %m = "daphne.fill"(%c1, %c4, %c3) : (f64, index, index) -> !daphne.Matrix<4x3xf64>
     "daphne.return"() : () -> ()
     // CHECK-LABEL: func.func @fill_basic
-    // CHECK: memref.alloc
-    // CHECK: linalg.fill
+    // CHECK: tensor.empty
+    // CHECK: linalg.fill ins({{.*}} : f64) outs({{.*}} : tensor<4x3xf64>) -> tensor<4x3xf64>
     // CHECK-NOT: daphne.fill
   }
 
-  // sumAll on f64 lowers to bufferization.to_tensor + linalg.reduce + tensor.extract.
+  // sumAll on f64 lowers to tensor.empty + linalg.fill + linalg.reduce + tensor.extract.
   func.func @sum_f64() {
     %c4 = "daphne.constant"() {value = 4 : index} : () -> index
     %c3 = "daphne.constant"() {value = 3 : index} : () -> index
@@ -23,10 +23,11 @@ module {
     %s = "daphne.sumAll"(%m) : (!daphne.Matrix<4x3xf64>) -> f64
     "daphne.return"() : () -> ()
     // CHECK-LABEL: func.func @sum_f64
-    // CHECK: bufferization.to_tensor {{.*}} restrict : memref<4x3xf64> to tensor<4x3xf64>
-    // CHECK: linalg.reduce
+    // CHECK: tensor.empty
+    // CHECK: linalg.fill ins({{.*}} : f64) outs({{.*}} : tensor<4x3xf64>) -> tensor<4x3xf64>
+    // CHECK: linalg.reduce ins({{.*}} : tensor<4x3xf64>) outs({{.*}} : tensor<f64>) dimensions = [0, 1]
     // CHECK: arith.addf
-    // CHECK: tensor.extract
+    // CHECK: tensor.extract {{.*}} : tensor<f64>
     // CHECK-NOT: daphne.sumAll
   }
 

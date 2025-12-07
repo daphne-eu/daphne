@@ -14,24 +14,22 @@ template <typename DaphneOp> struct AggAllReduce : OpConversionPattern<DaphneOp>
     using OpConversionPattern<DaphneOp>::OpConversionPattern;
     LogicalResult matchAndRewrite(DaphneOp op, typename DaphneOp::Adaptor ad,
                                   ConversionPatternRewriter &rw) const override {
-        auto memrefTy = dyn_cast<MemRefType>(ad.getArg().getType());
-        if (!memrefTy)
-            return rw.notifyMatchFailure(op, "expected memref");
+        auto tensorTy = dyn_cast<RankedTensorType>(ad.getArg().getType());
+        if (!tensorTy)
+            return rw.notifyMatchFailure(op, "expected Tensor");
         auto matTy = dyn_cast<daphne::MatrixType>(op.getArg().getType());
         if (!matTy)
             return rw.notifyMatchFailure(op, "expected MatrixType");
         Type logicalTy = matTy.getElementType();
-        Type storageTy = memrefTy.getElementType();
+        Type storageTy = tensorTy.getElementType();
         Location loc = op.getLoc();
 
-        auto tensorTy = RankedTensorType::get(memrefTy.getShape(), storageTy);
-        Value tin = rw.create<bufferization::ToTensorOp>(loc, tensorTy, ad.getArg(), /*restricted=*/true);
         Value initValue = AggReductions<DaphneOp>::identity(logicalTy, loc, rw);
         Value initT = rw.create<tensor::FromElementsOp>(loc, RankedTensorType::get({}, storageTy), initValue);
 
-        SmallVector<int64_t> dims(memrefTy.getRank());
+        SmallVector<int64_t> dims(tensorTy.getRank());
         std::iota(dims.begin(), dims.end(), 0);
-        auto red = rw.create<linalg::ReduceOp>(loc, tin, initT, dims, [&](OpBuilder &b, Location nl, ValueRange args) {
+        auto red = rw.create<linalg::ReduceOp>(loc, ad.getArg(), initT, dims, [&](OpBuilder &b, Location nl, ValueRange args) {
             Value comb = AggReductions<DaphneOp>::combine(logicalTy, args[0], args[1], nl, b);
             b.create<linalg::YieldOp>(nl, comb);
         });
@@ -50,21 +48,22 @@ struct FillOpConverter : public OpConversionPattern<daphne::FillOp> {
         if (!mt)
             return rewriter.notifyMatchFailure(op, "expected MatrixType result");
 
-        auto memrefTy = llvm::dyn_cast<MemRefType>(typeConverter->convertType(mt));
-        if (!memrefTy)
+        auto tensorTy = llvm::dyn_cast<RankedTensorType>(typeConverter->convertType(mt));
+        if (!tensorTy)
             return rewriter.notifyMatchFailure(op, "no memref type after conversion");
 
         SmallVector<Value, 2> dynSizes;
-        if (memrefTy.isDynamicDim(0))
+        if (tensorTy.isDynamicDim(0))
             dynSizes.push_back(adaptor.getNumRows());
-        if (memrefTy.isDynamicDim(1))
+        if (tensorTy.isDynamicDim(1))
             dynSizes.push_back(adaptor.getNumCols());
 
         Location loc = op.getLoc();
-        Value alloc = rewriter.create<memref::AllocOp>(loc, memrefTy, dynSizes);
 
-        rewriter.create<linalg::FillOp>(loc, adaptor.getArg(), alloc);
-        rewriter.replaceOp(op, alloc);
+        Value init = rewriter.create<tensor::EmptyOp>(loc, tensorTy, dynSizes);
+        Value filled = rewriter.create<linalg::FillOp>(loc, adaptor.getArg(), init).getResult(0);
+
+        rewriter.replaceOp(op, filled);
         return success();
     }
 };

@@ -1,6 +1,7 @@
 #include "DaphneTypeConverter.h"
 
 #include "mlir/IR/BuiltinTypes.h"
+#include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/SparseTensor/IR/SparseTensor.h>
 
@@ -9,7 +10,7 @@ using namespace mlir;
 DaphneTypeConverter::DaphneTypeConverter(MLIRContext *ctx) {
     addConversion([](Type type) -> Type { return type; });
     addConversion([ctx](IntegerType it) -> Type { return IntegerType::get(ctx, it.getWidth()); });
-    addConversion([this, ctx](daphne::MatrixType type) -> Type { return convertMatrixToMemRef(ctx, type); });
+    addConversion([this, ctx](daphne::MatrixType type) -> Type { return convertMatrixToTensor(ctx, type); });
     addTargetMaterialization([](OpBuilder &builder, Type targetType, ValueRange inputs, Location loc) -> Value {
         if (inputs.size() != 1)
             return Value();
@@ -19,9 +20,12 @@ DaphneTypeConverter::DaphneTypeConverter(MLIRContext *ctx) {
                 return builder.create<UnrealizedConversionCastOp>(loc, dstInt, inputs[0]).getResult(0);
         }
 
-        if (!isa<MemRefType>(targetType) || !isa<daphne::MatrixType>(inputs[0].getType()))
+        if (!isa<RankedTensorType>(targetType) || !isa<daphne::MatrixType>(inputs[0].getType()))
             return Value();
-        return builder.create<daphne::ConvertDenseMatrixToMemRef>(loc, targetType, inputs[0]);
+        RankedTensorType tensorType = dyn_cast<RankedTensorType>(targetType);
+        auto memrefTy = MemRefType::get(tensorType.getShape(), tensorType.getElementType());
+        Value cdm2m = builder.create<daphne::ConvertDenseMatrixToMemRef>(loc, memrefTy, inputs[0]);
+        return builder.create<bufferization::ToTensorOp>(loc, targetType, cdm2m, /*restricted=*/true);
     });
 
     addSourceMaterialization([](OpBuilder &builder, Type targetType, ValueRange inputs, Location loc) -> Value {
@@ -34,11 +38,15 @@ DaphneTypeConverter::DaphneTypeConverter(MLIRContext *ctx) {
         }
 
         auto matrixType = dyn_cast<daphne::MatrixType>(targetType);
-        auto memrefType = dyn_cast<MemRefType>(inputs[0].getType());
-        if (!matrixType || !memrefType)
+        RankedTensorType tensorType = dyn_cast<RankedTensorType>(inputs[0].getType());
+        if (!matrixType || !tensorType)
             return Value();
 
-        Value memref = inputs[0];
+        // Materialization for tensor<...> to daphne.Matrix<...>
+        // 1) tensor -> memref          through bufferization
+        // 2) memref -> daphne.Matrix   through conversion kernel
+        auto memRefType = MemRefType::get(tensorType.getShape(), tensorType.getElementType());
+        Value memref = builder.create<bufferization::ToBufferOp>(loc, memRefType, inputs[0]);
         auto meta = builder.create<memref::ExtractStridedMetadataOp>(loc, memref);
         Value basePtr = builder.create<memref::ExtractAlignedPointerAsIndexOp>(loc, memref);
         Value offset = meta.getOffset();
@@ -52,22 +60,7 @@ DaphneTypeConverter::DaphneTypeConverter(MLIRContext *ctx) {
     });
 }
 
-// TODO: Maybe we should always convert daphne.Matrix to tensor types instead of memref types.
-// This should at least be consistent and documented, so that certain lowerings can assume that the converted type is a
-// RankedTensorType/MemRefType. Some linalg ops work only/better on tensor types. Additionally, the sparse_tensor
-// dialect needs to be on the tensor type, not on memref types.
-// Prob something like this:
-// if (matrixType.getRepresentation() == daphne::MatrixRepresentation::Sparse) {
-//     SmallVector<sparse_tensor::LevelType> CSR{sparse_tensor::LevelFormat::Dense,
-//                                               sparse_tensor::LevelFormat::Compressed};
-//     auto enc = sparse_tensor::SparseTensorEncodingAttr::get(ctx, [>dimLevelType=<]CSR,
-//                                                             [>dimOrdering=<]AffineMap(),
-//                                                             [>higherOrdering=<]AffineMap(),
-//                                                             [>posWidth=*/0, /*crdWidth=<]0);
-//
-//     return RankedTensorType::get(shape, elemTy, enc);
-// }
-Type DaphneTypeConverter::convertMatrixToMemRef(MLIRContext *ctx, daphne::MatrixType matrixType) {
+Type DaphneTypeConverter::convertMatrixToTensor(MLIRContext *ctx, daphne::MatrixType matrixType) {
     auto rows = matrixType.getNumRows();
     auto cols = matrixType.getNumCols();
     SmallVector<int64_t> shape = {rows >= 0 ? rows : ShapedType::kDynamic, cols >= 0 ? cols : ShapedType::kDynamic};
@@ -76,5 +69,5 @@ Type DaphneTypeConverter::convertMatrixToMemRef(MLIRContext *ctx, daphne::Matrix
     if (auto it = dyn_cast<IntegerType>(elemTy))
         elemTy = convertType(elemTy);
 
-    return MemRefType::get(shape, elemTy);
+    return RankedTensorType::get(shape, elemTy);
 }
