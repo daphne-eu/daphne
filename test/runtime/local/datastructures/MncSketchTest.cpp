@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <vector>
 
+// run ./test.sh -nb -d yes [datastructures] after building Daphne to execute this test
 TEST_CASE("MNC sketch from CSRMatrix basic", TAG_DATASTRUCTURES) {
     using ValueType = double;
 
