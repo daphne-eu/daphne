@@ -126,3 +126,82 @@ TEST_CASE("MNC sketch respects CSRMatrix sub-matrix view", TAG_DATASTRUCTURES) {
     DataObjectFactory::destroy(mSub);
     DataObjectFactory::destroy(mOrig);
 }
+
+TEST_CASE("MNC Sketch example from paper", TAG_DATASTRUCTURES) {
+    using ValueType = double;
+    /* Matrix:
+    [0,0,0,0,0,0,0,1,0], 
+    [0,1,0,0,1,0,0,0,0], 
+    [0,0,0,1,1,1,0,0,0], 
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,0],
+    [1,0,0,1,0,0,0,0,0],
+    [0,0,1,0,1,0,1,0,0],
+    [0,0,0,0,0,0,0,0,1],
+    */
+    const size_t numRows     = 9;
+    const size_t numCols     = 9;
+    const size_t numNonZeros = 14;
+
+    CSRMatrix<ValueType> *m =
+        DataObjectFactory::create<CSRMatrix<ValueType>>(numRows, numCols, numNonZeros, /*zero=*/true);
+
+    ValueType *values   = m->getValues();
+    size_t   *colIdxs   = m->getColIdxs();
+    size_t   *rowOffsets= m->getRowOffsets();
+
+    // Valid CSR: one nnz per row
+    // rowOffsets: [ 0  1  3  6  6  7  8 10 13 14]
+    rowOffsets[0] = 0;
+    rowOffsets[1] = 1;
+    rowOffsets[2] = 3;
+    rowOffsets[3] = 6;
+    rowOffsets[4] = 6;
+    rowOffsets[5] = 7;
+    rowOffsets[6] = 8;
+    rowOffsets[7] = 10;
+    rowOffsets[8] = 13;
+    rowOffsets[9] = 14;
+
+    // colIdxs: [7 1 4 3 4 5 2 7 0 3 2 4 6 8]
+    colIdxs[0] = 7;
+    colIdxs[1] = 1;
+    colIdxs[2] = 4;
+    colIdxs[3] = 3;
+    colIdxs[4] = 4;
+    colIdxs[5] = 5;
+    colIdxs[6] = 2;
+    colIdxs[7] = 7;
+    colIdxs[8] = 0;
+    colIdxs[9] = 3;
+    colIdxs[10] = 2;
+    colIdxs[11] = 4;
+    colIdxs[12] = 6;
+    colIdxs[13] = 8;
+    
+    for (size_t i = 0; i < numNonZeros; ++i)
+        values[i] = 1.0;
+
+    MncSketch h = buildMncFromCsr(*m);
+
+    // dimensions
+    CHECK(h.m == numRows);
+    CHECK(h.n == numCols);
+
+    // row + col nnz
+    
+    std::vector<std::uint32_t> expectedHr{1,2,3,0,1,1,2,3,1};
+    std::vector<std::uint32_t> expectedHc{1,1,2,2,3,1,1,2,1};
+    CHECK(h.hr == expectedHr);
+    CHECK(h.hc == expectedHc);
+
+    // her and hec
+    std::vector<std::uint32_t> expectedHer{0,1,1,0,0,0,1,1,1};
+    std::vector<std::uint32_t> expectedHec{0,0,1,0,0,0,0,2,1};
+    std::vector<std::uint32_t> notexpectedHec{1,1,1,0,0,0,0,2,1};
+    CHECK(h.her == expectedHer);
+    CHECK(h.hec == expectedHec);
+
+    DataObjectFactory::destroy(m);
+}
