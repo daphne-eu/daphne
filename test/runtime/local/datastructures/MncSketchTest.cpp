@@ -51,24 +51,24 @@ TEST_CASE("MNC sketch from CSRMatrix basic", TAG_DATASTRUCTURES) {
     MncSketch h = buildMncFromCsr(*m);
 
     // dimensions
-    CHECK(h.getNumRows() == numRows);
-    CHECK(h.getNumCols() == numCols);
+    CHECK(h.m == numRows);
+    CHECK(h.n == numCols);
 
     // row + col nnz
     std::vector<std::uint32_t> expectedHr{1,1,1};
     std::vector<std::uint32_t> expectedHc{1,1,1};
-    CHECK(h.getHr() == expectedHr);
-    CHECK(h.getHc() == expectedHc);
+    CHECK(h.hr == expectedHr);
+    CHECK(h.hc == expectedHc);
 
     // summary stats
-    CHECK(h.getMaxHr()    == 1);
-    CHECK(h.getMaxHc()    == 1);
-    CHECK(h.getNnzRows()  == 3);
-    CHECK(h.getNnzCols()  == 3);
-    CHECK(h.getRowsEq1()  == 3);
-    CHECK(h.getColsEq1()  == 3);
-    CHECK(h.getRowsGtHalf() == 0); // 1 <= n/2 since n=3
-    CHECK(h.getColsGtHalf() == 0); // 1 <= m/2 since m=3
+    CHECK(h.maxHr    == 1);
+    CHECK(h.maxHc    == 1);
+    CHECK(h.nnzRows  == 3);
+    CHECK(h.nnzCols  == 3);
+    CHECK(h.rowsEq1  == 3);
+    CHECK(h.colsEq1  == 3);
+    CHECK(h.rowsGtHalf == 0); // 1 <= n/2 since n=3
+    CHECK(h.colsGtHalf == 0); // 1 <= m/2 since m=3
 
     DataObjectFactory::destroy(m);
 }
@@ -114,14 +114,14 @@ TEST_CASE("MNC sketch respects CSRMatrix sub-matrix view", TAG_DATASTRUCTURES) {
     MncSketch hSub = buildMncFromCsr(*mSub);
 
     // submatrix is 2x3, with nnz rows = 2
-    CHECK(hSub.getNumRows() == 2);
-    CHECK(hSub.getNumCols() == 3);
+    CHECK(hSub.m == 2);
+    CHECK(hSub.n == 3);
 
     // each row in the submatrix has exactly 1 nnz
     std::vector<std::uint32_t> expectedHrSub{1,1};
-    CHECK(hSub.getHr() == expectedHrSub);
-    CHECK(hSub.getNnzRows() == 2);
-    CHECK(hSub.getRowsEq1() == 2);
+    CHECK(hSub.hr == expectedHrSub);
+    CHECK(hSub.nnzRows == 2);
+    CHECK(hSub.rowsEq1 == 2);
 
     DataObjectFactory::destroy(mSub);
     DataObjectFactory::destroy(mOrig);
