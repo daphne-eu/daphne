@@ -6,6 +6,7 @@
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/Linalg/IR/Linalg.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
+#include <mlir/Dialect/SparseTensor/IR/SparseTensor.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
 
 namespace mlir::daphne {
@@ -34,7 +35,7 @@ struct ConvertDaphneToLinalgPass : public impl::ConvertDaphneToLinalgBase<Conver
 
     void getDependentDialects(DialectRegistry &registry) const override {
         registry.insert<arith::ArithDialect, memref::MemRefDialect, linalg::LinalgDialect, tensor::TensorDialect,
-                        bufferization::BufferizationDialect>();
+                        bufferization::BufferizationDialect, sparse_tensor::SparseTensorDialect>();
     }
 };
 
