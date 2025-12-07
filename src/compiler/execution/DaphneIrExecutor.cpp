@@ -17,6 +17,10 @@
 #include "DaphneIrExecutor.h"
 #include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
 #include <mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/SCF/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/SparseTensor/Pipelines/Passes.h>
+#include <mlir/Dialect/SparseTensor/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/SparseTensor/Transforms/Passes.h>
 #include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
 #include <util/ErrorHandler.h>
 
@@ -49,6 +53,7 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/MemRef/Transforms/Passes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -69,8 +74,10 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserC
     mlir::func::registerInlinerExtension(registry);
     mlir::linalg::registerBufferizableOpInterfaceExternalModels(registry);
     mlir::arith::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::scf::registerBufferizableOpInterfaceExternalModels(registry);
     mlir::tensor::registerBufferizableOpInterfaceExternalModels(registry);
     mlir::bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::sparse_tensor::registerBufferizableOpInterfaceExternalModels(registry);
 
     context_.appendDialectRegistry(registry);
 
@@ -84,6 +91,7 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserC
     context_.getOrLoadDialect<mlir::linalg::LinalgDialect>();
     context_.getOrLoadDialect<mlir::math::MathDialect>();
     context_.getOrLoadDialect<mlir::bufferization::BufferizationDialect>();
+    context_.getOrLoadDialect<mlir::sparse_tensor::SparseTensorDialect>();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -167,7 +175,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.explain_select_matrix_repr)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
 
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createTransferDataPropertiesPass());
+    // pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createTransferDataPropertiesPass());
     if (userConfig_.explain_transfer_data_props)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after transferring data properties:"));
 
@@ -307,9 +315,36 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
     pm.addPass(mlir::daphne::createConvertDaphneToLinalgPass());
-    pm.addPass(mlir::bufferization::createOneShotBufferizePass());
+    pm.addPass(mlir::daphne::createPrintIRPass("IR after createConvertDaphneToLinalgPass"));
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizeNamedOpsPass());
-    pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToAffineLoopsPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgElementwiseOpFusionPass());
+    // pm.addPass(mlir::daphne::createPrintIRPass("IR after LinalgPasses"));
+
+    auto bufOpts = mlir::getBufferizationOptionsForSparsification(/*analysisOnly=*/false);
+    mlir::SparsificationOptions sparseOpts; // defaults match the simple ctor
+    pm.addPass(mlir::createSparsificationAndBufferizationPass(
+        bufOpts, sparseOpts,
+        /*createSparseDeallocs=*/false,
+        /*enableRuntimeLibrary=*/false, // turn off runtime support
+        /*enableBufferInitialization=*/false,
+        /*vectorLength=*/0,
+        /*enableVLAVectorization=*/false,
+        /*enableSIMDIndex32=*/false,
+        /*enableGPULibgen=*/false, mlir::SparseEmitStrategy::kFunctional, mlir::SparseParallelizationStrategy::kNone));
+    // pm.addPass(mlir::createSparsificationAndBufferizationPass());
+    pm.addPass(mlir::createStorageSpecifierToLLVMPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createCanonicalizerPass());
+
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createConvertLinalgToLoopsPass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::memref::createExpandReallocPass());
+    pm.addPass(mlir::memref::createExpandStridedMetadataPass());
+    pm.addPass(mlir::createLowerAffinePass());
+    pm.addNestedPass<mlir::func::FuncOp>(mlir::createSCFToControlFlowPass());
+
+    // pm.addNestedPass<mlir::func::FuncOp>(mlir::memref::createFoldMemRefAliasOpsPass());
+    pm.addPass(mlir::memref::createNormalizeMemRefsPass());
+    // pm.addPass(mlir::memref::createExpandReallocPass());
+    // pm.addPass(mlir::createReconcileUnrealizedCastsPass());
 
     if (userConfig_.explain_mlir_codegen)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after codegen pipeline"));

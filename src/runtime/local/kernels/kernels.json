@@ -1599,6 +1599,40 @@
     },
     {
         "kernelTemplate": {
+            "header": "ConvertSparseBuffersToMatrix.h",
+            "opName": "convertSparseBuffersToMatrix",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                { "type": "CSRMatrix<VT> *&", "name": "result" },
+                { "type": "size_t", "name": "valuesBase" },
+                { "type": "size_t", "name": "valuesOffset" },
+                { "type": "size_t", "name": "valuesSize" },
+                { "type": "size_t", "name": "valuesStride" },
+                { "type": "size_t", "name": "colIdxsBase" },
+                { "type": "size_t", "name": "colIdxsOffset" },
+                { "type": "size_t", "name": "colIdxsSize" },
+                { "type": "size_t", "name": "colIdxsStride" },
+                { "type": "size_t", "name": "rowOffsetsBase" },
+                { "type": "size_t", "name": "rowOffsetsOffset" },
+                { "type": "size_t", "name": "rowOffsetsSize" },
+                { "type": "size_t", "name": "rowOffsetsStride" },
+                { "type": "size_t", "name": "numRows" },
+                { "type": "size_t", "name": "numCols" }
+            ]
+        },
+        "instantiations": [
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "ConvertCSRMatrixToValuesMemRef.h",
             "opName": "convertCSRMatrixToValuesMemRef",
             "returnType": "StridedMemRefType<VT,1>",

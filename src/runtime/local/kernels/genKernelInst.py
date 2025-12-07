@@ -155,6 +155,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
     isCreateDaphneContext = opName == "createDaphneContext"
     def isInstrumentedOp(op :str):
+        # TODO: currently daphne ctx is deleted before ops when doing sparse
+        # codegen, so instrumentation breaks
         if op in ["map", "createDaphneContext", "destroyDaphneContext"]:
             return False
         # TODO: KernelDispatchMapping currently does not support distributed ops
