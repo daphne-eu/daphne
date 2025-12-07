@@ -10,6 +10,8 @@
 
 #include <llvm/ADT/TypeSwitch.h>
 
+using namespace mlir;
+
 template <typename DaphneOp> struct AggAllReduce : OpConversionPattern<DaphneOp> {
     using OpConversionPattern<DaphneOp>::OpConversionPattern;
     LogicalResult matchAndRewrite(DaphneOp op, typename DaphneOp::Adaptor ad,
