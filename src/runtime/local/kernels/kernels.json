@@ -3997,6 +3997,8 @@
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "uint32_t"], "uint32_t"],
+            [["DenseMatrix", "int32_t"], "int32_t"],
             [["DenseMatrix", "uint8_t"], "uint8_t"],
             [["CSRMatrix", "double"], "double"],
             [["CSRMatrix", "float"], "float"],
