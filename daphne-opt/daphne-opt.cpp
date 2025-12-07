@@ -16,7 +16,16 @@
 
 #include "daphne-opt.h"
 
+#include <mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Func/Extensions/InlinerExtension.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include <mlir/Dialect/LLVMIR/Transforms/InlinerInterfaceImpl.h>
+#include <mlir/Dialect/Linalg/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/SCF/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/SparseTensor/IR/SparseTensor.h>
+#include <mlir/Dialect/SparseTensor/Transforms/BufferizableOpInterfaceImpl.h>
+#include <mlir/Dialect/Tensor/Transforms/BufferizableOpInterfaceImpl.h>
 
 #include "ir/daphneir/Passes.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
@@ -37,15 +46,24 @@ int main(int argc, char **argv) {
     mlir::daphne::registerDaphnePasses();
 
     mlir::DialectRegistry registry;
-    registry.insert<mlir::daphne::DaphneDialect, mlir::arith::ArithDialect, mlir::func::FuncDialect,
-                    mlir::scf::SCFDialect, mlir::LLVM::LLVMDialect, mlir::affine::AffineDialect,
-                    mlir::memref::MemRefDialect, mlir::linalg::LinalgDialect, mlir::math::MathDialect,
-                    mlir::bufferization::BufferizationDialect, mlir::tensor::TensorDialect>();
+    registry
+        .insert<mlir::daphne::DaphneDialect, mlir::arith::ArithDialect, mlir::func::FuncDialect, mlir::scf::SCFDialect,
+                mlir::LLVM::LLVMDialect, mlir::affine::AffineDialect, mlir::memref::MemRefDialect,
+                mlir::linalg::LinalgDialect, mlir::math::MathDialect, mlir::bufferization::BufferizationDialect,
+                mlir::tensor::TensorDialect, mlir::sparse_tensor::SparseTensorDialect>();
     // Add the following to include *all* MLIR Core dialects, or selectively
     // include what you need like above. You only need to register dialects that
     // will be *parsed* by the tool, not the one generated
     // registerAllDialects(registry);
 
+    mlir::LLVM::registerInlinerInterface(registry);
+    mlir::func::registerInlinerExtension(registry);
+    mlir::linalg::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::arith::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::scf::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::tensor::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::bufferization::func_ext::registerBufferizableOpInterfaceExternalModels(registry);
+    mlir::sparse_tensor::registerBufferizableOpInterfaceExternalModels(registry);
     return mlir::asMainReturnCode(
         mlir::MlirOptMain(argc, argv, "Standalone DAPHNE optimizing compiler driver\n", registry));
 }
