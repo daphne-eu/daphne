@@ -18,8 +18,10 @@ struct MncSketch{
     std::vector<std::uint32_t> hc;   // nnz per col (size n)
 
     // Extended counts (optional, only constructed if maxHr or maxHc > 1)
-    std::vector<std::uint32_t> her;  // nnz in row i that lie in columns with hc == 1
-    std::vector<std::uint32_t> hec;  // nnz in column j that lie in rows with hr == 1
+    // her[i]: nnz in row i that lie in columns with hc == 1
+    // hec[j]: nnz in column j that lie in rows with hr == 1
+    std::vector<std::uint32_t> her;
+    std::vector<std::uint32_t> hec;
 
     // Summary statistics
     std::uint32_t maxHr = 0;
@@ -33,7 +35,7 @@ struct MncSketch{
     bool isDiagonal = false;         // optional flag if A is (full) diagonal
 };
 
-// Build MNC sketch from a DAPHNE CSRMatrix
+// Build MNC sketch from a CSRMatrix
 template<typename VT>
 MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
     MncSketch h;
@@ -88,6 +90,49 @@ MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
         if(cnt > h.maxHc)
             h.maxHc = cnt;
     }
-    
+
+    // --- 3) isDiagonal ---
+    // We call a matrix "diagonal" if it is square and every non-zero lies on i == j.
+    if(h.m == h.n && nnzEnd > nnzBegin) {
+        bool diag = true;
+        for(std::size_t i = 0; i < h.m && diag; ++i) {
+            std::size_t s = rowOffsets[i];
+            std::size_t e = rowOffsets[i+1];
+            for(std::size_t k = s; k < e; ++k) {
+                std::size_t j = colIdxs[k];
+                if(j != i) {
+                    diag = false;
+                    break;
+                }
+            }
+        }
+        h.isDiagonal = diag;
+    } else {
+        h.isDiagonal = false;
+    }
+
+    // --- 4) extended counts her, hec --- (only if there is something to extend)
+    if(h.maxHr > 1 || h.maxHc > 1) {
+        h.her.assign(h.m, 0);
+        h.hec.assign(h.n, 0);
+
+        // For each nnz at (i,j):
+        //  - if hc[j] == 1, it contributes to her[i]
+        //  - if hr[i] == 1, it contributes to hec[j]
+        for(std::size_t i = 0; i < h.m; ++i) {
+            std::size_t s = rowOffsets[i];
+            std::size_t e = rowOffsets[i+1];
+            for(std::size_t k = s; k < e; ++k) {
+                std::size_t j = colIdxs[k];
+
+                if(h.hc[j] == 1)
+                    h.her[i]++;
+
+                if(h.hr[i] == 1)
+                    h.hec[j]++;
+            }
+        }
+    }
+
     return h;
 }
