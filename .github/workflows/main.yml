@@ -51,13 +51,6 @@ jobs:
     - name: ccache stats
       run: ccache -s || true
 
-    - name: Save ccache (main only)
-      if: github.ref == 'refs/heads/main'
-      uses: actions/cache/save@v4
-      with:
-        path: ${{ env.CCACHE_DIR }}
-        key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
-
     - name: Testing
       run: ./test.sh --no-build
 
