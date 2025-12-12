@@ -1,0 +1,6 @@
+def foo() {
+    return;
+    print(123);
+}
+
+foo();

@@ -1,0 +1,9 @@
+def foo(x:si64) -> si64 {
+    if(x == 1)
+        return 123;
+    else
+        return 456;
+    return 789;
+}
+
+print(foo(2));
