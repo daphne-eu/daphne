@@ -613,8 +613,7 @@ class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::
                                           cvpSplits, cvpCombines, op.getIr(), dctx};
         auto cko = rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(op.getOperation(), callee.str(), newOperands,
                                                                      op.getOutputs().getTypes());
-        // TODO Use ATTR_HASVARIADICRESULTS from LowerToLLVMPass.cpp.
-        cko->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
+        cko->setAttr(CompilerUtils::ATTR_HAS_VARIADIC_RESULTS, rewriter.getBoolAttr(true));
 
         return success();
     }

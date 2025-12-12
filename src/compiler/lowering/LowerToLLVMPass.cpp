@@ -60,10 +60,6 @@ using namespace mlir;
 // Note that the memory allocated by an AllocaOp can be reused by multiple
 // repeated kernel calls.
 
-// Optional attribute of CallKernelOp, which indicates that all results shall
-// be combined into a single variadic result.
-const std::string ATTR_HASVARIADICRESULTS = "hasVariadicResults";
-
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp> {
     using OpRewritePattern<daphne::ReturnOp>::OpRewritePattern;
 
@@ -273,9 +269,10 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp> {
         // separate nullptr for each result to the kernel. If it is true, we
         // create an array with the number of results, fill it with nullptrs,
         // and pass that to the kernel (variadic results).
-        const bool hasVarRes = op->hasAttr(ATTR_HASVARIADICRESULTS)
-                                   ? llvm::dyn_cast<BoolAttr>(op->getAttr(ATTR_HASVARIADICRESULTS)).getValue()
-                                   : false;
+        const bool hasVarRes =
+            op->hasAttr(CompilerUtils::ATTR_HAS_VARIADIC_RESULTS)
+                ? llvm::dyn_cast<BoolAttr>(op->getAttr(CompilerUtils::ATTR_HAS_VARIADIC_RESULTS)).getValue()
+                : false;
 
         auto module = op->getParentOfType<ModuleOp>();
         auto loc = op.getLoc();
@@ -866,7 +863,7 @@ class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::Vectoriz
         // Create a CallKernelOp for the kernel function to call and return
         // success().
         auto kernel = rewriter.create<daphne::CallKernelOp>(loc, callee.str(), newOperands, resultTypes);
-        kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
+        kernel->setAttr(CompilerUtils::ATTR_HAS_VARIADIC_RESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
         return success();
     }
