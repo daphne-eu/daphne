@@ -419,8 +419,9 @@ Note that casting to frames does not support changing the value/column type yet,
 
 #### Function Calls
 
-Function calls can address [*built-in* functions](/doc/DaphneDSL/Builtins.md) as well as [*user-defined* functions](#user-defined-functions-udfs), but the syntax is the same in both cases:
-The name of the function followed by a comma-separated list of positional parameters in parentheses.
+Function calls can address [*built-in* functions](/doc/DaphneDSL/Builtins.md) as well as [*user-defined* functions](#user-defined-functions-udfs).
+Arguments can be provided positionally or as named keyword arguments (similar to Python), but positional arguments must precede keyword arguments and every parameter can only be specified once.
+Keyword names must match the parameter names of the called function (see the built-ins reference or the UDF definition).
 
 *Examples:*
 
@@ -428,6 +429,8 @@ The name of the function followed by a comma-separated list of positional parame
 print("hello");
 t(myMatrix);
 seq(0, 10, 2);
+fill(value=2, numRows=3, numCols=4);
+seq(from=0, to=6, inc=2);
 ```
 
 #### Conditional Expression
@@ -739,7 +742,8 @@ See also *typed and untyped functions* below.
 The body of a function definition is always a block statement, i.e., it must be enclosed in curly braces `{}` even if it is just a single statement.
 <!--TODO Overloading is allowed-->
 
-So far, DaphneDSL supports only positional parameters to functions, but in the future, we plan to support named keyword arguments as well.
+The parameter names given in the signature can be used at call sites as keyword arguments.
+When using keyword arguments, the same rules as for built-ins apply: positional arguments must precede keyword arguments and a parameter may only be specified once.
 
 Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a function definition must not be nested within a control-flow statement or within another function definition.
 
