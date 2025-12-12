@@ -20,6 +20,9 @@ jobs:
       # fix usage of tput in build script:
       TERM: dumb
       DEBIAN_FRONTEND: noninteractive
+      CCACHE_DIR: /github/home/.ccache
+      CCACHE_COMPRESS: "true"
+      CCACHE_MAXSIZE: 4G
 
     steps:
     - name: Checkout
@@ -28,25 +31,32 @@ jobs:
     - name: Fix working dir permissions
       run: chown root:root .
 
-#    - name: Cache 3rd party dependency build
-#      id: cache-deps
-#      uses: actions/cache@v3
-#      env:
-#        cache-name: cache-deps
-#      with:
-#        path: ./thirdparty
-#        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
-#        restore-keys: |
-#          ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+    - name: Restore ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: >
+          ccache-${{ runner.os }}-${{ github.job }}-
+          ${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+        restore-keys: |
+          ccache-${{ runner.os }}-${{ github.job }}-
 
-#    - if: ${{ steps.cache-deps.outputs.cache-hit == 'true' }}
-#      name: Print cache hit result
-#      continue-on-error: true
-#      run: echo "------------ Using cached build dependencies ------------"
+    - name: ccache zero stats
+      run: ccache -z || true
 
     - name: Building
       run: ./build.sh --no-fancy --no-deps --installPrefix /usr/local --target all | ts
       shell: bash
+
+    - name: ccache stats
+      run: ccache -s || true
+
+    - name: Save ccache (main only)
+      if: github.ref == 'refs/heads/main'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
 
     - name: Testing
       run: ./test.sh --no-build
