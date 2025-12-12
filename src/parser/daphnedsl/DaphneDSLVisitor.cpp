@@ -1825,7 +1825,7 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
     return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc, val));
 }
 
-void removeOperationsBeforeReturnOp(mlir::daphne::ReturnOp firstReturnOp, mlir::Block *block) {
+void removeTrailingOperationsAfterReturnOp(mlir::daphne::ReturnOp firstReturnOp, mlir::Block *block) {
     auto op = &block->getOperations().back();
     // erase in reverse order to ensure no uses will be left
     while (op != firstReturnOp) {
@@ -1917,7 +1917,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
         if (!returnOps.empty()) {
             // NOTE: we ignore operations after return, could also throw an
             // error
-            removeOperationsBeforeReturnOp(*returnOps.begin(), newThenBlock);
+            removeTrailingOperationsAfterReturnOp(*returnOps.begin(), newThenBlock);
         } else {
             rectifyIfCaseWithoutReturnOp(ifOp, newThenBlock);
         }
@@ -1941,7 +1941,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
         if (!returnOps.empty()) {
             // NOTE: we ignore operations after return, could also throw an
             // error
-            removeOperationsBeforeReturnOp(*returnOps.begin(), newElseBlock);
+            removeTrailingOperationsAfterReturnOp(*returnOps.begin(), newElseBlock);
         } else {
             rectifyIfCaseWithoutReturnOp(ifOp, newElseBlock);
         }
@@ -2022,10 +2022,20 @@ void rectifyEarlyReturns(mlir::Block *funcBlock) {
                 levelOfMostNested = nested;
             }
         });
-        if (!mostNestedReturn || mostNestedReturn == &funcBlock->back()) {
-            // finished!
+        if (!mostNestedReturn) {
+            // no returns found -> nothing to do
             break;
         }
+        if (mostNestedReturn->getBlock() == funcBlock) {
+            // A top-level return with trailing ops: drop the unreachable ops and warn.
+            if (mostNestedReturn != &funcBlock->back()) {
+                removeTrailingOperationsAfterReturnOp(mostNestedReturn, funcBlock);
+                continue;
+            }
+            break;
+        }
+        if (mostNestedReturn == &funcBlock->back())
+            break;
 
         auto parentOp = mostNestedReturn->getParentOp();
         if (auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
