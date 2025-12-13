@@ -3253,12 +3253,15 @@ In the latter case, the unspecified part of the type will be retained from the a
 </code></pre></div>
 <p>Note that casting to frames does not support changing the value/column type yet, i.e., expressions like <code>as.frame&lt;f64, si32, f32&gt;(x)</code> and <code>as.f64(x)</code> (on a frame <code>x</code>) do not work yet.</p>
 <h4 id="function-calls">Function Calls</h4>
-<p>Function calls can address <a href="/daphne/DaphneDSL/Builtins"><em>built-in</em> functions</a> as well as <a href="#user-defined-functions-udfs"><em>user-defined</em> functions</a>, but the syntax is the same in both cases:
-The name of the function followed by a comma-separated list of positional parameters in parentheses.</p>
+<p>Function calls can address <a href="/daphne/DaphneDSL/Builtins"><em>built-in</em> functions</a> as well as <a href="#user-defined-functions-udfs"><em>user-defined</em> functions</a>.
+Arguments can be provided positionally or as named keyword arguments (similar to Python), but positional arguments must precede keyword arguments and every parameter can only be specified once.
+Keyword names must match the parameter names of the called function (see the built-ins reference or the UDF definition).</p>
 <p><em>Examples:</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nf">print</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
 <a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nf">t</span><span class="p">(</span><span class="n">myMatrix</span><span class="p">);</span>
 <a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="nf">seq</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">);</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="nf">fill</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">numRows</span><span class="o">=</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">numCols</span><span class="o">=</span><span class="m">4</span><span class="p">);</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="nf">seq</span><span class="p">(</span><span class="n">from</span><span class="o">=</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="o">=</span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="n">inc</span><span class="o">=</span><span class="m">2</span><span class="p">);</span>
 </code></pre></div>
 <h4 id="conditional-expression">Conditional Expression</h4>
 <p>DaphneDSL supports the conditional expression with the general syntax:</p>
@@ -3474,7 +3477,8 @@ The types of the return values are optional, but if omitted, exactly one return 
 Functions with multiple return values must specify the types of all return values.
 See also <em>typed and untyped functions</em> below.
 The body of a function definition is always a block statement, i.e., it must be enclosed in curly braces <code>{}</code> even if it is just a single statement.</p>
-<p>So far, DaphneDSL supports only positional parameters to functions, but in the future, we plan to support named keyword arguments as well.</p>
+<p>The parameter names given in the signature can be used at call sites as keyword arguments.
+When using keyword arguments, the same rules as for built-ins apply: positional arguments must precede keyword arguments and a parameter may only be specified once.</p>
 <p>Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a function definition must not be nested within a control-flow statement or within another function definition.</p>
 <h3 id="returning-values">Returning Values</h3>
 <p>User-defined functions can return zero, one, or more (comma-separated) values using the <code>return</code>-statement.
