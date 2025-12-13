@@ -1,0 +1,2 @@
+X = fill(value=2, numRows=2, numCols=3);
+print(X);

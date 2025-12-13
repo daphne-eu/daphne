@@ -31,8 +31,10 @@
 
 #include <mlir/Dialect/SCF/IR/SCF.h>
 
+#include <algorithm>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -182,6 +184,166 @@ mlir::Value DaphneDSLVisitor::applyLeftIndexing(mlir::Location loc, mlir::Value 
             loc, argType, arg, ins, utils.castSI64If(axLowerIncl), utils.castSI64If(axUpperExcl)));
     } else
         throw ErrorHandler::compilerError(loc, "DSLVisitor (applyLeftIndexing)", "unsupported type for left indexing");
+}
+
+std::vector<DaphneDSLVisitor::CallArgInfo>
+DaphneDSLVisitor::collectCallArgs(DaphneDSLGrammarParser::CallExprContext *ctx, bool evaluate) {
+    std::vector<CallArgInfo> callArgs;
+    if (!ctx->callArgs())
+        return callArgs;
+
+    for (auto *callArgCtx : ctx->callArgs()->callArg()) {
+        CallArgInfo info;
+        info.isNamed = callArgCtx->paramName != nullptr;
+        if (info.isNamed)
+            info.name = callArgCtx->paramName->getText();
+        info.ctx = callArgCtx;
+        if (evaluate)
+            info.value = valueOrErrorOnVisit(callArgCtx->expr());
+        else
+            info.value = mlir::Value();
+        callArgs.push_back(info);
+    }
+
+    return callArgs;
+}
+
+bool DaphneDSLVisitor::hasNamedArguments(const std::vector<CallArgInfo> &callArgs) const {
+    for (const auto &arg : callArgs)
+        if (arg.isNamed)
+            return true;
+    return false;
+}
+
+std::optional<std::vector<std::string>> DaphneDSLVisitor::getUdfParamNames(const std::string &functionName,
+                                                                           size_t numCallArgs) {
+    auto range = functionsSymbolMap.equal_range(functionName);
+    std::optional<std::vector<std::string>> paramNames;
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second.getFunctionType().getNumInputs() != numCallArgs)
+            continue;
+        const auto symName = it->second.getSymName().str();
+        auto nameIt = funcParamNames.find(symName);
+        if (nameIt == funcParamNames.end())
+            continue;
+        if (!paramNames)
+            paramNames = nameIt->second;
+        else if (paramNames != nameIt->second)
+            throw ErrorHandler::compilerError(it->second.getLoc(), "DSLVisitor",
+                                              "inconsistent parameter names for overloaded function `" + functionName +
+                                                  "`");
+    }
+    return paramNames;
+}
+
+void DaphneDSLVisitor::storeFunctionParamNames(mlir::func::FuncOp funcOp, const std::vector<std::string> &paramNames) {
+    funcParamNames[funcOp.getSymName().str()] = paramNames;
+}
+
+// Maps positional/keyword call arguments to parameter order, enforcing:
+// - no mixing positional after keyword
+// - keywords must match known parameters
+// - no duplicates
+// - required leading parameters must be present
+// - no gaps before provided optional args
+std::vector<mlir::Value> DaphneDSLVisitor::orderCallArguments(const std::string &funcName, mlir::Location callLoc,
+                                                              const std::vector<std::string> &paramNames,
+                                                              size_t numRequired,
+                                                              const std::vector<CallArgInfo> &callArgs,
+                                                              std::vector<const CallArgInfo *> *sourceOrder) {
+    if (sourceOrder)
+        sourceOrder->clear();
+
+    if (paramNames.empty()) {
+        for (const auto &arg : callArgs)
+            if (arg.isNamed)
+                throw ErrorHandler::compilerError(utils.getLoc(arg.ctx->start), "DSLVisitor",
+                                                  "function `" + funcName + "` does not support named arguments");
+
+        std::vector<mlir::Value> ordered;
+        ordered.reserve(callArgs.size());
+        for (const auto &arg : callArgs) {
+            ordered.push_back(arg.value);
+            if (sourceOrder)
+                sourceOrder->push_back(&arg);
+        }
+        return ordered;
+    }
+
+    if (callArgs.size() > paramNames.size())
+        throw ErrorHandler::compilerError(callLoc, "DSLVisitor",
+                                          "function `" + funcName + "` expects at most " +
+                                              std::to_string(paramNames.size()) + " arguments");
+
+    numRequired = std::min(numRequired, paramNames.size());
+
+    std::vector<std::optional<mlir::Value>> slots(paramNames.size());
+    std::vector<const CallArgInfo *> sources(paramNames.size(), nullptr);
+    size_t positionalIndex = 0;
+    bool seenNamed = false;
+    for (const auto &arg : callArgs) {
+        if (!arg.isNamed) {
+            if (seenNamed)
+                throw ErrorHandler::compilerError(utils.getLoc(arg.ctx->start), "DSLVisitor",
+                                                  "positional argument follows keyword argument in call to `" +
+                                                      funcName + "`");
+            if (positionalIndex >= paramNames.size())
+                throw ErrorHandler::compilerError(utils.getLoc(arg.ctx->start), "DSLVisitor",
+                                                  "too many positional arguments for function `" + funcName + "`");
+            slots[positionalIndex] = arg.value;
+            sources[positionalIndex] = &arg;
+            ++positionalIndex;
+        } else {
+            seenNamed = true;
+            size_t idx = paramNames.size();
+            for (size_t i = 0; i < paramNames.size(); i++)
+                if (paramNames[i] == arg.name) {
+                    idx = i;
+                    break;
+                }
+            if (idx == paramNames.size())
+                throw ErrorHandler::compilerError(utils.getLoc(arg.ctx->start), "DSLVisitor",
+                                                  "unknown keyword argument `" + arg.name + "` for function `" +
+                                                      funcName + "`");
+            if (slots[idx].has_value())
+                throw ErrorHandler::compilerError(utils.getLoc(arg.ctx->start), "DSLVisitor",
+                                                  "multiple values for argument `" + arg.name + "` in function `" +
+                                                      funcName + "`");
+            slots[idx] = arg.value;
+            sources[idx] = &arg;
+        }
+    }
+
+    size_t lastProvided = 0;
+    bool hasProvided = false;
+    for (size_t i = 0; i < slots.size(); i++)
+        if (slots[i].has_value()) {
+            lastProvided = i;
+            hasProvided = true;
+        }
+
+    if (!hasProvided)
+        return {};
+
+    std::vector<mlir::Value> ordered;
+    if (sourceOrder)
+        sourceOrder->clear();
+    for (size_t i = 0; i <= lastProvided; i++) {
+        if (slots[i].has_value()) {
+            ordered.push_back(*slots[i]);
+            if (sourceOrder)
+                sourceOrder->push_back(sources[i]);
+        } else if (i < numRequired)
+            throw ErrorHandler::compilerError(callLoc, "DSLVisitor",
+                                              "missing value for argument `" + paramNames[i] + "` in function `" +
+                                                  funcName + "`");
+        else
+            throw ErrorHandler::compilerError(callLoc, "DSLVisitor",
+                                              "cannot skip optional argument `" + paramNames[i] +
+                                                  "` before providing later arguments in function `" + funcName + "`");
+    }
+
+    return ordered;
 }
 
 // ****************************************************************************
@@ -768,6 +930,12 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
     return valueOrErrorOnVisit(ctx->expr());
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitCallArgs(DaphneDSLGrammarParser::CallArgsContext *ctx) {
+    return visitChildren(ctx);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitCallArg(DaphneDSLGrammarParser::CallArgContext *ctx) { return visitChildren(ctx); }
+
 bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type paramTy) const {
     auto argMatTy = llvm::dyn_cast<mlir::daphne::MatrixType>(argTy);
     auto paramMatTy = llvm::dyn_cast<mlir::daphne::MatrixType>(paramTy);
@@ -883,7 +1051,8 @@ DaphneDSLVisitor::findMatchingUnaryUDF(mlir::Location loc, const std::string &fu
     return std::nullopt;
 }
 
-antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExprContext *ctx) {
+antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExprContext *ctx,
+                                                const std::vector<CallArgInfo> &callArgs) {
     std::string func;
     const auto &identifierVec = ctx->IDENTIFIER();
     for (size_t s = 0; s < identifierVec.size(); s++)
@@ -895,15 +1064,23 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
                                           "called 'handleMapOpCall' for function " + func + " instead of 'map'");
 
-    if (ctx->expr().size() != 2) {
+    std::vector<const CallArgInfo *> orderedSources;
+    // Evaluate only the data argument, the UDF name is kept as string.
+    if (!callArgs.empty()) {
+        auto &firstArg = const_cast<CallArgInfo &>(callArgs[0]);
+        firstArg.value = valueOrErrorOnVisit(firstArg.ctx->expr());
+    }
+    auto orderedArgs = orderCallArguments(func, loc, {"arg", "udf"}, 2, callArgs, &orderedSources);
+
+    if (orderedArgs.size() != 2) {
         throw ErrorHandler::compilerError(loc, "DSLVisitor",
                                           "built-in function 'map' expects exactly 2 argument(s), but got " +
-                                              std::to_string(ctx->expr().size()));
+                                              std::to_string(callArgs.size()));
     }
 
     std::vector<mlir::Value> args;
 
-    auto argVal = valueOrErrorOnVisit(ctx->expr(0));
+    auto argVal = orderedArgs[0];
     args.push_back(argVal);
 
     auto argMatTy = llvm::dyn_cast<mlir::daphne::MatrixType>(argVal.getType());
@@ -912,7 +1089,7 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
                                           "built-in function 'map' expects argument of type matrix as its "
                                           "first parameter");
 
-    std::string udfName = ctx->expr(1)->getText();
+    std::string udfName = orderedSources[1]->ctx->expr()->getText();
     auto maybeUDF = findMatchingUnaryUDF(loc, udfName, argMatTy.getElementType());
 
     if (!maybeUDF)
@@ -935,30 +1112,56 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     mlir::Location loc = utils.getLoc(ctx->start);
 
     if (func == "map")
-        return handleMapOpCall(ctx);
+        return handleMapOpCall(ctx, collectCallArgs(ctx, /*evaluate*/ false));
 
-    // Parse arguments.
+    auto callArgs = collectCallArgs(ctx);
+
+    // Try user-defined functions first.
     std::vector<mlir::Value> args_vec;
-    for (unsigned i = 0; i < ctx->expr().size(); i++)
-        args_vec.push_back(valueOrErrorOnVisit(ctx->expr(i)));
+    if (functionsSymbolMap.count(func)) {
+        auto paramNames = getUdfParamNames(func, callArgs.size());
+        if (!paramNames) {
+            if (hasNamedArguments(callArgs))
+                throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                                                  "missing parameter names for user-defined function `" + func + "`");
+            // No metadata available but no keyword arguments: proceed with positional mapping.
+            args_vec.reserve(callArgs.size());
+            for (const auto &arg : callArgs)
+                args_vec.push_back(arg.value);
+        } else
+            args_vec = orderCallArguments(func, loc, *paramNames, paramNames->size(), callArgs);
+        auto maybeUDF = findMatchingUDF(func, args_vec, loc);
+        if (maybeUDF) {
+            if (hasKernelHint)
+                throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                                                  "kernel hints are not supported for calls to user-defined "
+                                                  "functions");
 
-    auto maybeUDF = findMatchingUDF(func, args_vec, loc);
-    if (maybeUDF) {
-        if (hasKernelHint)
-            throw ErrorHandler::compilerError(loc, "DSLVisitor",
-                                              "kernel hints are not supported for calls to user-defined "
-                                              "functions");
-
-        auto funcTy = maybeUDF->getFunctionType();
-        auto co =
-            builder.create<mlir::daphne::GenericCallOp>(loc, maybeUDF->getSymName(), args_vec, funcTy.getResults());
-        if (funcTy.getNumResults() > 1)
-            return co.getResults();
-        else if (funcTy.getNumResults() == 1)
-            return co.getResult(0);
-        else
-            return nullptr;
+            auto funcTy = maybeUDF->getFunctionType();
+            auto co =
+                builder.create<mlir::daphne::GenericCallOp>(loc, maybeUDF->getSymName(), args_vec, funcTy.getResults());
+            if (funcTy.getNumResults() > 1)
+                return co.getResults();
+            else if (funcTy.getNumResults() == 1)
+                return co.getResult(0);
+            else
+                return nullptr;
+        }
     }
+
+    // Parse arguments for built-ins (with keyword reordering).
+    std::vector<std::string> builtinParamNames;
+    size_t builtinRequired = 0;
+    if (auto info = builtins.getParamNames(func)) {
+        builtinParamNames = info->paramNames;
+        builtinRequired = info->requiredParams;
+    } else if (hasNamedArguments(callArgs))
+        // If the built-in exposes no parameter metadata, we cannot map keyword
+        // arguments to parameters.
+        throw ErrorHandler::compilerError(loc, "DSLVisitor",
+                                          "built-in function `" + func + "` does not support named arguments");
+
+    args_vec = orderCallArguments(func, loc, builtinParamNames, builtinRequired, callArgs);
 
     // Create DaphneIR operation for the built-in function.
     antlrcpp::Any res = builtins.build(loc, func, args_vec);
@@ -2132,6 +2335,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     }
     functionOperation.getBody().push_front(funcBlock);
 
+    storeFunctionParamNames(functionOperation, funcArgNames);
     symbolTable = globalSymbolTable;
     return functionOperation;
 }

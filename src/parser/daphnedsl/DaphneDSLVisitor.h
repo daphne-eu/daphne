@@ -79,6 +79,17 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     std::stack<std::string> scriptPaths;
     std::vector<std::string> importedFiles;
     DaphneUserConfig userConf;
+
+    // Information for a single argument provided at a call site (positional or keyword).
+    struct CallArgInfo {
+        bool isNamed;
+        std::string name;
+        DaphneDSLGrammarParser::CallArgContext *ctx;
+        mlir::Value value;
+    };
+
+    std::unordered_map<std::string, std::vector<std::string>> funcParamNames;
+
     /**
      * @brief Creates a `FuncOp` for a UDF.
      * @param loc The source code location
@@ -111,6 +122,23 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     template <class InsertAxOp, class NumAxOp>
     mlir::Value applyLeftIndexing(mlir::Location loc, mlir::Value arg, mlir::Value ins, antlrcpp::Any ax,
                                   bool allowLabel);
+
+    // Parse arguments of a call expression into a richer representation.
+    std::vector<CallArgInfo> collectCallArgs(DaphneDSLGrammarParser::CallExprContext *ctx, bool evaluate = true);
+
+    // Reorder call arguments to match the callee's parameter list, validating keyword usage.
+    std::vector<mlir::Value> orderCallArguments(const std::string &funcName, mlir::Location callLoc,
+                                                const std::vector<std::string> &paramNames, size_t numRequired,
+                                                const std::vector<CallArgInfo> &callArgs,
+                                                std::vector<const CallArgInfo *> *sourceOrder = nullptr);
+
+    bool hasNamedArguments(const std::vector<CallArgInfo> &callArgs) const;
+
+    // Retrieve stored parameter names for a UDF overload set (errors on inconsistency).
+    std::optional<std::vector<std::string>> getUdfParamNames(const std::string &functionName, size_t numCallArgs);
+
+    // Store parameter names for a newly created UDF.
+    void storeFunctionParamNames(mlir::func::FuncOp funcOp, const std::vector<std::string> &paramNames);
 
     /**
      * @brief Tries to find a matching UDF based on the arguments provided
@@ -153,7 +181,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @param ctx Context of the call expression
      * @return the created `mapOp`
      */
-    antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext *ctx);
+    antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext *ctx,
+                                  const std::vector<CallArgInfo> &callArgs);
 
     /**
      * @brief Creates a column matrix from a vector of MLIR values and
@@ -224,6 +253,8 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     antlrcpp::Any visitParanthesesExpr(DaphneDSLGrammarParser::ParanthesesExprContext *ctx) override;
 
     antlrcpp::Any visitCallExpr(DaphneDSLGrammarParser::CallExprContext *ctx) override;
+    antlrcpp::Any visitCallArgs(DaphneDSLGrammarParser::CallArgsContext *ctx) override;
+    antlrcpp::Any visitCallArg(DaphneDSLGrammarParser::CallArgContext *ctx) override;
 
     antlrcpp::Any visitCastExpr(DaphneDSLGrammarParser::CastExprContext *ctx) override;
 
