@@ -2,7 +2,6 @@
 
 #include "ir/daphneir/Daphne.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include <iostream>
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Bufferization/IR/Bufferization.h>
 #include <mlir/Dialect/MemRef/IR/MemRef.h>
@@ -15,6 +14,7 @@ DaphneTypeConverter::DaphneTypeConverter(MLIRContext *ctx) {
     addConversion([](Type type) -> Type { return type; });
     addConversion([ctx](IntegerType it) -> Type { return IntegerType::get(ctx, it.getWidth()); });
     addConversion([this, ctx](daphne::MatrixType type) -> Type { return convertMatrixToTensor(ctx, type); });
+
     addTargetMaterialization([](OpBuilder &builder, Type targetType, ValueRange inputs, Location loc) -> Value {
         if (inputs.size() != 1)
             return Value();
