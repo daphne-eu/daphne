@@ -103,4 +103,33 @@ module {
     // CHECK: arith.mulf
     // CHECK-NOT: daphne.ewMul
   }
+
+  // Sparse ewMul: daphne.Matrix (CSRMatrix) is disassembled to buffers, a sparse_tensor
+  // is assembled. Computation is done via linalg.generic, then the result
+  // disassembled back to sparse buffers and assembled again as a daphne.Matrix.
+  func.func @ewmul_sparse_mat_mat_f64(%arg0: !daphne.Matrix<8x8xf64:sp[1.000000e-01]:rep[sparse]>) {
+    %true = "daphne.constant"() <{value = true}> : () -> i1
+    %false = "daphne.constant"() <{value = false}> : () -> i1
+    %res = "daphne.ewMul"(%arg0, %arg0) : (!daphne.Matrix<8x8xf64:sp[1.000000e-01]:rep[sparse]>, !daphne.Matrix<8x8xf64:sp[1.000000e-01]:rep[sparse]>) -> !daphne.Matrix<8x8xf64:sp[0.010000000000000002]:rep[sparse]>
+    "daphne.print"(%res, %true, %false) : (!daphne.Matrix<8x8xf64:sp[0.010000000000000002]:rep[sparse]>, i1, i1) -> ()
+    "daphne.return"() : () -> ()
+    // CHECK-LABEL: func.func @ewmul_sparse_mat_mat_f64
+    // Input: daphne.Matrix -> CSR components extracted and assembled into sparse tensor
+    // CHECK: daphne.convertCSRMatrixToValuesMemRef
+    // CHECK: daphne.convertCSRMatrixToColIdxsMemRef
+    // CHECK: daphne.convertCSRMatrixToRowOffsetsMemRef
+    // CHECK: bufferization.to_tensor
+    // CHECK: bufferization.to_tensor
+    // CHECK: bufferization.to_tensor
+    // CHECK: sparse_tensor.assemble
+    // Computation: linalg.generic with sparse tensors
+    // CHECK: linalg.generic
+    // CHECK: arith.mulf
+    // Output: sparse_tensor disassembled back to buffers and -> daphne.Matrix
+    // CHECK: sparse_tensor.values
+    // CHECK: sparse_tensor.coordinates
+    // CHECK: sparse_tensor.positions
+    // CHECK: daphne.convertSparseBuffersToMatrix
+    // CHECK-NOT: daphne.ewMul
+  }
 }
