@@ -207,6 +207,14 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.use_distributed)
         pm.addPass(mlir::daphne::createDistributePipelinesPass());
 
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
+
+    if (userConfig_.use_obj_ref_mgnt)
+        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createManageObjRefsPass());
+    if (userConfig_.explain_obj_ref_mgnt)
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references:"));
+
     if (userConfig_.use_mlir_codegen || userConfig_.use_mlir_hybrid_codegen)
         buildCodegenPipeline(pm);
 
@@ -224,19 +232,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.use_fpgaopencl)
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkFPGAOPENCLOpsPass(userConfig_));
 #endif
-
-    // Tidy up the IR before managing object reference counters with IncRefOp
-    // and DecRefOp. This is important, because otherwise, an SSA value whose
-    // references are managed could be cleared away by common subexpression
-    // elimination (CSE), while retaining its IncRefOps/DecRefOps, which could
-    // lead to double frees etc.
-    pm.addPass(mlir::createCanonicalizerPass());
-    pm.addPass(mlir::createCSEPass());
-
-    if (userConfig_.use_obj_ref_mgnt)
-        pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createManageObjRefsPass());
-    if (userConfig_.explain_obj_ref_mgnt)
-        pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references:"));
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_, usedLibPaths));
     if (userConfig_.explain_kernels)
@@ -315,7 +310,7 @@ void DaphneIrExecutor::buildCodegenPipeline(mlir::PassManager &pm) {
         pm.addPass(mlir::daphne::createPrintIRPass("IR before codegen pipeline"));
 
     pm.addPass(mlir::daphne::createConvertDaphneToLinalgPass());
-    pm.addPass(mlir::daphne::createPrintIRPass("IR after createConvertDaphneToLinalgPass"));
+    // pm.addPass(mlir::daphne::createPrintIRPass("IR after createConvertDaphneToLinalgPass"));
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgGeneralizeNamedOpsPass());
     pm.addNestedPass<mlir::func::FuncOp>(mlir::createLinalgElementwiseOpFusionPass());
     // pm.addPass(mlir::daphne::createPrintIRPass("IR after LinalgPasses"));
