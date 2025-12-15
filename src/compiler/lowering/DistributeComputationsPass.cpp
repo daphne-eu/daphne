@@ -84,7 +84,7 @@ void DistributeComputationsPass::runOnOperation() {
 
     // convert other operations
     ConversionTarget target(getContext());
-    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect>();
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, func::FuncDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op) {
         // An operation is legal (does not need to be replaced), if ...
