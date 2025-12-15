@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <compiler/utils/CompilerUtils.h>
 #include <compiler/utils/LoweringUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
@@ -87,12 +86,7 @@ void processValue(OpBuilder builder, Value v) {
         // not to insert the IncRefOp before the CreateDaphneContextOp,
         // otherwise we will run into problems during/after lowering to kernel
         // calls.
-        Block *pb = v.getParentBlock();
-        if (auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
-            Value dctx = CompilerUtils::getDaphneContext(fo);
-            builder.setInsertionPointAfterValue(dctx);
-        } else
-            builder.setInsertionPointAfter(defOp);
+        builder.setInsertionPointAfter(defOp);
         builder.create<daphne::IncRefOp>(v.getLoc(), v);
     }
 
@@ -158,11 +152,7 @@ void processValue(OpBuilder builder, Value v) {
         // DecRefOp before the CreateDaphneContextOp, otherwise we will run
         // into problems during/after lowering to kernel calls.
         Block *pb = v.getParentBlock();
-        if (auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
-            Value dctx = CompilerUtils::getDaphneContext(fo);
-            builder.setInsertionPointAfterValue(dctx);
-        } else
-            builder.setInsertionPointToStart(pb);
+        builder.setInsertionPointToStart(pb);
     }
 
     // Finally create the DecRefOp.
