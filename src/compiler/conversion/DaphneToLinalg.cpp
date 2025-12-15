@@ -119,6 +119,16 @@ struct FillOpConverter : public OpConversionPattern<daphne::FillOp> {
     }
 };
 
+// TODO: This is temporarily duplicated from LowerToLLVMPass.
+struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp> {
+    using OpRewritePattern<daphne::ReturnOp>::OpRewritePattern;
+
+    LogicalResult matchAndRewrite(daphne::ReturnOp op, PatternRewriter &rewriter) const final {
+        rewriter.replaceOpWithNewOp<func::ReturnOp>(op, op.getOperands());
+        return success();
+    }
+};
+
 void populateDaphneToLinalgPatterns(DaphneTypeConverter &converter, RewritePatternSet &patterns) {
     // clang-format off
     patterns.add<
@@ -128,5 +138,6 @@ void populateDaphneToLinalgPatterns(DaphneTypeConverter &converter, RewritePatte
         AggAllReduce<daphne::AllAggMinOp>,
         AggAllReduce<daphne::AllAggMaxOp>
     >(converter, patterns.getContext());
+    patterns.add<ReturnOpLowering>(patterns.getContext());
     // clang-format on
 }

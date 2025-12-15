@@ -102,7 +102,8 @@ void DistributePipelinesPass::runOnOperation() {
     // convert other operations
     ConversionTarget target(getContext());
     // TODO do we need all these?
-    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect,
+                           func::FuncDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addDynamicallyLegalOp<daphne::VectorizedPipelineOp>([](daphne::VectorizedPipelineOp op) {
         // TODO Carefully decide if this pipeline shall be distributed,
