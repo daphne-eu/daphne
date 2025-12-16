@@ -62,7 +62,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder &builder, std::istream &stream
         if (!builder.getBlock()->empty()) {
             loc = builder.getBlock()->back().getLoc();
         }
-        builder.create<mlir::func::ReturnOp>(loc);
+        builder.create<mlir::daphne::ReturnOp>(loc);
     }
     auto *terminator = funcBlock->getTerminator();
     auto funcType = builder.getFunctionType(funcBlock->getArgumentTypes(), terminator->getOperandTypes());
