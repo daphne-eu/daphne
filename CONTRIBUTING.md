@@ -126,6 +126,53 @@ At the same time, this freedom comes with certain responsibilities, which are ro
     Balancing the handling of pull requests is important to *keep the development process scalable*.
 
 
+### Commit Message
+
+Commits should adhere to the following conventions:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Where:
+
+```
+type = feat | fix | docs | test | chore ;
+
+feat     -> external behavior changes
+fix      -> incorrect behavior corrected
+refactor -> internal change, behavior preserved
+docs     -> documentation only
+test     -> tests only
+chore    -> maintenance only (CI, dependency bump)
+```
+
+Some examples:
+```
+feat(compiler): add basic constant folding pass
+fix: handle zero-size tensors in lowering
+refactor: split up LLVM lowering pass
+docs: improve GPU lowering guidelines
+```
+
+or
+
+```
+feat(runtime): add kernel for softmax on gpu
+
+Add a kernel of the softmax operation on NVIDIA and AMD GPUs.
+
+Refs: 676104e
+Closes #123, #456
+```
+
+Limit the commit message title to `<=50` and the commit message body to `<=72` characters per line.
+
+
 ### Code Style
 
 Before contributing, please make sure to run `clang-format` on your C++ (.h and
