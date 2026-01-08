@@ -27,7 +27,7 @@ struct ConvertDaphneToLinalgPass : public impl::ConvertDaphneToLinalgBase<Conver
         target.addLegalOp<UnrealizedConversionCastOp>();
 
         target.addIllegalOp<daphne::FillOp, daphne::AllAggSumOp, daphne::AllAggMinOp, daphne::AllAggMaxOp,
-                            daphne::EwMulOp, daphne::ReturnOp>();
+                            daphne::EwAddOp, daphne::EwSubOp, daphne::EwMulOp, daphne::EwDivOp, daphne::ReturnOp>();
 
         if (failed(applyPartialConversion(getOperation(), target, std::move(patterns))))
             signalPassFailure();

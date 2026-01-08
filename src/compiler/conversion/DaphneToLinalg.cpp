@@ -13,27 +13,69 @@
 
 using namespace mlir;
 
-// TODO: Will need to be templated to work with all elementwise binary ops.
-struct EwMulOpConverter : public OpConversionPattern<daphne::EwMulOp> {
-    using OpConversionPattern::OpConversionPattern;
-    LogicalResult matchAndRewrite(daphne::EwMulOp op, OpAdaptor adaptor, ConversionPatternRewriter &rw) const override {
-        auto resTy = dyn_cast<RankedTensorType>(typeConverter->convertType(op.getType()));
+template <typename BinaryOp> struct EwBinaryOpTraits {};
+
+template <> struct EwBinaryOpTraits<daphne::EwAddOp> {
+    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
+        if (isa<FloatType>(elemTy))
+            return b.create<arith::AddFOp>(loc, lhs, rhs);
+        return b.create<arith::AddIOp>(loc, lhs, rhs);
+    }
+};
+
+template <> struct EwBinaryOpTraits<daphne::EwSubOp> {
+    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
+        if (isa<FloatType>(elemTy))
+            return b.create<arith::SubFOp>(loc, lhs, rhs);
+        return b.create<arith::SubIOp>(loc, lhs, rhs);
+    }
+};
+
+template <> struct EwBinaryOpTraits<daphne::EwMulOp> {
+    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
+        if (isa<FloatType>(elemTy))
+            return b.create<arith::MulFOp>(loc, lhs, rhs);
+        return b.create<arith::MulIOp>(loc, lhs, rhs);
+    }
+};
+
+template <> struct EwBinaryOpTraits<daphne::EwDivOp> {
+    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
+        if (isa<FloatType>(elemTy))
+            return b.create<arith::DivFOp>(loc, lhs, rhs);
+        auto it = dyn_cast<IntegerType>(elemTy);
+        if (it.isUnsigned())
+            return b.create<arith::DivUIOp>(loc, lhs, rhs);
+        return b.create<arith::DivSIOp>(loc, lhs, rhs);
+    }
+};
+
+template <typename EwBinaryOp> struct EwBinaryOpConverter : public OpConversionPattern<EwBinaryOp> {
+    using OpConversionPattern<EwBinaryOp>::OpConversionPattern;
+    using OpAdaptor = typename mlir::OpConversionPattern<EwBinaryOp>::OpAdaptor;
+
+    LogicalResult matchAndRewrite(EwBinaryOp op, OpAdaptor adaptor, ConversionPatternRewriter &rw) const override {
+        auto matTy = dyn_cast<daphne::MatrixType>(op.getType());
+        auto resTy = dyn_cast<RankedTensorType>(this->typeConverter->convertType(op.getType()));
         auto lhsTy = dyn_cast<RankedTensorType>(adaptor.getLhs().getType());
         if (!resTy || !lhsTy)
             return rw.notifyMatchFailure(op, "could not convert input or result type");
+
         Location loc = op.getLoc();
         SmallVector<Value> dynDims;
         for (unsigned i = 0; i < resTy.getRank(); ++i)
             if (resTy.isDynamicDim(i))
                 dynDims.push_back(rw.create<tensor::DimOp>(loc, adaptor.getLhs(), i));
+
         Value init = rw.create<tensor::EmptyOp>(loc, resTy, dynDims);
         auto idMap = rw.getMultiDimIdentityMap(resTy.getRank());
-        auto [rhs, rhsMap] = prepareRhs(op, lhsTy, resTy, idMap, adaptor.getRhs(), rw, loc);
+        auto [rhs, rhsMap] = prepareRhs(resTy, idMap, adaptor.getRhs(), rw, loc);
+
         SmallVector<utils::IteratorType> iters(resTy.getRank(), utils::IteratorType::parallel);
         auto generic = rw.create<linalg::GenericOp>(
             loc, resTy, ValueRange{adaptor.getLhs(), rhs}, ValueRange{init}, ArrayRef<AffineMap>{idMap, rhsMap, idMap},
             iters, [&](OpBuilder &b, Location nl, ValueRange args) {
-                Value prod = emitArithMulOp(resTy.getElementType(), b, nl, args[0], args[1]);
+                Value prod = EwBinaryOpTraits<EwBinaryOp>::emit(matTy.getElementType(), b, nl, args[0], args[1]);
                 b.create<linalg::YieldOp>(nl, prod);
             });
         rw.replaceOp(op, generic.getResults());
@@ -47,9 +89,8 @@ struct EwMulOpConverter : public OpConversionPattern<daphne::EwMulOp> {
         return b.create<arith::MulIOp>(loc, lhs, rhs);
     }
 
-    std::pair<Value, AffineMap> prepareRhs(daphne::EwMulOp op, RankedTensorType lhsTy, RankedTensorType resTy,
-                                           AffineMap idMap, Value rhsInput, ConversionPatternRewriter &rw,
-                                           Location loc) const {
+    std::pair<Value, AffineMap> prepareRhs(RankedTensorType resTy, AffineMap idMap, Value rhsInput,
+                                           ConversionPatternRewriter &rw, Location loc) const {
         if (auto rhsTy = dyn_cast<RankedTensorType>(rhsInput.getType()))
             return std::make_pair(rhsInput, idMap);
 
@@ -132,7 +173,10 @@ struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp> {
 void populateDaphneToLinalgPatterns(DaphneTypeConverter &converter, RewritePatternSet &patterns) {
     // clang-format off
     patterns.add<
-        EwMulOpConverter,
+        EwBinaryOpConverter<daphne::EwAddOp>,
+        EwBinaryOpConverter<daphne::EwSubOp>,
+        EwBinaryOpConverter<daphne::EwMulOp>,
+        EwBinaryOpConverter<daphne::EwDivOp>,
         FillOpConverter,
         AggAllReduce<daphne::AllAggSumOp>,
         AggAllReduce<daphne::AllAggMinOp>,

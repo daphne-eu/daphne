@@ -104,6 +104,85 @@ module {
     // CHECK-NOT: daphne.ewMul
   }
 
+  func.func @ewadd_mat_mat_f64() {
+    %c4 = "daphne.constant"() {value = 4 : index} : () -> index
+    %c3 = "daphne.constant"() {value = 3 : index} : () -> index
+    %c2 = "daphne.constant"() {value = 2. : f64} : () -> f64
+    %c5 = "daphne.constant"() {value = 5. : f64} : () -> f64
+    %lhs = "daphne.fill"(%c2, %c4, %c3) : (f64, index, index) -> !daphne.Matrix<4x3xf64>
+    %rhs = "daphne.fill"(%c5, %c4, %c3) : (f64, index, index) -> !daphne.Matrix<4x3xf64>
+    %res = "daphne.ewAdd"(%lhs, %rhs) : (!daphne.Matrix<4x3xf64>, !daphne.Matrix<4x3xf64>) -> !daphne.Matrix<4x3xf64>
+    "daphne.return"() : () -> ()
+    // CHECK-LABEL: func.func @ewadd_mat_mat_f64
+    // CHECK: linalg.generic
+    // CHECK-SAME: outs({{.*}} : tensor<4x3xf64>)
+    // CHECK: arith.addf
+    // CHECK-NOT: daphne.ewAdd
+  }
+
+  func.func @ewadd_mat_scalar() {
+    %c4 = "daphne.constant"() {value = 4 : index} : () -> index
+    %c3 = "daphne.constant"() {value = 3 : index} : () -> index
+    %c2 = "daphne.constant"() {value = 2. : f64} : () -> f64
+    %c5 = "daphne.constant"() {value = 5. : f64} : () -> f64
+    %lhs = "daphne.fill"(%c2, %c4, %c3) : (f64, index, index) -> !daphne.Matrix<4x3xf64>
+    %res = "daphne.ewAdd"(%lhs, %c5) : (!daphne.Matrix<4x3xf64>, f64) -> !daphne.Matrix<4x3xf64>
+    "daphne.return"() : () -> ()
+    // CHECK-LABEL: func.func @ewadd_mat_scalar
+    // CHECK: linalg.generic
+    // CHECK-SAME: indexing_maps = [#[[ID:.*]], #[[SCALAR:.*]], #[[ID]]]
+    // CHECK: arith.addf
+    // CHECK-NOT: daphne.ewAdd
+  }
+
+  func.func @ewsub_mat_mat_si64() {
+    %c4 = "daphne.constant"() {value = 4 : index} : () -> index
+    %c3 = "daphne.constant"() {value = 3 : index} : () -> index
+    %c2 = "daphne.constant"() {value = 2 : si64} : () -> si64
+    %c5 = "daphne.constant"() {value = 5 : si64} : () -> si64
+    %lhs = "daphne.fill"(%c2, %c4, %c3) : (si64, index, index) -> !daphne.Matrix<4x3xsi64>
+    %rhs = "daphne.fill"(%c5, %c4, %c3) : (si64, index, index) -> !daphne.Matrix<4x3xsi64>
+    %res = "daphne.ewSub"(%lhs, %rhs) : (!daphne.Matrix<4x3xsi64>, !daphne.Matrix<4x3xsi64>) -> !daphne.Matrix<4x3xsi64>
+    "daphne.return"() : () -> ()
+    // CHECK-LABEL: func.func @ewsub_mat_mat_si64
+    // CHECK: linalg.generic
+    // CHECK-SAME: outs({{.*}} : tensor<4x3xi64>)
+    // CHECK: arith.subi
+    // CHECK-NOT: daphne.ewSub
+  }
+
+  func.func @ewdiv_mat_mat_si64() {
+    %c4 = "daphne.constant"() {value = 4 : index} : () -> index
+    %c3 = "daphne.constant"() {value = 3 : index} : () -> index
+    %c2 = "daphne.constant"() {value = 2 : si64} : () -> si64
+    %c5 = "daphne.constant"() {value = 5 : si64} : () -> si64
+    %lhs = "daphne.fill"(%c2, %c4, %c3) : (si64, index, index) -> !daphne.Matrix<4x3xsi64>
+    %rhs = "daphne.fill"(%c5, %c4, %c3) : (si64, index, index) -> !daphne.Matrix<4x3xsi64>
+    %res = "daphne.ewDiv"(%lhs, %rhs) : (!daphne.Matrix<4x3xsi64>, !daphne.Matrix<4x3xsi64>) -> !daphne.Matrix<4x3xsi64>
+    "daphne.return"() : () -> ()
+    // CHECK-LABEL: func.func @ewdiv_mat_mat_si64
+    // CHECK: linalg.generic
+    // CHECK-SAME: outs({{.*}} : tensor<4x3xi64>)
+    // CHECK: arith.divsi
+    // CHECK-NOT: daphne.ewDiv
+  }
+
+  func.func @ewdiv_mat_mat_ui64() {
+    %c4 = "daphne.constant"() {value = 4 : index} : () -> index
+    %c3 = "daphne.constant"() {value = 3 : index} : () -> index
+    %c2 = "daphne.constant"() {value = 2 : ui64} : () -> ui64
+    %c5 = "daphne.constant"() {value = 5 : ui64} : () -> ui64
+    %lhs = "daphne.fill"(%c2, %c4, %c3) : (ui64, index, index) -> !daphne.Matrix<4x3xui64>
+    %rhs = "daphne.fill"(%c5, %c4, %c3) : (ui64, index, index) -> !daphne.Matrix<4x3xui64>
+    %res = "daphne.ewDiv"(%lhs, %rhs) : (!daphne.Matrix<4x3xui64>, !daphne.Matrix<4x3xui64>) -> !daphne.Matrix<4x3xui64>
+    "daphne.return"() : () -> ()
+    // CHECK-LABEL: func.func @ewdiv_mat_mat_ui64
+    // CHECK: linalg.generic
+    // CHECK-SAME: outs({{.*}} : tensor<4x3xi64>)
+    // CHECK: arith.divui
+    // CHECK-NOT: daphne.ewDiv
+  }
+
   // Sparse ewMul: daphne.Matrix (CSRMatrix) is disassembled to buffers, a sparse_tensor
   // is assembled. Computation is done via linalg.generic, then the result
   // disassembled back to sparse buffers and assembled again as a daphne.Matrix.
