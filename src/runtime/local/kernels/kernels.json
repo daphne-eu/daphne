@@ -2310,6 +2310,16 @@
                         ["CSRMatrix", "double"],
                         "double"
                     ],
+                    [
+                        ["DenseMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        "float"
+                    ],
+                    [
+                        ["DenseMatrix", "double"],
+                        ["CSRMatrix", "double"],
+                        "double"
+                    ],
                     ["Frame", "Frame", "float"],
                     ["Frame", "Frame", "double"],
                     ["Frame", "Frame", "int64_t"],

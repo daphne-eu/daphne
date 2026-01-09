@@ -43,6 +43,14 @@ void checkEwBinaryObjSca(BinaryOpCode opCode, const DT *lhs, const VT rhs, const
     DataObjectFactory::destroy(res);
 }
 
+template <class DTRes, class DTLhs, typename VT>
+void checkSparseEwBinaryObjScaDenseRes(BinaryOpCode opCode, const DTLhs *lhs, const VT rhs, const DTRes *exp) {
+    DTRes *res = nullptr;
+    ewBinaryObjSca<DTRes, DTLhs, VT>(opCode, res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
+}
+
 // ****************************************************************************
 // Arithmetic
 // ****************************************************************************
@@ -66,6 +74,23 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add - Matrix"), TAG_KERNELS, (DATA_TYPES),
     checkEwBinaryObjSca<DT, VT>(BinaryOpCode::ADD, m1, 1, m2);
 
     DataObjectFactory::destroy(m0, m1, m2);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("sparse_scalar_dense_res"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using SparseDT = CSRMatrix<VT>;
+    using DTRes = DenseMatrix<VT>;
+
+    // clang-format off
+    auto lhs = genGivenVals<SparseDT>(4, { 0, 1, 0, 2, 0, 0, 0, 0, 3, 0, 0, 4, 0, 0, 0, 0, });
+    auto expAdd = genGivenVals<DTRes>(4, { 5, 6, 5, 7, 5, 5, 5, 5, 8, 5, 5, 9, 5, 5, 5, 5, });
+    auto expMul = genGivenVals<DTRes>(4, { 0, 2, 0, 4, 0, 0, 0, 0, 6, 0, 0, 8, 0, 0, 0, 0, });
+    // clang-format on
+
+    checkSparseEwBinaryObjScaDenseRes<DTRes, SparseDT, VT>(BinaryOpCode::ADD, lhs, VT(5), expAdd);
+    checkSparseEwBinaryObjScaDenseRes<DTRes, SparseDT, VT>(BinaryOpCode::MUL, lhs, VT(2), expMul);
+
+    DataObjectFactory::destroy(lhs, expAdd, expMul);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("add - Frame"), TAG_KERNELS, VALUE_TYPES) {

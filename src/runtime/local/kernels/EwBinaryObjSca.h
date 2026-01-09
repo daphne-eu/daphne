@@ -144,6 +144,49 @@ struct EwBinaryObjSca<CSRMatrix<VTRes>, CSRMatrix<VTLhs>, VTRhs> {
 };
 
 // ----------------------------------------------------------------------------
+// DenseMatrix <- CSRMatrix, scalar
+// ----------------------------------------------------------------------------
+
+template <typename VTRes, typename VTLhs, typename VTRhs>
+struct EwBinaryObjSca<DenseMatrix<VTRes>, CSRMatrix<VTLhs>, VTRhs> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTRes> *&res, const CSRMatrix<VTLhs> *lhs, VTRhs rhs,
+                      DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+
+        VTRes *valuesRes = res->getValues();
+        const size_t rowSkipRes = res->getRowSkip();
+
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
+
+        const VTRes zeroRes = func(VTLhs(0), rhs, ctx);
+        const bool isSparsityPreserving = (zeroRes == VTRes(0));
+
+        if (isSparsityPreserving)
+            memset(res->getValues(), 0, sizeof(VTRes) * numRows * numCols);
+        else
+            std::fill(res->getValues(), res->getValues() + numRows * numCols, zeroRes);
+
+        // Process only non-zero positions
+        for (size_t r = 0; r < numRows; r++) {
+            const size_t nnzRow = lhs->getNumNonZeros(r);
+            const VTLhs *valuesRowLhs = lhs->getValues(r);
+            const size_t *colIdxsRowLhs = lhs->getColIdxs(r);
+
+            for (size_t i = 0; i < nnzRow; i++) {
+                const size_t c = colIdxsRowLhs[i];
+                valuesRes[c] = func(valuesRowLhs[i], rhs, ctx);
+            }
+
+            valuesRes += rowSkipRes;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Matrix <- Matrix, scalar
 // ----------------------------------------------------------------------------
 
