@@ -1,5 +1,6 @@
 #include "compiler/conversion/DaphneToLinalg.h"
 #include "compiler/conversion/AggReductions.h"
+#include "compiler/conversion/BinaryOpTraits.h"
 #include "ir/daphneir/Daphne.h"
 
 #include <mlir/Dialect/Arith/IR/Arith.h>
@@ -12,43 +13,6 @@
 #include <mlir/Transforms/DialectConversion.h>
 
 using namespace mlir;
-
-template <typename BinaryOp> struct EwBinaryOpTraits {};
-
-template <> struct EwBinaryOpTraits<daphne::EwAddOp> {
-    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
-        if (isa<FloatType>(elemTy))
-            return b.create<arith::AddFOp>(loc, lhs, rhs);
-        return b.create<arith::AddIOp>(loc, lhs, rhs);
-    }
-};
-
-template <> struct EwBinaryOpTraits<daphne::EwSubOp> {
-    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
-        if (isa<FloatType>(elemTy))
-            return b.create<arith::SubFOp>(loc, lhs, rhs);
-        return b.create<arith::SubIOp>(loc, lhs, rhs);
-    }
-};
-
-template <> struct EwBinaryOpTraits<daphne::EwMulOp> {
-    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
-        if (isa<FloatType>(elemTy))
-            return b.create<arith::MulFOp>(loc, lhs, rhs);
-        return b.create<arith::MulIOp>(loc, lhs, rhs);
-    }
-};
-
-template <> struct EwBinaryOpTraits<daphne::EwDivOp> {
-    static Value emit(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) {
-        if (isa<FloatType>(elemTy))
-            return b.create<arith::DivFOp>(loc, lhs, rhs);
-        auto it = dyn_cast<IntegerType>(elemTy);
-        if (it.isUnsigned())
-            return b.create<arith::DivUIOp>(loc, lhs, rhs);
-        return b.create<arith::DivSIOp>(loc, lhs, rhs);
-    }
-};
 
 template <typename EwBinaryOp> struct EwBinaryOpConverter : public OpConversionPattern<EwBinaryOp> {
     using OpConversionPattern<EwBinaryOp>::OpConversionPattern;
@@ -83,12 +47,6 @@ template <typename EwBinaryOp> struct EwBinaryOpConverter : public OpConversionP
     };
 
   private:
-    Value emitArithMulOp(Type elemTy, OpBuilder &b, Location loc, Value lhs, Value rhs) const {
-        if (isa<FloatType>(elemTy))
-            return b.create<arith::MulFOp>(loc, lhs, rhs);
-        return b.create<arith::MulIOp>(loc, lhs, rhs);
-    }
-
     std::pair<Value, AffineMap> prepareRhs(RankedTensorType resTy, AffineMap idMap, Value rhsInput,
                                            ConversionPatternRewriter &rw, Location loc) const {
         if (auto rhsTy = dyn_cast<RankedTensorType>(rhsInput.getType()))
