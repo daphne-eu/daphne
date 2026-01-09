@@ -94,6 +94,56 @@ template <typename VT> struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix
 };
 
 // ----------------------------------------------------------------------------
+// DenseMatrix <- DenseMatrix, CSRMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct MatMul<DenseMatrix<VT>, DenseMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *lhs, const CSRMatrix<VT> *rhs, bool transa,
+                      bool transb, DCTX(ctx)) {
+        const size_t nr1 = lhs->getNumRows();
+        const size_t nc1 = lhs->getNumCols();
+        const size_t nr2 = rhs->getNumRows();
+        const size_t nc2 = rhs->getNumCols();
+
+        if (nc1 != nr2) {
+            throw std::runtime_error("MatMul - #cols of lhs and #rows of rhs must be the same");
+        }
+        // FIXME: transpose isn't supported atm
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, /*zero=*/true);
+
+        const VT *valuesLhs = lhs->getValues();
+        VT *valuesRes = res->getValues();
+
+        const size_t rowSkipLhs = lhs->getRowSkip();
+        const size_t rowSkipRes = res->getRowSkip();
+
+        // For each row m of lhs
+        for (size_t m = 0; m < nr1; m++) {
+            const size_t rowIdxLhs = m * rowSkipLhs;
+            const size_t rowIdxRes = m * rowSkipRes;
+
+            // For each row n of rhs
+            for (size_t n = 0; n < nr2; n++) {
+                const VT lhsVal = valuesLhs[rowIdxLhs + n];
+
+                // Get non-zeros in row k of rhs
+                const size_t rowNumNonZeros = rhs->getNumNonZeros(n);
+                const size_t *rowColIdxs = rhs->getColIdxs(n);
+                const VT *rowValues = rhs->getValues(n);
+
+                // For each non-zero in row k of rhs
+                for (size_t i = 0; i < rowNumNonZeros; i++) {
+                    const size_t c = rowColIdxs[i];
+                    valuesRes[rowIdxRes + c] += lhsVal * rowValues[i];
+                }
+            }
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Matrix <- Matrix, Matrix
 // ----------------------------------------------------------------------------
 

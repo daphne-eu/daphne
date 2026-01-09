@@ -41,6 +41,15 @@ void checkMatMul(const DT *lhs, const DT *rhs, const DT *exp, DCTX(dctx), bool t
     DataObjectFactory::destroy(res);
 }
 
+template <class DTRes, class DTLhs, class DTRhs>
+void checkMatMulMixed(const DTLhs *lhs, const DTRhs *rhs, const DTRes *exp, DCTX(dctx), bool transa = false,
+                      bool transb = false) {
+    DTRes *res = nullptr;
+    matMul<DTRes, DTLhs, DTRhs>(res, lhs, rhs, transa, transb, dctx);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (CSRMatrix, DATA_TYPES), (VALUE_TYPES)) {
     auto dctx = setupContextAndLogger();
 
@@ -141,6 +150,25 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (CSRMatrix, DATA_TYPES), (VALU
     checkMatMul(v5, v2, v6, dctx.get());
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, m6, v0, v1, v2, v3, v4, v5, v6, v7, v8);
+}
+
+TEMPLATE_TEST_CASE("MatMul Dense x Sparse", TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using LhsDT = DenseMatrix<VT>;
+    using RhsDT = CSRMatrix<VT>;
+    using ResDT = DenseMatrix<VT>;
+
+    auto dctx = setupContextAndLogger();
+
+    // clang-format off
+    auto lhs = genGivenVals<LhsDT>(3, { 1, 0, 2, 3, 4, 0, });
+    auto rhs = genGivenVals<RhsDT>(2, { 0, 5, 0, 0, 6, 0, });
+    auto exp = genGivenVals<ResDT>(3, { 0, 5, 0, 0, 28, 0, 0, 20, 0, });
+    // clang-format on
+
+    checkMatMulMixed<ResDT, LhsDT, RhsDT>(lhs, rhs, exp, dctx.get());
+
+    DataObjectFactory::destroy(lhs, rhs, exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
