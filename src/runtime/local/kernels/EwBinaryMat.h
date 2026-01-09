@@ -317,6 +317,59 @@ template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMat
 };
 
 // ----------------------------------------------------------------------------
+// DenseMatrix <- CSRMatrix, DenseMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct EwBinaryMat<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *&res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
+                      DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+
+        if (numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+            throw std::runtime_error("EwBinaryMat(Dense<-CSR,Dense) - lhs and rhs must have the same dimensions");
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+        VT *valuesRes = res->getValues();
+        const VT *valuesRhs = rhs->getValues();
+        const size_t rowSkipRes = res->getRowSkip();
+        const size_t rowSkipRhs = rhs->getRowSkip();
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        // Check if 0 op x = 0 for any x (test with a non-zero value)
+        const bool isSparsityPreserving = (func(VT(0), VT(1), ctx) == VT(0));
+
+        if (isSparsityPreserving) {
+            // 0 op x = 0 for all x (e.g., MUL, DIV)
+            // Initialize to zero, compute only non-zero positions of lhs
+            memset(res->getValues(), 0, sizeof(VT) * numRows * numCols);
+        }
+
+        for (size_t r = 0; r < numRows; r++) {
+            if (!isSparsityPreserving) {
+                // Initialize with func(0, rhs) for all positions (handles 0+x=x and 0-x=-x)
+                for (size_t c = 0; c < numCols; c++)
+                    valuesRes[c] = func(VT(0), valuesRhs[c], ctx);
+            }
+
+            const size_t nnzRow = lhs->getNumNonZeros(r);
+            const VT *valuesRowLhs = lhs->getValues(r);
+            const size_t *colIdxsRowLhs = lhs->getColIdxs(r);
+            for (size_t i = 0; i < nnzRow; i++) {
+                const size_t c = colIdxsRowLhs[i];
+                valuesRes[c] = func(valuesRowLhs[i], valuesRhs[c], ctx);
+            }
+
+            valuesRes += rowSkipRes;
+            valuesRhs += rowSkipRhs;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Matrix <- Matrix, Matrix
 // ----------------------------------------------------------------------------
 

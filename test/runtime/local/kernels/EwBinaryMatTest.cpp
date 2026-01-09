@@ -55,6 +55,13 @@ void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT *lhs, const
     CHECK(*res == *exp);
 }
 
+template <class SparseDT, class DTRes, class DTRhs>
+void checkSparseDenseEwBinaryMatDenseRes(BinaryOpCode opCode, const SparseDT *lhs, const DTRhs *rhs, const DTRes *exp) {
+    DTRes *res = nullptr;
+    ewBinaryMat<DTRes, SparseDT, DTRhs>(opCode, res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+}
+
 // ****************************************************************************
 // Arithmetic
 // ****************************************************************************
@@ -148,6 +155,24 @@ TEMPLATE_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
     checkSparseDenseEwBinaryMat(BinaryOpCode::MUL, m0, m3, m0);
 
     DataObjectFactory::destroy(m0, m1, m2, m3, exp0, exp1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("sparse_dense_dense_res"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    using SparseDT = CSRMatrix<VT>;
+    using DT = DenseMatrix<VT>;
+
+    // clang-format off
+    auto lhs = genGivenVals<SparseDT>(4, { 0, 1, 0, 2, 0, 0, 0, 0, 3, 0, 0, 4, 0, 0, 0, 0, });
+    auto rhs = genGivenVals<DT>(4, { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, });
+    auto expAdd = genGivenVals<DT>(4, { 1, 3, 3, 6, 5, 6, 7, 8, 12, 10, 11, 16, 13, 14, 15, 16, });
+    auto expMul = genGivenVals<DT>(4, { 0, 2, 0, 8, 0, 0, 0, 0, 27, 0, 0, 48, 0, 0, 0, 0, });
+    // clang-format on
+
+    checkSparseDenseEwBinaryMatDenseRes(BinaryOpCode::ADD, lhs, rhs, expAdd);
+    checkSparseDenseEwBinaryMatDenseRes(BinaryOpCode::MUL, lhs, rhs, expMul);
+
+    DataObjectFactory::destroy(lhs, rhs, expAdd, expMul);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES_NO_CSR), (VALUE_TYPES)) {
