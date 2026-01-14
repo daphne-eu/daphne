@@ -1909,6 +1909,9 @@ def Daphne_CreateFPGAContextOp : Daphne_Op<"createFPGAContext", [FPGAOPENCLSuppo
 def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOperandSegments]> {
     let summary = "Performs multi-threaded vector-wise computations of the input.";
 
+    // Unlike most other DaphneIR ops, this op explicitly needs the DaphneContext as an argument, because it is not
+    // lowered to CallKernelOp in RewriteToCallKernelOpsPass but in LowerToLLVMPass, where an extraction of the
+    // DaphneContext from the IR is not possible/convenient anymore.
     let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>>:$inputs,
             // TODO: both types should be SIZE, but we require `-1` for dynamic/unknown
             Variadic<AnyTypeOf<[SIntScalar, Size, Unknown]>>:$out_rows,
@@ -1940,9 +1943,13 @@ def Daphne_DistributedPipelineOp : Daphne_Op<"distributedPipeline", [AttrSizedOp
 // ****************************************************************************
 // Higher-order operations
 // ****************************************************************************
+
 def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg]> {
-    let summary = "Applies a user defined function to elements of a matrix.";
-    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func);
+    let summary = "Applies a user-defined function to elements of a matrix.";
+    // Unlike most other DaphneIR ops, this op explicitly needs the DaphneContext as an argument, because it is not
+    // lowered to CallKernelOp in RewriteToCallKernelOpsPass but in LowerToLLVMPass, where an extraction of the
+    // DaphneContext from the IR is not possible/convenient anymore.
+    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func, Optional<DaphneContext>:$ctx);
     let results = (outs MatrixOrU:$res);
 }
 

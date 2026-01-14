@@ -652,7 +652,16 @@ void RewriteToCallKernelOpPass::runOnOperation() {
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = CompilerUtils::getDaphneContext(func);
+
+    // All runtime kernels (except for the createDaphneContext-kernel) expect a DaphneContext as their last argument. To
+    // this end, when rewriting a DaphneIR op to a CallKernelOp, the DaphneContext is appended to the arguments of the
+    // CallKernelOp after the original op's arguments. However, some DaphneIR ops are not lowered to CallKernelOp in
+    // this pass but later (in LowerToLLVMPass), because they need some more low-level information (e.g., function
+    // pointers) which is not available at this stage. Those ops must be given the DaphneContext here, because after
+    // this pass, the CreateDaphneContextOps will have been lowered and so an extraction of the DaphneContext from the
+    // IR will not be possible/convenient anymore.
     func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctx); });
+    func->walk([&](daphne::MapOp mo) { mo.getCtxMutable().assign(dctx); });
 
     // Apply conversion to CallKernelOps.
     patterns.insert<KernelReplacement, DistributedPipelineKernelReplacement>(&getContext(), dctx, userConfig,

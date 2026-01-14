@@ -1446,7 +1446,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Attribute attr = co.getValue();
 
         return static_cast<mlir::Value>(
-            builder.create<MapOp>(loc, source.getType(), source, llvm::dyn_cast<mlir::StringAttr>(attr)));
+            builder.create<MapOp>(loc, source.getType(), source, llvm::dyn_cast<mlir::StringAttr>(attr), nullptr));
     }
 
     // ****************************************************************************
