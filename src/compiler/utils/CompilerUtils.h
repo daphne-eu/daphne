@@ -66,7 +66,12 @@ struct CompilerUtils {
     /**
      * @brief The name of the attribute used to flag DaphneIR ops for vectorization if --vec-restricted is used.
      */
-    static constexpr std::string ATTR_VEC = "vec";
+    static inline constexpr std::string ATTR_VEC = "vec";
+
+    /* Optional attribute of CallKernelOp, which indicates that all results shall be combined into a single variadic
+     * result.
+     */
+    static inline constexpr std::string_view ATTR_HAS_VARIADIC_RESULTS = "hasVariadicResults";
 
     /**
      * @brief Returns `true` if the given op has a boolean attribute with the given name and the value of this attribute

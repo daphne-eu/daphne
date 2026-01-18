@@ -74,6 +74,18 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
 // DAPHNE Runtime Interoperability
 // ****************************************************************************
 
+def Daphne_ConvertSparseBuffersToMatrix
+  : Daphne_Op<"convertSparseBuffersToMatrix", [Pure]> {
+  let summary = "Wrap CSR buffers into a daphne.Matrix.";
+  let description = [{ Constructs a Matrix from CSR layout buffers (values, column indices, row offsets) given as raw
+    base pointer, offset, size, and stride metadata, plus the logical matrix sizes. }];
+  let arguments = (ins Size:$valuesBase, Size:$valuesOffset, Size:$valuesSize, Size:$valuesStride,
+                        Size:$colIdxsBase, Size:$colIdxsOffset, Size:$colIdxsSize, Size:$colIdxsStride,
+                        Size:$rowOffsetsBase, Size:$rowOffsetsOffset, Size:$rowOffsetsSize, Size:$rowOffsetsStride,
+                        Size:$numRows, Size:$numCols);
+  let results   = (outs MatrixOrU:$res);
+}
+
 def Daphne_ConvertMemRefToDenseMatrix : Daphne_Op<"convertMemRefToDenseMatrix"> {
     let summary = "Return a DenseMatrix.";
     let description = [{ Constructs a DenseMatrix given a rank 2 StridedMemRefType. }];
@@ -1897,6 +1909,9 @@ def Daphne_CreateFPGAContextOp : Daphne_Op<"createFPGAContext", [FPGAOPENCLSuppo
 def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOperandSegments]> {
     let summary = "Performs multi-threaded vector-wise computations of the input.";
 
+    // Unlike most other DaphneIR ops, this op explicitly needs the DaphneContext as an argument, because it is not
+    // lowered to CallKernelOp in RewriteToCallKernelOpsPass but in LowerToLLVMPass, where an extraction of the
+    // DaphneContext from the IR is not possible/convenient anymore.
     let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame, Unknown]>>:$inputs,
             // TODO: both types should be SIZE, but we require `-1` for dynamic/unknown
             Variadic<AnyTypeOf<[SIntScalar, Size, Unknown]>>:$out_rows,
@@ -1928,9 +1943,13 @@ def Daphne_DistributedPipelineOp : Daphne_Op<"distributedPipeline", [AttrSizedOp
 // ****************************************************************************
 // Higher-order operations
 // ****************************************************************************
+
 def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg]> {
-    let summary = "Applies a user defined function to elements of a matrix.";
-    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func);
+    let summary = "Applies a user-defined function to elements of a matrix.";
+    // Unlike most other DaphneIR ops, this op explicitly needs the DaphneContext as an argument, because it is not
+    // lowered to CallKernelOp in RewriteToCallKernelOpsPass but in LowerToLLVMPass, where an extraction of the
+    // DaphneContext from the IR is not possible/convenient anymore.
+    let arguments = (ins MatrixOrU:$arg, SymbolNameAttr:$func, Optional<DaphneContext>:$ctx);
     let results = (outs MatrixOrU:$res);
 }
 

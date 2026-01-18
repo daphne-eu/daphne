@@ -25,6 +25,7 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Value.h>
 
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -127,12 +128,20 @@ class DaphneDSLBuiltins {
     // ************************************************************************
 
   public:
+    // Parameter metadata for built-ins (names and number of required positional arguments).
+    struct BuiltinParamInfo {
+        std::vector<std::string> paramNames;
+        size_t requiredParams;
+    };
+
     explicit DaphneDSLBuiltins(mlir::OpBuilder &builder)
         : builder(builder), utils(builder){
                                 //
                             };
 
     antlrcpp::Any build(mlir::Location loc, const std::string &func, const std::vector<mlir::Value> &args);
+    // Return parameter metadata for a built-in if keyword arguments are supported.
+    std::optional<BuiltinParamInfo> getParamNames(const std::string &func) const;
 };
 
 #endif // SRC_PARSER_DAPHNEDSL_DAPHNEDSLBUILTINS_H

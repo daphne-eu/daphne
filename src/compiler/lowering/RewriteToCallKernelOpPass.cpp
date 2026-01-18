@@ -23,6 +23,7 @@
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
@@ -32,7 +33,6 @@
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/Location.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/ADT/ArrayRef.h"
 
 #include <iostream>
 #include <limits>
@@ -126,7 +126,9 @@ class KernelReplacement : public RewritePattern {
     const DaphneUserConfig &userConfig;
     std::unordered_map<std::string, bool> &usedLibPaths;
 
-    mlir::Type adaptType(mlir::Type t, bool generalizeToStructure) const {
+    // Normalize a type into the form used for kernel lookup when comparing to the `mlir::Type` of a `KernelInfo`. This
+    // may drop certain known shape information, and and optionally generalize some types.
+    mlir::Type normalizeTypeForKernelLookup(mlir::Type t, bool generalizeToStructure) const {
         MLIRContext *mctx = t.getContext();
         if (generalizeToStructure && llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType,
                                                mlir::daphne::ColumnType, mlir::daphne::ListType>(t))
@@ -138,14 +140,15 @@ class KernelReplacement : public RewritePattern {
         if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
             return ct.withSameValueType();
         if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
-            return mlir::daphne::ListType::get(mctx, adaptType(lt.getElementType(), generalizeToStructure));
+            return mlir::daphne::ListType::get(
+                mctx, normalizeTypeForKernelLookup(lt.getElementType(), generalizeToStructure));
         if (auto mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
-            // Remove any specific dimension information ({0}), but retain the rank and element type.
+            // Drop concrete shapes; keep rank and element type.
             int64_t mrtRank = mrt.getRank();
             if (mrtRank == 1) {
-                return mlir::MemRefType::get({0}, mrt.getElementType());
+                return mlir::MemRefType::get({ShapedType::kDynamic}, mrt.getElementType());
             } else if (mrtRank == 2) {
-                return mlir::MemRefType::get({0, 0}, mrt.getElementType());
+                return mlir::MemRefType::get({ShapedType::kDynamic, ShapedType::kDynamic}, mrt.getElementType());
             } else {
                 throw std::runtime_error(
                     "RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given " +
@@ -225,7 +228,7 @@ class KernelReplacement : public RewritePattern {
 
         // Append converted op result types to the look-up result types.
         for (size_t i = 0; i < opResTys.size(); i++)
-            lookupResTys.push_back(adaptType(opResTys[i], false));
+            lookupResTys.push_back(normalizeTypeForKernelLookup(opResTys[i], false));
 
         // Append converted op argument types to the look-up argument types.
         // Variadic operands, which can have an arbitrary number of occurrences,
@@ -279,7 +282,7 @@ class KernelReplacement : public RewritePattern {
                                                  op->getName().getStringRef().str());
                 }
 
-                lookupArgTys.push_back(adaptType(odsOperandTy, generalizeInputTypes));
+                lookupArgTys.push_back(normalizeTypeForKernelLookup(odsOperandTy, generalizeInputTypes));
 
                 if (isVariadic) {
                     // Variadic operand.
@@ -302,9 +305,20 @@ class KernelReplacement : public RewritePattern {
             // the type of each operand to the vector of types to use for
             // kernel look-up, and pass all operands to the CallKernelOp as-is.
             for (size_t i = 0; i < opArgTys.size(); i++) {
-                lookupArgTys.push_back(adaptType(opArgTys[i], generalizeInputTypes));
+                lookupArgTys.push_back(normalizeTypeForKernelLookup(opArgTys[i], generalizeInputTypes));
                 kernelArgs.push_back(op->getOperand(i));
             }
+
+        if (auto cdm2m = dyn_cast<daphne::ConvertDenseMatrixToMemRef>(op)) {
+            // The kernel for the conversion op is registered with signedness
+            // semantics, but the `DaphneTypeConverter` converst to a signless memref. To still match the proper kernel,
+            // we normalize and set the type to the `daphne.Matrix` element type.
+            auto matTy = llvm::cast<daphne::MatrixType>(cdm2m.getArg().getType());
+            auto resMemRef = llvm::cast<MemRefType>(cdm2m.getResult().getType());
+            auto memRefSignedness = MemRefType::get(resMemRef.getShape(), matTy.getElementType(), resMemRef.getLayout(),
+                                                    resMemRef.getMemorySpace());
+            lookupResTys[0] = normalizeTypeForKernelLookup(memRefSignedness, false);
+        }
 
         if (auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
             // GroupOp carries the aggregation functions to apply as an
@@ -599,8 +613,7 @@ class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::
                                           cvpSplits, cvpCombines, op.getIr(), dctx};
         auto cko = rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(op.getOperation(), callee.str(), newOperands,
                                                                      op.getOutputs().getTypes());
-        // TODO Use ATTR_HASVARIADICRESULTS from LowerToLLVMPass.cpp.
-        cko->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
+        cko->setAttr(CompilerUtils::ATTR_HAS_VARIADIC_RESULTS, rewriter.getBoolAttr(true));
 
         return success();
     }
@@ -626,7 +639,8 @@ void RewriteToCallKernelOpPass::runOnOperation() {
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
     target.addLegalDialect<mlir::affine::AffineDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect,
-                           mlir::linalg::LinalgDialect, mlir::arith::ArithDialect, mlir::BuiltinDialect>();
+                           mlir::linalg::LinalgDialect, mlir::arith::ArithDialect, mlir::BuiltinDialect,
+                           mlir::scf::SCFDialect, mlir::cf::ControlFlowDialect>();
 
     target.addLegalOp<ModuleOp, func::FuncOp, func::CallOp, func::ReturnOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
@@ -638,7 +652,16 @@ void RewriteToCallKernelOpPass::runOnOperation() {
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = CompilerUtils::getDaphneContext(func);
+
+    // All runtime kernels (except for the createDaphneContext-kernel) expect a DaphneContext as their last argument. To
+    // this end, when rewriting a DaphneIR op to a CallKernelOp, the DaphneContext is appended to the arguments of the
+    // CallKernelOp after the original op's arguments. However, some DaphneIR ops are not lowered to CallKernelOp in
+    // this pass but later (in LowerToLLVMPass), because they need some more low-level information (e.g., function
+    // pointers) which is not available at this stage. Those ops must be given the DaphneContext here, because after
+    // this pass, the CreateDaphneContextOps will have been lowered and so an extraction of the DaphneContext from the
+    // IR will not be possible/convenient anymore.
     func->walk([&](daphne::VectorizedPipelineOp vpo) { vpo.getCtxMutable().assign(dctx); });
+    func->walk([&](daphne::MapOp mo) { mo.getCtxMutable().assign(dctx); });
 
     // Apply conversion to CallKernelOps.
     patterns.insert<KernelReplacement, DistributedPipelineKernelReplacement>(&getContext(), dctx, userConfig,

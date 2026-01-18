@@ -101,6 +101,7 @@ enum class MatrixRepresentation {
 };
 
 std::string matrixRepresentationToString(MatrixRepresentation rep);
+std::ostream &operator<<(std::ostream &os, MatrixRepresentation rep);
 
 MatrixRepresentation stringToMatrixRepresentation(const std::string &str);
 } // namespace mlir::daphne

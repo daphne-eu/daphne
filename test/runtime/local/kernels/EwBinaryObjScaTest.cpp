@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CastObj.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -28,12 +29,10 @@
 
 #include <cstdint>
 
-// TODO Currently, we only pass DenseMatrix as the data type to the template
-// test cases. The Frame test cases are hard-coded on the template test cases.
-// Once we add CSRMatrix here, we should also factor out the frame test cases.
+// TODO The Frame test cases are hard-coded on the template test cases.
 
 #define TEST_NAME(opName) "EwBinaryObjSca (" opName ")"
-#define DATA_TYPES DenseMatrix, Matrix
+#define DATA_TYPES DenseMatrix, CSRMatrix, Matrix
 #define VALUE_TYPES double, uint32_t
 
 template <class DT, typename VT>

@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -145,6 +146,12 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         colIdxs = src->colIdxs;
         rowOffsets = std::shared_ptr<size_t[]>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
+
+    CSRMatrix(ValueType *v, size_t *cidx, size_t *ro, size_t nRows, size_t nCols, size_t maxNNZ,
+              std::function<void(ValueType *)> valDeleter, std::function<void(size_t *)> idxDeleter)
+        : Matrix<ValueType>(nRows, nCols), numRowsAllocated(nRows), isRowAllocatedBefore(false), maxNumNonZeros(maxNNZ),
+          values(v, valDeleter), colIdxs(cidx, idxDeleter), rowOffsets(ro, idxDeleter),
+          lastAppendedRowIdx(nRows ? nRows - 1 : 0) {}
 
     virtual ~CSRMatrix() {
         // nothing to do

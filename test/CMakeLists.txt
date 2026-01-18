@@ -57,14 +57,15 @@ set(TEST_SOURCES
 
         api/python/DaphneLibTest.cpp
 
+        codegen/CodegenTest.cpp
         api/cli/codegen/AggAllTest.cpp
-        api/cli/codegen/AggDimTest.cpp
-        api/cli/codegen/EwBinaryTest.cpp
-        api/cli/codegen/EwUnaryTest.cpp
-        api/cli/codegen/EwOpLoopFusionTest.cpp
-        api/cli/codegen/MapOpTest.cpp
-        api/cli/codegen/SparsityExploitTest.cpp
-        api/cli/codegen/TransposeTest.cpp
+        # api/cli/codegen/AggDimTest.cpp
+        # api/cli/codegen/EwBinaryTest.cpp
+        # api/cli/codegen/EwUnaryTest.cpp
+        # api/cli/codegen/EwOpLoopFusionTest.cpp
+        # api/cli/codegen/MapOpTest.cpp
+        # api/cli/codegen/SparsityExploitTest.cpp
+        # api/cli/codegen/TransposeTest.cpp
 
         ir/daphneir/InferTypesTest.cpp
         api/cli/operations/CanonicalizationConstantFoldingOpTest.cpp

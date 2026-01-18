@@ -1599,6 +1599,40 @@
     },
     {
         "kernelTemplate": {
+            "header": "ConvertSparseBuffersToMatrix.h",
+            "opName": "convertSparseBuffersToMatrix",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                { "type": "CSRMatrix<VT> *&", "name": "result" },
+                { "type": "size_t", "name": "valuesBase" },
+                { "type": "size_t", "name": "valuesOffset" },
+                { "type": "size_t", "name": "valuesSize" },
+                { "type": "size_t", "name": "valuesStride" },
+                { "type": "size_t", "name": "colIdxsBase" },
+                { "type": "size_t", "name": "colIdxsOffset" },
+                { "type": "size_t", "name": "colIdxsSize" },
+                { "type": "size_t", "name": "colIdxsStride" },
+                { "type": "size_t", "name": "rowOffsetsBase" },
+                { "type": "size_t", "name": "rowOffsetsOffset" },
+                { "type": "size_t", "name": "rowOffsetsSize" },
+                { "type": "size_t", "name": "rowOffsetsStride" },
+                { "type": "size_t", "name": "numRows" },
+                { "type": "size_t", "name": "numCols" }
+            ]
+        },
+        "instantiations": [
+            ["float"],
+            ["double"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "ConvertCSRMatrixToValuesMemRef.h",
             "opName": "convertCSRMatrixToValuesMemRef",
             "returnType": "StridedMemRefType<VT,1>",
@@ -2236,6 +2270,36 @@
             {
                 "name": ["CPP"],
                 "instantiations": [
+                    [
+                        ["CSRMatrix", "int32_t"],
+                        ["CSRMatrix", "int32_t"],
+                        "int32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "int64_t"],
+                        ["CSRMatrix", "int64_t"],
+                        "int64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint32_t"],
+                        ["CSRMatrix", "uint32_t"],
+                        "uint32_t"
+                    ],
+                    [
+                        ["CSRMatrix", "uint64_t"],
+                        ["CSRMatrix", "uint64_t"],
+                        "uint64_t"
+                    ],
+                    [
+                        ["CSRMatrix", "float"],
+                        ["CSRMatrix", "float"],
+                        "float"
+                    ],
+                    [
+                        ["CSRMatrix", "double"],
+                        ["CSRMatrix", "double"],
+                        "double"
+                    ],
                     ["Frame", "Frame", "float"],
                     ["Frame", "Frame", "double"],
                     ["Frame", "Frame", "int64_t"],
@@ -3967,6 +4031,8 @@
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "uint32_t"], "uint32_t"],
+            [["DenseMatrix", "int32_t"], "int32_t"],
             [["DenseMatrix", "uint8_t"], "uint8_t"],
             [["CSRMatrix", "double"], "double"],
             [["CSRMatrix", "float"], "float"],

@@ -24,17 +24,139 @@
 #include "antlr4-runtime.h"
 
 #include <algorithm>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <cstdlib>
 
-// ************************************************************************
-// Checking number of arguments
-// ************************************************************************
+namespace {
+using BuiltinParamInfo = DaphneDSLBuiltins::BuiltinParamInfo;
 
+const std::unordered_map<std::string, BuiltinParamInfo> &builtinParamInfos() {
+    static const std::unordered_map<std::string, BuiltinParamInfo> infos = {
+        {"fill", {{"value", "numRows", "numCols"}, 3}},
+        {"rand", {{"numRows", "numCols", "min", "max", "sparsity", "seed"}, 6}},
+        {"sample", {{"range", "size", "withReplacement", "seed"}, 4}},
+        {"seq", {{"from", "to", "inc"}, 2}},
+        {"reshape", {{"arg", "numRows", "numCols"}, 3}},
+        {"affine", {{"input", "weights", "bias"}, 3}},
+        {"avg_pool2d",
+         {{"input", "numImages", "numChannels", "imgHeight", "imgWidth", "poolH", "poolW", "strideH", "strideW",
+           "paddingH", "paddingW"},
+          11}},
+        {"max_pool2d",
+         {{"input", "numImages", "numChannels", "imgHeight", "imgWidth", "poolH", "poolW", "strideH", "strideW",
+           "paddingH", "paddingW"},
+          11}},
+        {"batch_norm2d", {{"input", "gamma", "beta", "emaMean", "emaVar", "eps"}, 6}},
+        {"conv2d",
+         {{"input", "filter", "numImages", "numChannels", "imgHeight", "imgWidth", "filterH", "filterW", "strideH",
+           "strideW", "paddingH", "paddingW", "bias"},
+          12}},
+        {"batch_norm2d_backward", {{"mean", "invVar", "input", "dout", "gamma", "eps"}, 6}},
+        {"conv2d_backward_filter",
+         {{"input", "output", "strideH", "strideW", "padH", "padW", "inputBatchSize", "inputNumChannels", "inputH",
+           "inputW", "filterNumFilters", "filterNumChannels", "filterH", "filterW"},
+          14}},
+        {"conv2d_backward_data",
+         {{"filter", "output", "strideH", "strideW", "padH", "padW", "inputBatchSize", "inputNumChannels", "inputH",
+           "inputW", "filterNumFilters", "filterNumChannels", "filterH", "filterW"},
+          14}},
+        {"avg_pool2d_backward",
+         {{"input", "dOut", "batchSize", "numChannels", "imgH", "imgW", "poolH", "poolW", "strideH", "strideW", "padH",
+           "padW"},
+          12}},
+        {"max_pool2d_backward",
+         {{"input", "dOut", "batchSize", "numChannels", "imgH", "imgW", "poolH", "poolW", "strideH", "strideW", "padH",
+           "padW"},
+          12}},
+        {"lowerTri", {{"arg", "diag", "values"}, 3}},
+        {"upperTri", {{"arg", "diag", "values"}, 3}},
+        {"replace", {{"arg", "pattern", "replacement"}, 3}},
+        {"ctable", {{"lhs", "rhs", "weight", "resNumRows", "resNumCols"}, 2}},
+        {"innerJoin", {{"lhs", "rhs", "lhsOn", "rhsOn", "numRowRes"}, 4}},
+        {"semiJoin", {{"lhs", "rhs", "lhsOn", "rhsOn", "numRowRes"}, 4}},
+        {"groupJoin", {{"lhs", "rhs", "lhsOn", "rhsOn", "rhsAgg"}, 5}},
+        {"setColLabelsPrefix", {{"frame", "prefix"}, 2}},
+        {"quantize", {{"arg", "min", "max"}, 3}},
+        {"print", {{"arg", "newline", "err"}, 1}},
+        {"writeFrame", {{"arg", "filename"}, 2}},
+        {"writeMatrix", {{"arg", "filename"}, 2}},
+        {"write", {{"arg", "filename"}, 2}},
+        {"readMatrix", {{"filename"}, 1}},
+        {"readFrame", {{"filename"}, 1}},
+        {"receiveFromNumpy", {{"address", "rows", "cols", "valueType"}, 4}},
+        {"stop", {{"message"}, 0}},
+        {"openFile", {{"filename"}, 1}},
+        {"openDevice", {{"device"}, 1}},
+        {"openFileOnTarget", {{"target", "filename"}, 2}},
+        {"close", {{"handle"}, 1}},
+        {"readCsv", {{"fileOrDescriptor", "numRows", "numCols", "delimiter"}, 4}},
+        {"oneHot", {{"arg", "info"}, 2}},
+        {"recode", {{"arg", "orderPreserving"}, 2}},
+        {"bin", {{"arg", "numBins", "min", "max"}, 2}},
+        {"append", {{"list", "elem"}, 2}},
+        {"remove", {{"list", "idx"}, 2}},
+        {"biasAdd", {{"input", "bias"}, 2}},
+        {"registerView", {{"viewName", "view"}, 2}},
+        {"typeOf", {{"arg"}, 1}},
+        {"syrk", {{"arg"}, 1}},
+        {"sql", {{"query"}, 1}},
+        {"count", {{"arg", "groupIds", "numGroups"}, 3}},
+        {"idxMin", {{"arg", "axis"}, 2}},
+        {"idxMax", {{"arg", "axis"}, 2}},
+        {"sum", {{"arg", "axisOrGroups", "numGroups"}, 1}},
+        {"aggMin", {{"arg", "axisOrGroups", "numGroups"}, 1}},
+        {"aggMax", {{"arg", "axisOrGroups", "numGroups"}, 1}},
+        {"mean", {{"arg", "axisOrGroups", "numGroups"}, 1}},
+        {"var", {{"arg", "axisOrGroups", "numGroups"}, 1}},
+        {"stddev", {{"arg", "axisOrGroups", "numGroups"}, 1}},
+        {"transpose", {{"arg"}, 1}},
+        {"t", {{"arg"}, 1}},
+        {"sparsity", {{"arg"}, 1}},
+        {"nrow", {{"arg"}, 1}},
+        {"ncol", {{"arg"}, 1}},
+        {"ncell", {{"arg"}, 1}},
+        {"saveDaphneLibResult", {{"arg"}, 1}},
+        {"length", {{"list"}, 1}}};
+    return infos;
+}
+
+const std::unordered_set<std::string> &unaryFuncs() {
+    static const std::unordered_set<std::string> funcs = {
+        "minus", "abs",  "sign",    "exp",         "ln",     "sqrt",       "round",      "floor",
+        "ceil",  "sin",  "cos",     "tan",         "sinh",   "cosh",       "tanh",       "asin",
+        "acos",  "atan", "isNan",   "lower",       "upper",  "diagMatrix", "diagVector", "reverse",
+        "eigen", "relu", "softmax", "isSymmetric", "cumSum", "cumProd",    "cumMin",     "cumMax"};
+    return funcs;
+}
+
+const std::unordered_set<std::string> &binaryFuncs() {
+    static const std::unordered_set<std::string> funcs = {
+        "mod",         "pow",      "log",       "min",      "max",      "concat",   "outerAdd", "outerSub", "outerMul",
+        "outerDiv",    "outerPow", "outerMod",  "outerLog", "outerMin", "outerMax", "outerAnd", "outerOr",  "outerXor",
+        "outerConcat", "outerEq",  "outerNeq",  "outerLt",  "outerLe",  "outerGt",  "outerGe",  "cbind",    "rbind",
+        "solve",       "gemv",     "intersect", "merge",    "except",   "cartesian"};
+    return funcs;
+}
+
+const BuiltinParamInfo &unaryParamInfo() {
+    static const BuiltinParamInfo info{{"arg"}, 1};
+    return info;
+}
+
+const BuiltinParamInfo &binaryParamInfo() {
+    static const BuiltinParamInfo info{{"lhs", "rhs"}, 2};
+    return info;
+}
+} // namespace
+
+// Checking number of arguments
 void DaphneDSLBuiltins::checkNumArgsExact(mlir::Location loc, const std::string &func, size_t numArgs,
                                           size_t numArgsExact) {
     if (numArgs != numArgsExact)
@@ -84,6 +206,20 @@ void DaphneDSLBuiltins::checkNumArgsEven(mlir::Location loc, const std::string &
         throw ErrorHandler::compilerError(
             loc, "DSLBuiltins",
             "built-in function `" + func + "` expects an even number of arguments, but got " + std::to_string(numArgs));
+}
+
+std::optional<DaphneDSLBuiltins::BuiltinParamInfo> DaphneDSLBuiltins::getParamNames(const std::string &func) const {
+    auto &infos = builtinParamInfos();
+    if (auto it = infos.find(func); it != infos.end())
+        return it->second;
+
+    if (unaryFuncs().count(func))
+        return unaryParamInfo();
+
+    if (binaryFuncs().count(func))
+        return binaryParamInfo();
+
+    return std::nullopt;
 }
 
 // ************************************************************************
@@ -1310,7 +1446,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
         mlir::Attribute attr = co.getValue();
 
         return static_cast<mlir::Value>(
-            builder.create<MapOp>(loc, source.getType(), source, llvm::dyn_cast<mlir::StringAttr>(attr)));
+            builder.create<MapOp>(loc, source.getType(), source, llvm::dyn_cast<mlir::StringAttr>(attr), nullptr));
     }
 
     // ****************************************************************************

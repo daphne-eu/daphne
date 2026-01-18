@@ -29,14 +29,6 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     VectorizeComputationsPass.cpp
     HorizontalFusionPass.cpp
     DaphneOptPass.cpp
-    EwOpsLowering.cpp
-    ModOpLowering.cpp
-    MapOpLowering.cpp
-    MatMulOpLowering.cpp
-    AggAllOpLowering.cpp
-    AggDimOpLowering.cpp
-    TransposeOpLowering.cpp
-    SparsityExploitationPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

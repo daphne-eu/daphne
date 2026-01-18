@@ -1,0 +1,5 @@
+def foo(a: si64, b: si64) -> si64 {
+    return a * 10 + b;
+}
+
+print(foo(5, 3));
