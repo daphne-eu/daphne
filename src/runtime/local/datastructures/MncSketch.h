@@ -277,8 +277,9 @@ MncSketch buildMncFromDenseMatrix(const DenseMatrix<VT> &A) {
 "MNC: Structure-Exploiting Sparsity Estimation for
 Matrix Expressions" section 3.2 
 */
-inline double Edm(const MncSketch &hA, const MncSketch &hB,
-                  std::size_t p) {
+inline double Edm(const std::vector<std::uint32_t>&,
+                  const std::vector<std::uint32_t>&,
+                  std::size_t) {
     return 0.5; // placeholder 
 }
 
