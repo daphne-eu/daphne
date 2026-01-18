@@ -1,8 +1,9 @@
 /*
  * Tests for MNC sketch on CSRMatrix
  */
-
+#include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -15,6 +16,7 @@
 #include <vector>
 
 // run ./test.sh -nb -d yes [datastructures] after building Daphne to execute this test
+// Test Case for building MNC sketch from CSRMatrix
 TEST_CASE("MNC sketch from CSRMatrix basic", TAG_DATASTRUCTURES) {
     using ValueType = double;
 
@@ -49,7 +51,7 @@ TEST_CASE("MNC sketch from CSRMatrix basic", TAG_DATASTRUCTURES) {
     values[1] = 3.0;
     values[2] = 1.0;
 
-    MncSketch h = buildMncFromCsr(*m);
+    MncSketch h = buildMncFromCsrMatrix(*m);
 
     // dimensions
     CHECK(h.m == numRows);
@@ -112,7 +114,7 @@ TEST_CASE("MNC sketch respects CSRMatrix sub-matrix view", TAG_DATASTRUCTURES) {
     // Create sub-matrix with rows [1,3) = rows 1 and 2 of original
     CSRMatrix<ValueType> *mSub = DataObjectFactory::create<CSRMatrix<ValueType>>(mOrig, 1, 3);
 
-    MncSketch hSub = buildMncFromCsr(*mSub);
+    MncSketch hSub = buildMncFromCsrMatrix(*mSub);
 
     // submatrix is 2x3, with nnz rows = 2
     CHECK(hSub.m == 2);
@@ -128,7 +130,7 @@ TEST_CASE("MNC sketch respects CSRMatrix sub-matrix view", TAG_DATASTRUCTURES) {
     DataObjectFactory::destroy(mOrig);
 }
 
-TEST_CASE("MNC Sketch example from paper", TAG_DATASTRUCTURES) {
+TEST_CASE("Build MNC Sketch from csr matrix with example from paper", TAG_DATASTRUCTURES) {
     using ValueType = double;
     /* Matrix:
     [0,0,0,0,0,0,0,1,0], 
@@ -184,19 +186,16 @@ TEST_CASE("MNC Sketch example from paper", TAG_DATASTRUCTURES) {
     for (size_t i = 0; i < numNonZeros; ++i)
         values[i] = 1.0;
 
-    MncSketch h = buildMncFromCsr(*m);
+    MncSketch h = buildMncFromCsrMatrix(*m);
 
     // dimensions
     CHECK(h.m == numRows);
     CHECK(h.n == numCols);
-
     // row + col nnz
-    
     std::vector<std::uint32_t> expectedHr{1,2,3,0,1,1,2,3,1};
     std::vector<std::uint32_t> expectedHc{1,1,2,2,3,1,1,2,1};
     CHECK(h.hr == expectedHr);
     CHECK(h.hc == expectedHc);
-
     // her and hec
     std::vector<std::uint32_t> expectedHer{0,1,1,0,0,0,1,1,1};
     std::vector<std::uint32_t> expectedHec{0,0,1,0,0,0,0,2,1};
@@ -205,6 +204,52 @@ TEST_CASE("MNC Sketch example from paper", TAG_DATASTRUCTURES) {
     CHECK(h.hec == expectedHec);
 
     DataObjectFactory::destroy(m);
+}
+TEST_CASE("Build MNC Sketch from dense matrix with example from paper", TAG_DATASTRUCTURES) {
+    /* Matrix:
+    [0,0,0,0,0,0,0,1,0], 
+    [0,1,0,0,1,0,0,0,0], 
+    [0,0,0,1,1,1,0,0,0], 
+    [0,0,0,0,0,0,0,0,0],
+    [0,0,1,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,0],
+    [1,0,0,1,0,0,0,0,0],
+    [0,0,1,0,1,0,1,0,0],
+    [0,0,0,0,0,0,0,0,1],
+    */
+    const size_t numRows     = 9;
+    const size_t numCols     = 9;
+    
+    auto m_dense = genGivenVals<DenseMatrix<double>>(9, {0,0,0,0,0,0,0,1,0,
+                                                  0,1,0,0,1,0,0,0,0,
+                                                  0,0,0,1,1,1,0,0,0,
+                                                  0,0,0,0,0,0,0,0,0,
+                                                  0,0,1,0,0,0,0,0,0,
+                                                  0,0,0,0,0,0,0,1,0,
+                                                  1,0,0,1,0,0,0,0,0,
+                                                  0,0,1,0,1,0,1,0,0,
+                                                  0,0,0,0,0,0,0,0,1});
+
+
+    MncSketch h_dense = buildMncFromDenseMatrix(*m_dense);
+
+    // dimensions
+    CHECK(h_dense.m == numRows);
+    CHECK(h_dense.n == numCols);
+    // row + col nnz
+    std::vector<std::uint32_t> expectedHr{1,2,3,0,1,1,2,3,1};
+    std::vector<std::uint32_t> expectedHc{1,1,2,2,3,1,1,2,1};
+    CHECK(h_dense.hr == expectedHr);
+    CHECK(h_dense.hc == expectedHc);
+
+    // her and hec
+    std::vector<std::uint32_t> expectedHer{0,1,1,0,0,0,1,1,1};
+    std::vector<std::uint32_t> expectedHec{0,0,1,0,0,0,0,2,1};
+    std::vector<std::uint32_t> notexpectedHec{1,1,1,0,0,0,0,2,1};
+    CHECK(h_dense.her == expectedHer);
+    CHECK(h_dense.hec == expectedHec);
+    
+    DataObjectFactory::destroy(m_dense);
 }
 
 // Tests for estimateSparsity_product function
@@ -266,8 +311,8 @@ TEST_CASE("Case 1: maxHr(A) <= 1 or maxHr(B) <= 1", TAG_DATASTRUCTURES) {
     valuesB[1] = 1.0;
     valuesB[2] = 1.0;
 
-    MncSketch hA = buildMncFromCsr(*A);
-    MncSketch hB = buildMncFromCsr(*B);
+    MncSketch hA = buildMncFromCsrMatrix(*A);
+    MncSketch hB = buildMncFromCsrMatrix(*B);
 
     double s = estimateSparsity_product(hA, hB);
 
@@ -336,8 +381,8 @@ TEST_CASE("Case 2: some rows/cols have >1 nnz", TAG_DATASTRUCTURES) {
 
     for(size_t i = 0; i < nnzB; i++) valuesB[i] = 1.0;
 
-    MncSketch hA = buildMncFromCsr(*A);
-    MncSketch hB = buildMncFromCsr(*B);
+    MncSketch hA = buildMncFromCsrMatrix(*A);
+    MncSketch hB = buildMncFromCsrMatrix(*B);
 
     double s = estimateSparsity_product(hA, hB);
 
@@ -350,4 +395,39 @@ TEST_CASE("Case 2: some rows/cols have >1 nnz", TAG_DATASTRUCTURES) {
 
     DataObjectFactory::destroy(A);
     DataObjectFactory::destroy(B);
+}
+
+TEST_CASE("Case 3: some rows/cols have >1 nnz for Dense Matrix", TAG_DATASTRUCTURES) {
+    // --- Matrix A: 3x3 ---
+    // [1 1 0]
+    // [0 1 1]
+    // [0 0 1]
+    
+    auto m_A = genGivenVals<DenseMatrix<double>>(3, {1,1,0,
+                                                    0,1,1,
+                                                    0,0,1});
+
+    // --- Matrix B: 3x3 ---
+    // [1 0 0]
+    // [1 1 0]
+    // [0 1 1]
+
+    auto m_B = genGivenVals<DenseMatrix<double>>(3, {1,0,0,
+                                                    1,1,0,
+                                                    0,1,1});
+
+    MncSketch hA = buildMncFromDenseMatrix(*m_A);
+    MncSketch hB = buildMncFromDenseMatrix(*m_B);
+
+    double s = estimateSparsity_product(hA, hB);
+
+    REQUIRE(s >= 0.0);
+    REQUIRE(s <= 1.0);
+    // REQUIRE(s == 5);
+    // std::size_t p = (hA.nnzRows - hA.rowsEq1) * (hB.nnzCols - hB.colsEq1);
+    // REQUIRE(p == 4);           
+    // REQUIRE(s == 5);
+
+    DataObjectFactory::destroy(m_A);
+    DataObjectFactory::destroy(m_B);
 }
