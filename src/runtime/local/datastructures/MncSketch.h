@@ -34,7 +34,7 @@ struct MncSketch{
     std::uint32_t colsEq1 = 0;       // # n cols with hc == 1
     std::uint32_t rowsGtHalf = 0;    // # n rows with hr > n/2
     std::uint32_t colsGtHalf = 0;    // # n cols with hc > m/2
-    bool isDiagonal = false;         // optional flag if A is (full) diagonal
+    bool isDiagonal;         // optional flag if A is (full) diagonal
 };
 
 // Build MNC sketch from a CSRMatrix
@@ -148,7 +148,7 @@ inline double Edm(const std::vector<std::uint32_t>&,
 
 
 
-double estimateSparsity(const MncSketch &hA, const MncSketch &hB) {
+double estimateSparsity_product(const MncSketch &hA, const MncSketch &hB) {
     const std::size_t m = hA.m;
     const std::size_t l = hB.n;
 

@@ -207,7 +207,7 @@ TEST_CASE("MNC Sketch example from paper", TAG_DATASTRUCTURES) {
     DataObjectFactory::destroy(m);
 }
 
-// Tests for estimateSparsity function
+// Tests for estimateSparsity_product function
 TEST_CASE("Case 1: maxHr(A) <= 1 or maxHr(B) <= 1", TAG_DATASTRUCTURES) {
     using ValueType = double;
 
@@ -269,7 +269,7 @@ TEST_CASE("Case 1: maxHr(A) <= 1 or maxHr(B) <= 1", TAG_DATASTRUCTURES) {
     MncSketch hA = buildMncFromCsr(*A);
     MncSketch hB = buildMncFromCsr(*B);
 
-    double s = estimateSparsity(hA, hB);
+    double s = estimateSparsity_product(hA, hB);
 
     // REQUIRE(s >= 0.0);
     // REQUIRE(s <= 1.0);
@@ -339,7 +339,7 @@ TEST_CASE("Case 2: some rows/cols have >1 nnz", TAG_DATASTRUCTURES) {
     MncSketch hA = buildMncFromCsr(*A);
     MncSketch hB = buildMncFromCsr(*B);
 
-    double s = estimateSparsity(hA, hB);
+    double s = estimateSparsity_product(hA, hB);
 
     REQUIRE(s >= 0.0);
     REQUIRE(s <= 1.0);
