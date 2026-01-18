@@ -425,7 +425,7 @@ TEST_CASE("Case 3: some rows/cols have >1 nnz for Dense Matrix", TAG_DATASTRUCTU
     REQUIRE(s <= 1.0);
     // REQUIRE(s == 5);
     // std::size_t p = (hA.nnzRows - hA.rowsEq1) * (hB.nnzCols - hB.colsEq1);
-    // REQUIRE(p == 4);           
+    // REQUIRE(p == 4);
     // REQUIRE(s == 5);
 
     DataObjectFactory::destroy(m_A);
@@ -433,10 +433,19 @@ TEST_CASE("Case 3: some rows/cols have >1 nnz for Dense Matrix", TAG_DATASTRUCTU
 }
 
 // -----------------------------------------------------------------------------
-// Propagation Tests
+    /**Propagation Tests
+    *Test file for the MncPropagation logic, which allows us to predict the intermediate sparsity of 
+    *a chain of multiplications of matrices without the need to compute the full operation.
+    *We tested our logic with a total of 3 tests, details are given below
+    */
 // -----------------------------------------------------------------------------
-
 TEST_CASE("Case 1: Exact Propagation (Diagonal Matrix)", TAG_DATASTRUCTURES) {
+    /*
+    *In this test, we take 2 3x3 matrices, 
+    *one of them (A) being an identity matrix. If the estimator introduced even a 
+    very small rounding error, then that would mean that our logic is false.
+    We expect that the output sketch must be a match of matrix B.
+    */
     using ValueType = double;
 
     // Matrix A: 3x3 Identity (Diagonal)
@@ -505,6 +514,12 @@ TEST_CASE("Case 1: Exact Propagation (Diagonal Matrix)", TAG_DATASTRUCTURES) {
 }
 
 TEST_CASE("Case 2: Outer Product (Density Blowup)", TAG_DATASTRUCTURES) {
+    /*
+    This test is our worst case scenario for sparsity. It takes a 3x1 matrix and a 1x3 matrix.
+    We start with only a total of 6 non-zero entries but end up with a full dense 3x3 matrix
+    with 9 non-zeros (no zero values). This test ensures that the logic predicts the
+    total content, resulting in 100% density.
+    */
     using ValueType = double;
 
     // Matrix A: 3x1 Column Vector
@@ -573,6 +588,12 @@ TEST_CASE("Case 2: Outer Product (Density Blowup)", TAG_DATASTRUCTURES) {
 }
 
 TEST_CASE("Case 3: Chain Propagation (Dimensions)", TAG_DATASTRUCTURES) {
+    /*
+    The third test covers a chain multiplication, in which we first multiply a 4x2 matrix
+    with a 2x5 matrix and then with a 5x3 matrix. This test covers the recursive logic
+    of our code. It not only makes sure that the non-zero counts are correct, but the
+    output of the first multiplication is compatible with the input of the second.
+    */
     using ValueType = double;
 
     // Matrix A: 4x2

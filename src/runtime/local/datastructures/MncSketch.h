@@ -1,3 +1,27 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+/*
+This MNC Sketch implementatipn is based on the paper: Johanna Sommer, Matthias Boehm,
+ Alexandre V. Evfimievski, Berthold Reinwald, Peter J. Haas (2019). 
+ "MNC: Structure-Exploiting Sparsity Estimation for Matrix Expressions". 
+SIGMOD '19: Proceedings of the 2019 International Conference on Management of Data
+*/
+
 #pragma once
 
 #include <iostream>
@@ -12,6 +36,9 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+/*
+MNC Sketch data structure to capture the structure of a matrix to estimate sparsity
+*/
 struct MncSketch{
     // dimensions
     std::size_t m = 0; // rows
@@ -39,7 +66,11 @@ struct MncSketch{
     bool isDiagonal;         // optional flag if A is (full) diagonal
 };
 
-// Build MNC sketch from a CSRMatrix
+/**
+ * A function to build MNC sketch from a CSRMatrix
+ * @param A The input CSRMatrix
+ * @return The MNC sketch of A
+*/
 template<typename VT>
 MncSketch buildMncFromCsrMatrix(const CSRMatrix<VT> &A) {
     MncSketch h;
@@ -141,6 +172,11 @@ MncSketch buildMncFromCsrMatrix(const CSRMatrix<VT> &A) {
     return h;
 }
 
+/**
+ * A function to build MNC sketch from a DenseMatrix
+ * @param A The input DenseMatrix
+ * @return The MNC sketch of A
+*/
 template<typename VT>
 MncSketch buildMncFromDenseMatrix(const DenseMatrix<VT> &A) {
     MncSketch h;
@@ -236,15 +272,24 @@ MncSketch buildMncFromDenseMatrix(const DenseMatrix<VT> &A) {
 }
 
 
-// TODO: implement the EDM algorithm properly
-inline double Edm(const std::vector<std::uint32_t>&,
-                  const std::vector<std::uint32_t>&,
-                  std::size_t) {
+// TODO: implement Density Map Estimator
+/** This implementation of estimate Sparsity follows the pseudocode from the paper 
+"MNC: Structure-Exploiting Sparsity Estimation for
+Matrix Expressions" section 3.2 
+*/
+inline double Edm(const MncSketch &hA, const MncSketch &hB,
+                  std::size_t p) {
     return 0.5; // placeholder 
 }
 
-
-
+/**
+ * Estimate the sparsity of the product of two matrices given their MNC sketches. 
+ * Based on Algorithm 1 from the MNC paper.
+ * @param hA MNC sketch of matrix A
+ * @param hB MNC sketch of matrix B
+ * @return Estimated sparsity of the product A * B
+ * 
+ */
 inline double estimateSparsity_product(const MncSketch &hA, const MncSketch &hB) {
     const std::size_t m = hA.m;
     const std::size_t l = hB.n;
@@ -295,8 +340,25 @@ inline double estimateSparsity_product(const MncSketch &hA, const MncSketch &hB)
 }
 
 // ----------------------------------------------------------------------------
-// Helper: Propagate a vector (rows or columns) 
+//    MNC Sparsity Propagation
+//    This module implements the propagation logic for the MNC (Matrix non zero count) sketches
+//    With this module we are able to predict the intermediate sparsity and structure of a chain
+//    of multiplication of matrices (ABC) without having to execute the whole operation, this
+//    enables us to save both time and memory. The Mnc Sparsity Propagation uses the MNC Sparsity estimation
+//    to get an inital density, it then scales the row and column histograms accordingly and then applies
+//    probablistic rounding(to avoid always rouding down to zero)
 // ----------------------------------------------------------------------------
+
+/**
+ * Helper function that propagates the histogram values (rows or columns) with rounding.
+ * The scaled counts are derived from the ratio of output to input NNZ.
+ * Probabilistic rounding is applied to prevent always rounding down to zero and
+ * to maintain statistical accuracy.*
+ * @param input The source Histogram from the input sketch.
+ * @param output The target vector to be filled in the new sketch.
+ * @param outNNZ Number of non-zero entries in the resulting vector.
+ * 
+*/
 inline void propagateVector(
     const std::vector<std::uint32_t>& input,
     std::vector<std::uint32_t>& output,
@@ -331,6 +393,13 @@ inline void propagateVector(
     }
 }
 
+/*
+*Handles the base cases where one of the matices is a simple square diagnal matrix i.e Indetity matrix
+*For this case we can avoid the scaling and just copy the input sketch of the other matrix i.e non-identiy matrix
+*Input : SKetches hA and hB
+*Output : Sketch hC as the copy of the matrix B if diagnol condition is met
+*Return : True if we have the exact case, otherwise False if we require scaling 
+*/
 // ----------------------------------------------------------------------------
 // Exact propagation for Trivial cases (Diagonal matrices)
 // ----------------------------------------------------------------------------
@@ -352,9 +421,14 @@ inline bool propagateExact(const MncSketch &hA, const MncSketch &hB, MncSketch &
     return false;
 }
 
-// ----------------------------------------------------------------------------
-// Single-step propagation (A * B)
-// ----------------------------------------------------------------------------
+/* Single-step propagation (A * B)
+Preforms a single step propogation for 2 the matrices A and B i.e(AB)
+*It first checks if the simple diaganol condition is met if not, then we use
+*non trvial method where the MNC Sparisity estimator is used to find the target
+*NNZ and then calcualte the scaling factor
+*Input : Sketches of hA and hB
+*Output : Sketch of hC with the predicted sparsity of the result
+*/
 inline MncSketch propagateMM(const MncSketch &hA, const MncSketch &hB) {
     // 1. Try exact propagation first
     MncSketch hC;
@@ -408,6 +482,13 @@ inline MncSketch propagateMM(const MncSketch &hA, const MncSketch &hB) {
     return hC;
 }
 
+/*
+*This estimates the sparsiy of a chain of matrix multiplications, it works recursively,
+*by taking the result sketch of the first last multiplicatio and then using that as an
+input for the next matrix in the chain, for example (AB*C)
+*Input : A vector of MncSketches of the matrix chain
+*Output : The final sketch for the multiplication chain
+ */
 // ----------------------------------------------------------------------------
 // Chain propagation (multiple sketches)
 // ----------------------------------------------------------------------------
