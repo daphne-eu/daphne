@@ -9,6 +9,7 @@
 #include <algorithm> 
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 struct MncSketch{
     // dimensions
@@ -39,7 +40,7 @@ struct MncSketch{
 
 // Build MNC sketch from a CSRMatrix
 template<typename VT>
-MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
+MncSketch buildMncFromCsrMatrix(const CSRMatrix<VT> &A) {
     MncSketch h;
     h.m = A.getNumRows();
     h.n = A.getNumCols();
@@ -138,6 +139,101 @@ MncSketch buildMncFromCsr(const CSRMatrix<VT> &A) {
 
     return h;
 }
+
+template<typename VT>
+MncSketch buildMncFromDenseMatrix(const DenseMatrix<VT> &A) {
+    MncSketch h;
+    h.m = A.getNumRows();
+    h.n = A.getNumCols();
+
+    h.hr.assign(h.m, 0);
+    h.hc.assign(h.n, 0);
+
+    const VT *rowPtr = A.getValues();
+    const std::size_t rowSkip = A.getRowSkip();
+
+    // --- 1) compute hr, hc, row stats, and diagonal flag in one dense scan ---
+    // Definition: diagonal if square AND every non-zero lies on i==j.
+    // Note: the all-zero square matrix is considered diagonal under this definition.
+    bool diag = (h.m == h.n);
+
+    for (std::size_t i = 0; i < h.m; ++i) {
+        std::uint32_t rowNnz = 0;
+
+        for (std::size_t j = 0; j < h.n; ++j) {
+            const VT v = rowPtr[j];
+            if (v != static_cast<VT>(0)) {
+                rowNnz++;
+                // increment column nnz
+                // (safe as long as counts fit into uint32_t; if not, switch to uint64_t)
+                h.hc[j]++;
+
+                // diagonal check
+                if (diag && j != i)
+                    diag = false;
+            }
+        }
+
+        h.hr[i] = rowNnz;
+
+        if (rowNnz > 0) {
+            h.nnzRows++;
+            if (rowNnz == 1)
+                h.rowsEq1++;
+            if (rowNnz > h.n / 2)
+                h.rowsGtHalf++;
+        }
+        if (rowNnz > h.maxHr)
+            h.maxHr = rowNnz;
+
+        // advance to next row (DenseMatrix might have padding)
+        rowPtr += rowSkip;
+    }
+
+    h.isDiagonal = diag;
+
+    // --- 2) column stats from hc ---
+    for (std::size_t j = 0; j < h.n; ++j) {
+        const std::uint32_t cnt = h.hc[j];
+        if (cnt > 0)
+            h.nnzCols++;
+        if (cnt == 1)
+            h.colsEq1++;
+        if (cnt > h.m / 2)
+            h.colsGtHalf++;
+        if (cnt > h.maxHc)
+            h.maxHc = cnt;
+    }
+
+    // --- 3) extended counts her/hec (optional) ---
+    if (h.maxHr > 1 || h.maxHc > 1) {
+        h.her.assign(h.m, 0);
+        h.hec.assign(h.n, 0);
+
+        // Second scan over all entries:
+        //  - if value!=0 and hc[j]==1 => her[i]++
+        //  - if value!=0 and hr[i]==1 => hec[j]++
+        const VT *rowPtr2 = A.getValues();
+        for (std::size_t i = 0; i < h.m; ++i) {
+            const bool rowIsSingleton = (h.hr[i] == 1);
+
+            for (std::size_t j = 0; j < h.n; ++j) {
+                const VT v = rowPtr2[j];
+                if (v != static_cast<VT>(0)) {
+                    if (h.hc[j] == 1)
+                        h.her[i]++;
+
+                    if (rowIsSingleton)
+                        h.hec[j]++;
+                }
+            }
+            rowPtr2 += rowSkip;
+        }
+    }
+
+    return h;
+}
+
 
 // TODO: implement the EDM algorithm properly
 inline double Edm(const std::vector<std::uint32_t>&,
