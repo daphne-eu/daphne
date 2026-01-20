@@ -1320,6 +1320,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#commit-message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commit Message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#code-style" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1966,6 +1977,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#commit-message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commit Message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#code-style" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2108,6 +2130,45 @@ At the same time, this freedom comes with certain responsibilities, which are ro
 <p>Balancing the handling of pull requests is important to <em>keep the development process scalable</em>.</p>
 </li>
 </ol>
+<h3 id="commit-message">Commit Message</h3>
+<p>Commits should adhere to the following conventions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>&lt;type&gt;[optional scope]: &lt;description&gt;
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>[optional body]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>[optional footer(s)]
+</code></pre></div>
+<p>Where:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>type = feat | fix | refactor | docs | test | chore | perf | style | revert;
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>feat     -&gt; adds a new feature (internal or external)
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>fix      -&gt; fixes an incorrect behavior
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>refactor -&gt; internal change, no new features
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>docs     -&gt; documentation only
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>test     -&gt; tests only
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>chore    -&gt; maintenance only (CI, dependency bump)
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>perf     -&gt; performance related changes
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>style    -&gt; code-style changes
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>revert   -&gt; to revert previous commits
+</code></pre></div>
+Use a single commit type per commit, choose by best judgement.
+A scope may be provided to a commit’s type, to provide additional contextual
+information and is contained within parenthesis, e.g., <code>feat(parser): add ability to parse arrays</code>.</p>
+<p>Some examples:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>feat(compiler): add basic constant folding pass
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>fix: handle zero-size tensors in lowering
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>refactor: split up LLVM lowering pass
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>docs: improve GPU lowering guidelines
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>feat(runtime): add kernel for softmax on gpu
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Add a kernel of the softmax operation on NVIDIA and AMD GPUs.
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Refs: 676104e
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>Closes #123, #456
+</code></pre></div>
+<p>We recommend to limit the commit message title to <code>&lt;=50</code> and the commit message
+body to <code>&lt;=72</code> characters per line.</p>
 <h3 id="code-style">Code Style</h3>
 <p>Before contributing, please make sure to run <code>clang-format</code> on your C++ (.h and
 .cpp) files. The code base is currently formatted with <code>clang-format</code> version
