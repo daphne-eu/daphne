@@ -92,6 +92,8 @@ const std::unordered_map<std::string, BuiltinParamInfo> &builtinParamInfos() {
         {"readFrame", {{"filename"}, 1}},
         {"receiveFromNumpy", {{"address", "rows", "cols", "valueType"}, 4}},
         {"stop", {{"message"}, 0}},
+        {"startProfiling", {{"region"}, 1}},
+        {"stopProfiling", {{"region"}, 1}},
         {"openFile", {{"filename"}, 1}},
         {"openDevice", {{"device"}, 1}},
         {"openFileOnTarget", {{"target", "filename"}, 2}},
@@ -1348,6 +1350,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string &fu
             message = args[0];
         }
         return builder.create<StopOp>(loc, message).getOperation();
+    }
+
+    if (func == "startProfiling") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+        mlir::Value regionName = args[0];
+        return builder.create<StartProfilingOp>(loc, regionName).getOperation();
+    }
+    if (func == "stopProfiling") {
+        checkNumArgsExact(loc, func, numArgs, 1);
+        mlir::Value regionName = args[0];
+        return builder.create<StopProfilingOp>(loc, regionName).getOperation();
     }
 
     // --------------------------------------------------------------------

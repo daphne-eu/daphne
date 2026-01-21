@@ -6177,7 +6177,12 @@
             "opName": "startProfiling",
             "returnType": "void",
             "templateParams": [],
-            "runtimeParams": []
+            "runtimeParams": [
+                {
+                    "type": "const char *",
+                    "name": "regionName"
+                }
+            ]
         },
         "instantiations": [[]]
     },
@@ -6187,7 +6192,12 @@
             "opName": "stopProfiling",
             "returnType": "void",
             "templateParams": [],
-            "runtimeParams": []
+            "runtimeParams": [
+                {
+                    "type": "const char *",
+                    "name": "regionName"
+                }
+            ]
         },
         "instantiations": [[]]
     },

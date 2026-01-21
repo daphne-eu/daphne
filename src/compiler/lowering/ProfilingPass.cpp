@@ -33,14 +33,28 @@ struct ProfilingPass : public PassWrapper<ProfilingPass, OperationPass<func::Fun
 
 void ProfilingPass::runOnOperation() {
     func::FuncOp f = getOperation();
+    bool hasProfilingOps = false;
+    f.walk([&](Operation *op) {
+        if (isa<daphne::StartProfilingOp, daphne::StopProfilingOp>(op)) {
+            hasProfilingOps = true;
+            return WalkResult::interrupt();
+        }
+        return WalkResult::advance();
+    });
+
+    if (hasProfilingOps)
+        return;
+
     Block &b = f.getBody().front();
 
     OpBuilder builder(&b, b.begin());
     Location loc = builder.getUnknownLoc();
 
-    builder.create<daphne::StartProfilingOp>(loc);
+    auto regionName =
+        builder.create<daphne::ConstantOp>(loc, builder.getType<daphne::StringType>(), builder.getStringAttr("script"));
+    builder.create<daphne::StartProfilingOp>(loc, regionName);
     builder.setInsertionPoint(b.getTerminator());
-    builder.create<daphne::StopProfilingOp>(loc);
+    builder.create<daphne::StopProfilingOp>(loc, regionName);
 }
 
 std::unique_ptr<Pass> daphne::createProfilingPass() { return std::make_unique<ProfilingPass>(); }

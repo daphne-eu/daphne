@@ -56,7 +56,7 @@ limitations under the License.
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
 - [Building in Unsupported Environments](/doc/BuildEnvironment.md)
 - [Logging in DAPHNE](/doc/development/Logging.md)
-- [Profiling in DAPHNE](/doc/development/Profiling.md)
+- [Profiling in DAPHNE](/doc/Profiling.md)
 - [Testing](/doc/development/Testing.md)
 - [Installing Python Libraries in the `daphne-dev` Container](/doc/development/InstallPythonLibsInContainer.md)
 

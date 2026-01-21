@@ -1987,16 +1987,16 @@ def Daphne_DecRefOp : Daphne_Op<"decRef"> {
 // ****************************************************************************
 
 def Daphne_StartProfilingOp : Daphne_Op<"startProfiling"> {
-    let summary = "Starts profiling";
+    let summary = "Starts profiling for the given region name";
 
-    let arguments = (ins); // no arguments
+    let arguments = (ins StrScalar:$regionName);
     let results = (outs); // no results
 }
 
 def Daphne_StopProfilingOp : Daphne_Op<"stopProfiling"> {
-    let summary = "Stops profiling";
+    let summary = "Stops profiling for the given region name";
 
-    let arguments = (ins); //no arguments
+    let arguments = (ins StrScalar:$regionName);
     let results = (outs); // no results
 }
 

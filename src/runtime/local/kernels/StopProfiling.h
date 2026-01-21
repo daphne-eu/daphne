@@ -26,9 +26,9 @@
 // Convenience function
 // ****************************************************************************
 
-void stopProfiling(DCTX(ctx)) {
+inline void stopProfiling(const char *regionName, DCTX(ctx)) {
 #ifdef USE_PAPI
-    PAPI_hl_region_end("fixme");
+    PAPI_hl_region_end(regionName);
 #else
     throw std::runtime_error("daphne was built without support for PAPI");
 #endif
