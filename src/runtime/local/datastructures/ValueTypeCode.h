@@ -37,6 +37,14 @@ enum class ValueTypeCode : uint8_t {
     F64,        // floating point (float, double)
     STR,        // std::string
     FIXEDSTR16, // fixed-size string (length 16)
+    FIXEDSTR32,  // fixed-size string (length 32)
+    FIXEDSTR64,  // fixed-size string (length 64)
+    FIXEDSTR128, // fixed-size string (length 128)
+    FIXEDSTR256, // fixed-size string (length 256)
+    UMBRA,       // Umbra String
+    NEWUMBRA,    // Another Umbra Implementation
+    UNORDDICENCSTR, // Unordered Dictionary-Encoded String
+    ORDDICENCSTR, // ordered Dictionary-Encoded String
     INVALID,    // only for JSON enum conversion
     // TODO Support bool as well, but poses some challenges (e.g. sizeof).
     //    UI1 // boolean (bool)
