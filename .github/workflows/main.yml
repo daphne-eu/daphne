@@ -32,12 +32,14 @@ jobs:
       run: chown root:root .
 
     - name: Restore ccache
-      uses: actions/cache@v4
+      id: ccache-restore
+      uses: actions/cache/restore@v4
       with:
         path: ${{ env.CCACHE_DIR }}
         key: >
           ccache-${{ runner.os }}-${{ github.job }}-
-          ${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          ${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '.github/workflows/main.yml', 'build.sh') }}-
+          ${{ github.ref_name }}-${{ github.sha }}
         restore-keys: |
           ccache-${{ runner.os }}-${{ github.job }}-
 
@@ -50,6 +52,24 @@ jobs:
 
     - name: ccache stats
       run: ccache -s || true
+
+    - name: Save ccache (main)
+      if: github.ref == 'refs/heads/main'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
+
+    - name: Save ccache (PR, non-fork)
+      if: >
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: >
+          ccache-${{ runner.os }}-${{ github.job }}-
+          ${{ github.event.pull_request.number }}-${{ github.sha }}
 
     - name: Testing
       run: ./test.sh --no-build
