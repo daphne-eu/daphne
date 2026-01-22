@@ -1550,34 +1550,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/Profiling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Profiling
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../development/WriteDocs/" class="md-nav__link">
         
   
@@ -1813,18 +1785,23 @@
 
 
 <h1 id="profiling-daphne-using-papi">Profiling DAPHNE Using PAPI</h1>
-<p>You can profile your DaphneDSL script by using the <code>--enable-profiling</code> CLI
-switch.
+<p>You can profile specific regions of your DaphneDSL script by inserting
+<code>startProfiling</code> and <code>stopProfiling</code> calls with a string region name.
 Note that profiling is only available if DAPHNE was built <em>without</em> the <code>--no-papi</code> flag.</p>
 <p>DAPHNE supports profiling via the <a href="https://github.com/icl-utk-edu/papi">PAPI</a>
 profiling library, specifically the
 <a href="https://github.com/icl-utk-edu/papi/wiki/PAPI-HL">high-level (HL) PAPI API</a>.</p>
-<p>When run with profiling enabled, the DAPHNE compiler will generate code that
-automatically starts and stops profiling (via PAPI) at the start and end of the
-DaphneDSL script.</p>
+<p>For example, you can mark a region like this:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">startProfiling</span><span class="p">(</span><span class="s">&quot;train&quot;</span><span class="p">);</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># ... computation ...</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nf">stopProfiling</span><span class="p">(</span><span class="s">&quot;train&quot;</span><span class="p">);</span>
+</code></pre></div>
+The region name must match between the start and stop calls.</p>
+<p>If you pass <code>--enable-profiling</code> and do not insert explicit profiling calls,
+the compiler will wrap the entire script in a default region named <code>script</code>.</p>
 <p>You can configure which events to profile via the <code>PAPI_EVENTS</code>
 environment variable, e.g.:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span><span class="nv">PAPI_EVENTS</span><span class="o">=</span><span class="s2">&quot;perf::CYCLES,perf::INSTRUCTIONS,perf::CACHE-REFERENCES,perf::CACHE MISSES,perf::BRANCHES,perf::BRANCH-MI SSES&quot;</span><span class="w"> </span><span class="nv">PAPI_REPORT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>bin/daphne<span class="w"> </span>--enable-profiling<span class="w"> </span>script.daph
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span><span class="nv">PAPI_EVENTS</span><span class="o">=</span><span class="s2">&quot;perf::CYCLES,perf::INSTRUCTIONS,perf::CACHE-REFERENCES,perf::CACHE MISSES,perf::BRANCHES,perf::BRANCH-MI SSES&quot;</span><span class="w"> </span><span class="nv">PAPI_REPORT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>bin/daphne<span class="w"> </span>script.daph
 </code></pre></div>
 <p>For more details about the supported events as well as other PAPI-HL configuration
 options you can read the
