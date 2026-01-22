@@ -48,6 +48,9 @@ tags.temp
 # clangd cache
 .cache/
 
+.clang-tidy
+papi_hl_output*
+
 # gdb
 .gdb_history
 
