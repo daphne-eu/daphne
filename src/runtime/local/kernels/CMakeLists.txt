@@ -19,6 +19,7 @@ set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(OpenMP REQUIRED)
 
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
@@ -90,7 +91,7 @@ file(GLOB CODEGEN_CPP_FILES CONFIGURE_DEPENDS
      "${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels_*.cpp")
 # message("CODEGEN_CPP_FILES: ${CODEGEN_CPP_FILES}")
 
-list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
+list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser OpenMP::OpenMP_CXX)
 
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels

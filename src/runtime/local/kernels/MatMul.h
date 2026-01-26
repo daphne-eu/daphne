@@ -18,12 +18,15 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/CSRStats.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/CastObj.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdlib>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -51,22 +54,14 @@ void matMul(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, bool transa, bool t
 // DenseMatrix <- CSRMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
+enum class SpMatMulVariant { ROWWISE, PARALLEL, BLOCKED };
+
 template <typename VT> struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs, bool transa,
-                      bool transb, DCTX(ctx)) {
+  private:
+    // Naive Row-wise serial implementation
+    static void applyRowWise(DenseMatrix<VT> *res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs) {
         const size_t nr1 = lhs->getNumRows();
-        [[maybe_unused]] const size_t nc1 = lhs->getNumCols();
-
-        [[maybe_unused]] const size_t nr2 = rhs->getNumRows();
         const size_t nc2 = rhs->getNumCols();
-
-        if (nc1 != nr2) {
-            throw std::runtime_error("MatMul - #cols of lhs and #rows of rhs must be the same");
-        }
-        // FIXME: transpose isn't supported atm
-
-        if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false);
 
         const VT *valuesRhs = rhs->getValues();
         VT *valuesRes = res->getValues();
@@ -89,6 +84,166 @@ template <typename VT> struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, DenseMatrix
                     valuesRes[rowIdxRes + j] += rowValues[i] * valuesRhs[rowIdxRhs + j];
                 }
             }
+        }
+    }
+
+    // Parallel implementation using OpenMP
+    static void applyParallel(DenseMatrix<VT> *res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs) {
+        const size_t nr1 = lhs->getNumRows();
+        const size_t nc2 = rhs->getNumCols();
+
+        const VT *valuesRhs = rhs->getValues();
+        VT *valuesRes = res->getValues();
+
+        const size_t rowSkipRhs = rhs->getRowSkip();
+        const size_t rowSkipRes = res->getRowSkip();
+
+        memset(valuesRes, VT(0), sizeof(VT) * nr1 * nc2);
+
+#pragma omp parallel for schedule(dynamic)
+        for (size_t r = 0; r < nr1; r++) {
+            const size_t rowNumNonZeros = lhs->getNumNonZeros(r);
+            const size_t *rowColIdxs = lhs->getColIdxs(r);
+            const VT *rowValues = lhs->getValues(r);
+
+            const size_t rowIdxRes = r * rowSkipRes;
+            for (size_t i = 0; i < rowNumNonZeros; i++) {
+                const size_t c = rowColIdxs[i];
+                const size_t rowIdxRhs = c * rowSkipRhs;
+
+                for (size_t j = 0; j < nc2; j++) {
+                    valuesRes[rowIdxRes + j] += rowValues[i] * valuesRhs[rowIdxRhs + j];
+                }
+            }
+        }
+    }
+
+    // Blocked implementation for cache efficiency
+    static void applyBlocked(DenseMatrix<VT> *res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
+                             size_t blockSize = 64) {
+        const size_t nr1 = lhs->getNumRows();
+        const size_t nc2 = rhs->getNumCols();
+
+        const VT *valuesRhs = rhs->getValues();
+        VT *valuesRes = res->getValues();
+
+        const size_t rowSkipRhs = rhs->getRowSkip();
+        const size_t rowSkipRes = res->getRowSkip();
+
+        memset(valuesRes, VT(0), sizeof(VT) * nr1 * nc2);
+
+// Process rows in blocks for better cache locality
+#pragma omp parallel for schedule(dynamic)
+        for (size_t blockStart = 0; blockStart < nr1; blockStart += blockSize) {
+            const size_t blockEnd = std::min(blockStart + blockSize, nr1);
+
+            for (size_t r = blockStart; r < blockEnd; r++) {
+                const size_t rowNumNonZeros = lhs->getNumNonZeros(r);
+                const size_t *rowColIdxs = lhs->getColIdxs(r);
+                const VT *rowValues = lhs->getValues(r);
+
+                const size_t rowIdxRes = r * rowSkipRes;
+                for (size_t i = 0; i < rowNumNonZeros; i++) {
+                    const size_t c = rowColIdxs[i];
+                    const size_t rowIdxRhs = c * rowSkipRhs;
+
+                    for (size_t j = 0; j < nc2; j++) {
+                        valuesRes[rowIdxRes + j] += rowValues[i] * valuesRhs[rowIdxRhs + j];
+                    }
+                }
+            }
+        }
+    }
+
+    // Algorithm selection heuristic based on matrix characteristics
+    static SpMatMulVariant selectVariant(const CSRStats &stats, size_t rhsCols) {
+        // Estimate work: each non-zero contributes rhsCols multiply-adds
+        const size_t totalWork = stats.nnz * rhsCols;
+
+        // Small workloads: serial is faster (avoid OpenMP overhead)
+        // Threshold ~100K ops empirically balances overhead vs parallelism
+        if (totalWork < 100000 || stats.numRows < 500) {
+            return SpMatMulVariant::ROWWISE;
+        }
+
+        // Large matrices with moderate-to-high density benefit from blocking
+        if (stats.sparsity > 0.05 && stats.numRows >= 1000 && rhsCols >= 50) {
+            return SpMatMulVariant::BLOCKED;
+        }
+
+        // Large sparse matrices with many rows: parallelize over rows
+        if (stats.numRows >= 1000 && totalWork >= 500000) {
+            return SpMatMulVariant::PARALLEL;
+        }
+
+        return SpMatMulVariant::ROWWISE;
+    }
+
+    // Get adaptive level from environment variable
+    // Returns: 0 = disabled, >= 1 = enabled
+    // enabled via DAPHNE_ADAPTIVE env var
+    static int getAdaptiveLevel() {
+        const char *env = std::getenv("DAPHNE_ADAPTIVE");
+        if (env == nullptr)
+            return 0;
+        try {
+            return std::atoi(env);
+        } catch (...) {
+            return 0;
+        }
+    }
+
+    static const char *variantToString(SpMatMulVariant var) {
+        switch (var) {
+        case SpMatMulVariant::ROWWISE:
+            return "ROWWISE";
+        case SpMatMulVariant::PARALLEL:
+            return "PARALLEL";
+        case SpMatMulVariant::BLOCKED:
+            return "BLOCKED";
+        default:
+            return "UNKNOWN";
+        }
+    }
+
+  public:
+    static void apply(DenseMatrix<VT> *&res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs, bool transa,
+                      bool transb, DCTX(ctx)) {
+        const size_t nr1 = lhs->getNumRows();
+        [[maybe_unused]] const size_t nc1 = lhs->getNumCols();
+
+        [[maybe_unused]] const size_t nr2 = rhs->getNumRows();
+        const size_t nc2 = rhs->getNumCols();
+
+        if (nc1 != nr2) {
+            throw std::runtime_error("MatMul - #cols of lhs and #rows of rhs must be the same");
+        }
+        // FIXME: transpose isn't supported atm
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false);
+
+        SpMatMulVariant var = SpMatMulVariant::ROWWISE; // default
+        const int adaptiveLevel = getAdaptiveLevel();
+
+        if (adaptiveLevel >= 1) {
+            CSRStats stats = CSRStats::compute(lhs);
+            var = selectVariant(stats, nc2);
+
+            ctx->logger->debug("MatMul<Dense,CSR,Dense> rows={} cols={} nnz={} sparsity={:.4f} rhsCols={} -> {}",
+                               stats.numRows, stats.numCols, stats.nnz, stats.sparsity, nc2, variantToString(var));
+        }
+
+        switch (var) {
+        case SpMatMulVariant::ROWWISE:
+            applyRowWise(res, lhs, rhs);
+            break;
+        case SpMatMulVariant::PARALLEL:
+            applyParallel(res, lhs, rhs);
+            break;
+        case SpMatMulVariant::BLOCKED:
+            applyBlocked(res, lhs, rhs);
+            break;
         }
     }
 };
