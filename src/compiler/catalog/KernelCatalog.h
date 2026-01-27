@@ -18,9 +18,14 @@
 
 #include <compiler/utils/TypePrinting.h>
 
+#include "ir/daphneir/Daphne.h"
+#include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/Types.h>
 
 #include <iostream>
+#include <limits>
+#include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -118,6 +123,46 @@ class KernelCatalog {
 
   public:
     /**
+     * @brief Normalizes a type for kernel lookup by removing shape information
+     * and optionally generalizing to structure types.
+     *
+     * This is used to match operation types against registered kernel types,
+     * which typically don't include concrete shape information.
+     *
+     * @param t The type to normalize.
+     * @param generalizeToStructure If true, Matrix/Frame/Column/List types are
+     *        generalized to StructureType.
+     * @return The normalized type suitable for kernel lookup.
+     */
+    static mlir::Type normalizeTypeForKernelLookup(mlir::Type t, bool generalizeToStructure = false) {
+        mlir::MLIRContext *mctx = t.getContext();
+        if (generalizeToStructure && llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType,
+                                               mlir::daphne::ColumnType, mlir::daphne::ListType>(t))
+            return mlir::daphne::StructureType::get(mctx);
+        if (auto mt = llvm::dyn_cast<mlir::daphne::MatrixType>(t))
+            return mt.withSameElementTypeAndRepr();
+        if (llvm::isa<mlir::daphne::FrameType>(t))
+            return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
+        if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
+            return ct.withSameValueType();
+        if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
+            return mlir::daphne::ListType::get(mctx, normalizeTypeForKernelLookup(lt.getElementType(), generalizeToStructure));
+        if (auto mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
+            // Drop concrete shapes; keep rank and element type.
+            int64_t mrtRank = mrt.getRank();
+            if (mrtRank == 1) {
+                return mlir::MemRefType::get({mlir::ShapedType::kDynamic}, mrt.getElementType());
+            } else if (mrtRank == 2) {
+                return mlir::MemRefType::get({mlir::ShapedType::kDynamic, mlir::ShapedType::kDynamic}, mrt.getElementType());
+            } else {
+                throw std::runtime_error("KernelCatalog: expected MemRef to be of rank 1 or 2 but was given " +
+                                         std::to_string(mrtRank));
+            }
+        }
+        return t;
+    }
+
+    /**
      * @brief Registers the given kernel information as a kernel for the
      * DaphneIR operation with the given mnemonic.
      *
@@ -142,6 +187,86 @@ class KernelCatalog {
             return it->second;
         else
             return {};
+    }
+
+    /**
+     * @brief Finds the best matching kernel for the given operation, types, and backend.
+     *
+     * @param opMnemonic The mnemonic of the DaphneIR operation.
+     * @param argTypes The argument types to match.
+     * @param resTypes The result types to match.
+     * @param backend The backend to target (e.g., "CPP", "CUDA").
+     * @return An optional containing the matching KernelInfo if found, or std::nullopt if no match.
+     */
+    std::optional<KernelInfo> findKernel(const std::string &opMnemonic, const std::vector<mlir::Type> &argTypes,
+                                         const std::vector<mlir::Type> &resTypes,
+                                         const std::string &backend = "CPP") const {
+        std::vector<KernelInfo> kernelInfos = getKernelInfos(opMnemonic);
+
+        if (kernelInfos.empty())
+            return std::nullopt;
+
+        const size_t numArgs = argTypes.size();
+        const size_t numRess = resTypes.size();
+        int chosenKernelIdx = -1;
+        int64_t chosenKernelPriority = std::numeric_limits<int64_t>::min();
+
+        for (size_t i = 0; i < kernelInfos.size(); i++) {
+            const auto &ki = kernelInfos[i];
+            if (ki.backend != backend)
+                continue;
+            if (numArgs != ki.argTypes.size())
+                continue;
+            if (numRess != ki.resTypes.size())
+                continue;
+
+            bool mismatch = false;
+            for (size_t j = 0; j < numArgs && !mismatch; j++)
+                if (argTypes[j] != ki.argTypes[j])
+                    mismatch = true;
+            for (size_t j = 0; j < numRess && !mismatch; j++)
+                if (resTypes[j] != ki.resTypes[j])
+                    mismatch = true;
+
+            if (!mismatch && (ki.priority > chosenKernelPriority || chosenKernelIdx == -1)) {
+                chosenKernelIdx = static_cast<int>(i);
+                chosenKernelPriority = ki.priority;
+            }
+        }
+
+        if (chosenKernelIdx == -1)
+            return std::nullopt;
+
+        return kernelInfos[chosenKernelIdx];
+    }
+
+    /**
+     * @brief Formats an error message for when no matching kernel is found.
+     *
+     * @param opMnemonic The mnemonic of the DaphneIR operation.
+     * @param argTypes The argument types that were searched for.
+     * @param resTypes The result types that were searched for.
+     * @param backend The backend that was targeted.
+     * @return A formatted error message string.
+     */
+    std::string formatNoKernelError(const std::string &opMnemonic, const std::vector<mlir::Type> &argTypes,
+                                    const std::vector<mlir::Type> &resTypes, const std::string &backend = "CPP") const {
+        std::stringstream s;
+        s << "no kernel for operation `" << opMnemonic << "` available for the required input types `(";
+        for (size_t i = 0; i < argTypes.size(); i++) {
+            s << argTypes[i];
+            if (i < argTypes.size() - 1)
+                s << ", ";
+        }
+        s << ")` and output types `(";
+        for (size_t i = 0; i < resTypes.size(); i++) {
+            s << resTypes[i];
+            if (i < resTypes.size() - 1)
+                s << ", ";
+        }
+        s << ")` for backend `" << backend << "`, registered kernels for this op:" << std::endl;
+        dump(opMnemonic, s);
+        return s.str();
     }
 
     /**

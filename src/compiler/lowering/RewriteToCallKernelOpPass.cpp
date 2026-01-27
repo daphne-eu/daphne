@@ -35,7 +35,6 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -126,38 +125,6 @@ class KernelReplacement : public RewritePattern {
     const DaphneUserConfig &userConfig;
     std::unordered_map<std::string, bool> &usedLibPaths;
 
-    // Normalize a type into the form used for kernel lookup when comparing to the `mlir::Type` of a `KernelInfo`. This
-    // may drop certain known shape information, and and optionally generalize some types.
-    mlir::Type normalizeTypeForKernelLookup(mlir::Type t, bool generalizeToStructure) const {
-        MLIRContext *mctx = t.getContext();
-        if (generalizeToStructure && llvm::isa<mlir::daphne::MatrixType, mlir::daphne::FrameType,
-                                               mlir::daphne::ColumnType, mlir::daphne::ListType>(t))
-            return mlir::daphne::StructureType::get(mctx);
-        if (auto mt = llvm::dyn_cast<mlir::daphne::MatrixType>(t))
-            return mt.withSameElementTypeAndRepr();
-        if (llvm::isa<mlir::daphne::FrameType>(t))
-            return mlir::daphne::FrameType::get(mctx, {mlir::daphne::UnknownType::get(mctx)});
-        if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
-            return ct.withSameValueType();
-        if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
-            return mlir::daphne::ListType::get(
-                mctx, normalizeTypeForKernelLookup(lt.getElementType(), generalizeToStructure));
-        if (auto mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
-            // Drop concrete shapes; keep rank and element type.
-            int64_t mrtRank = mrt.getRank();
-            if (mrtRank == 1) {
-                return mlir::MemRefType::get({ShapedType::kDynamic}, mrt.getElementType());
-            } else if (mrtRank == 2) {
-                return mlir::MemRefType::get({ShapedType::kDynamic, ShapedType::kDynamic}, mrt.getElementType());
-            } else {
-                throw std::runtime_error(
-                    "RewriteToCallKernelOpPass: expected MemRef to be of rank 1 or 2 but was given " +
-                    std::to_string(mrtRank));
-            }
-        }
-        return t;
-    }
-
   public:
     /**
      * Creates a new KernelReplacement rewrite pattern.
@@ -228,7 +195,7 @@ class KernelReplacement : public RewritePattern {
 
         // Append converted op result types to the look-up result types.
         for (size_t i = 0; i < opResTys.size(); i++)
-            lookupResTys.push_back(normalizeTypeForKernelLookup(opResTys[i], false));
+            lookupResTys.push_back(KernelCatalog::normalizeTypeForKernelLookup(opResTys[i], false));
 
         // Append converted op argument types to the look-up argument types.
         // Variadic operands, which can have an arbitrary number of occurrences,
@@ -282,7 +249,7 @@ class KernelReplacement : public RewritePattern {
                                                  op->getName().getStringRef().str());
                 }
 
-                lookupArgTys.push_back(normalizeTypeForKernelLookup(odsOperandTy, generalizeInputTypes));
+                lookupArgTys.push_back(KernelCatalog::normalizeTypeForKernelLookup(odsOperandTy, generalizeInputTypes));
 
                 if (isVariadic) {
                     // Variadic operand.
@@ -305,7 +272,7 @@ class KernelReplacement : public RewritePattern {
             // the type of each operand to the vector of types to use for
             // kernel look-up, and pass all operands to the CallKernelOp as-is.
             for (size_t i = 0; i < opArgTys.size(); i++) {
-                lookupArgTys.push_back(normalizeTypeForKernelLookup(opArgTys[i], generalizeInputTypes));
+                lookupArgTys.push_back(KernelCatalog::normalizeTypeForKernelLookup(opArgTys[i], generalizeInputTypes));
                 kernelArgs.push_back(op->getOperand(i));
             }
 
@@ -317,7 +284,7 @@ class KernelReplacement : public RewritePattern {
             auto resMemRef = llvm::cast<MemRefType>(cdm2m.getResult().getType());
             auto memRefSignedness = MemRefType::get(resMemRef.getShape(), matTy.getElementType(), resMemRef.getLayout(),
                                                     resMemRef.getMemorySpace());
-            lookupResTys[0] = normalizeTypeForKernelLookup(memRefSignedness, false);
+            lookupResTys[0] = KernelCatalog::normalizeTypeForKernelLookup(memRefSignedness, false);
         }
 
         if (auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
@@ -435,10 +402,6 @@ class KernelReplacement : public RewritePattern {
             // for this operation and the given result/argument types and
             // backend.
 
-            if (kernelInfos.empty())
-                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass",
-                                                  "no kernels registered for operation `" + opMnemonic + "`");
-
             std::string backend;
             if (op->hasAttr("cuda_device"))
                 backend = "CUDA";
@@ -447,53 +410,13 @@ class KernelReplacement : public RewritePattern {
             else
                 backend = "CPP";
 
-            const size_t numArgs = lookupArgTys.size();
-            const size_t numRess = lookupResTys.size();
-            int chosenKernelIdx = -1;
-            int64_t chosenKernelPriority = std::numeric_limits<int64_t>::min();
-            for (size_t i = 0; i < kernelInfos.size(); i++) {
-                auto ki = kernelInfos[i];
-                if (ki.backend != backend)
-                    continue;
-                if (numArgs != ki.argTypes.size())
-                    continue;
-                if (numRess != ki.resTypes.size())
-                    continue;
-
-                bool mismatch = false;
-                for (size_t i = 0; i < numArgs && !mismatch; i++)
-                    if (lookupArgTys[i] != ki.argTypes[i])
-                        mismatch = true;
-                for (size_t i = 0; i < numRess && !mismatch; i++)
-                    if (lookupResTys[i] != ki.resTypes[i])
-                        mismatch = true;
-
-                if (!mismatch && (ki.priority > chosenKernelPriority || chosenKernelIdx == -1)) {
-                    chosenKernelIdx = i;
-                    chosenKernelPriority = ki.priority;
-                }
+            auto kernelOpt = kc.findKernel(opMnemonic, lookupArgTys, lookupResTys, backend);
+            if (!kernelOpt) {
+                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass",
+                                                  kc.formatNoKernelError(opMnemonic, lookupArgTys, lookupResTys, backend));
             }
-            if (chosenKernelIdx == -1) {
-                std::stringstream s;
-                s << "no kernel for operation `" << opMnemonic << "` available for the required input types `(";
-                for (size_t i = 0; i < numArgs; i++) {
-                    s << lookupArgTys[i];
-                    if (i < numArgs - 1)
-                        s << ", ";
-                }
-                s << +")` and output types `(";
-                for (size_t i = 0; i < numRess; i++) {
-                    s << lookupResTys[i];
-                    if (i < numRess - 1)
-                        s << ", ";
-                }
-                s << ")` for backend `" << backend << "`, registered kernels for this op:" << std::endl;
-                kc.dump(opMnemonic, s);
-                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass", s.str());
-            }
-            KernelInfo chosenKI = kernelInfos[chosenKernelIdx];
-            libPath = chosenKI.libPath;
-            kernelFuncName = chosenKI.kernelFuncName;
+            libPath = kernelOpt->libPath;
+            kernelFuncName = kernelOpt->kernelFuncName;
         }
 
         // *****************************************************************************
