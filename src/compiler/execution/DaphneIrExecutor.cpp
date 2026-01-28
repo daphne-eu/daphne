@@ -207,9 +207,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
     if (userConfig_.use_distributed)
         pm.addPass(mlir::daphne::createDistributePipelinesPass());
 
-    if (userConfig_.use_mlir_codegen || userConfig_.use_mlir_hybrid_codegen)
-        buildCodegenPipeline(pm);
-
     if (userConfig_.enable_profiling)
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createProfilingPass());
 
@@ -237,6 +234,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module) {
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createManageObjRefsPass());
     if (userConfig_.explain_obj_ref_mgnt)
         pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references:"));
+
+    if (userConfig_.use_mlir_codegen || userConfig_.use_mlir_hybrid_codegen)
+        buildCodegenPipeline(pm);
 
     pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_, usedLibPaths));
     if (userConfig_.explain_kernels)
