@@ -110,6 +110,8 @@ std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
 
     return {sparsity / k};
 }
+// NOTE : if have mnc attri-> use it
+// implement here: sparsity and inference based on mnc sketch
 
 std::vector<double> daphne::MatMulOp::inferSparsity() {
     auto lhsTy = llvm::dyn_cast<daphne::MatrixType>(getLhs().getType());
