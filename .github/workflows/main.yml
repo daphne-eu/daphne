@@ -23,6 +23,9 @@ jobs:
       CCACHE_DIR: /github/home/.ccache
       CCACHE_COMPRESS: "true"
       CCACHE_MAXSIZE: 4G
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_SLOPPINESS: "time_macros,include_file_mtime,include_file_ctime"
 
     steps:
     - name: Checkout
@@ -42,6 +45,9 @@ jobs:
           ${{ github.ref_name }}-${{ github.sha }}
         restore-keys: |
           ccache-${{ runner.os }}-${{ github.job }}-
+
+    - name: ccache config
+      run: ccache -p
 
     - name: ccache zero stats
       run: ccache -z || true
