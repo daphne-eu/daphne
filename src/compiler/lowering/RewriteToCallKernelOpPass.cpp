@@ -412,8 +412,9 @@ class KernelReplacement : public RewritePattern {
 
             auto kernelOpt = kc.findKernel(opMnemonic, lookupArgTys, lookupResTys, backend);
             if (!kernelOpt) {
-                throw ErrorHandler::compilerError(loc, "RewriteToCallKernelOpPass",
-                                                  kc.formatNoKernelError(opMnemonic, lookupArgTys, lookupResTys, backend));
+                throw ErrorHandler::compilerError(
+                    loc, "RewriteToCallKernelOpPass",
+                    kc.formatNoKernelError(opMnemonic, lookupArgTys, lookupResTys, backend));
             }
             libPath = kernelOpt->libPath;
             kernelFuncName = kernelOpt->kernelFuncName;

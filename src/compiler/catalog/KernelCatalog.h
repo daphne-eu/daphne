@@ -146,14 +146,16 @@ class KernelCatalog {
         if (auto ct = llvm::dyn_cast<mlir::daphne::ColumnType>(t))
             return ct.withSameValueType();
         if (auto lt = llvm::dyn_cast<mlir::daphne::ListType>(t))
-            return mlir::daphne::ListType::get(mctx, normalizeTypeForKernelLookup(lt.getElementType(), generalizeToStructure));
+            return mlir::daphne::ListType::get(
+                mctx, normalizeTypeForKernelLookup(lt.getElementType(), generalizeToStructure));
         if (auto mrt = llvm::dyn_cast<mlir::MemRefType>(t)) {
             // Drop concrete shapes; keep rank and element type.
             int64_t mrtRank = mrt.getRank();
             if (mrtRank == 1) {
                 return mlir::MemRefType::get({mlir::ShapedType::kDynamic}, mrt.getElementType());
             } else if (mrtRank == 2) {
-                return mlir::MemRefType::get({mlir::ShapedType::kDynamic, mlir::ShapedType::kDynamic}, mrt.getElementType());
+                return mlir::MemRefType::get({mlir::ShapedType::kDynamic, mlir::ShapedType::kDynamic},
+                                             mrt.getElementType());
             } else {
                 throw std::runtime_error("KernelCatalog: expected MemRef to be of rank 1 or 2 but was given " +
                                          std::to_string(mrtRank));
