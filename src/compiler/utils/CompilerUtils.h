@@ -226,6 +226,8 @@ struct CompilerUtils {
             // strings) when inserted into the typical "const DT *" template of
             // kernel input parameters.
             return "char";
+        else if (llvm::isa<mlir::daphne::FixedStr16Type>(t))
+            return "FixedStr16";
         else if (llvm::isa<mlir::daphne::DaphneContextType>(t))
             return "DaphneContext";
         else if (auto handleTy = llvm::dyn_cast<mlir::daphne::HandleType>(t)) {

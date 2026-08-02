@@ -80,6 +80,17 @@ MAKE_TEST_CASE("data_transfer_numpy_array_int64_1d_vector")
 MAKE_TEST_CASE("data_transfer_numpy_array_string_1d")
 MAKE_TEST_CASE("data_transfer_numpy_array_string_1d_vector")
 MAKE_TEST_CASE("data_transfer_numpy_array_string_2d")
+MAKE_TEST_CASE_STR("data_transfer_numpy_array_fixedstr16_bytes_shared_memory",
+                   "DenseMatrix(2x2, FixedStr)\napple banana\ncherry fig\n")
+MAKE_TEST_CASE_STR("data_transfer_numpy_array_fixedstr16_unicode_shared_memory",
+                   "DenseMatrix(3x1, FixedStr)\nred\ngreen\nblue\n")
+MAKE_TEST_CASE_STR("data_transfer_numpy_array_fixedstr16_edgecases_shared_memory",
+                   "DenseMatrix(1x1, FixedStr)\n123456789012345\n"
+                   "DenseMatrix(1x1, FixedStr)\n123456789012345\n"
+                   "DenseMatrix(1x1, FixedStr)\nééééééé\n"
+                   "DenseMatrix(2x3, FixedStr)\nplain npstr bytes\nba mv None\n"
+                   "DenseMatrix(4x1, FixedStr)\nNone\nnan\n<NA>\nNaT\n"
+                   "DenseMatrix(1x4, FixedStr)\ntext nan <NA> NaT\nok\n")
 
 MAKE_TEST_CASE("data_transfer_python_list_float64_1d")
 MAKE_TEST_CASE("data_transfer_python_list_float64_1d_shared_memory")

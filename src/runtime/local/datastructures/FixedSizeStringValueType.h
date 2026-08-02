@@ -97,7 +97,7 @@ struct FixedStr16 {
 
     // Overload the output stream operator
     friend std::ostream &operator<<(std::ostream &os, const FixedStr16 &fs) {
-        os.write(fs.buffer, N);
+        os.write(fs.buffer, fs.size());
         return os;
     }
 
