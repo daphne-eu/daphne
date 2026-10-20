@@ -251,9 +251,10 @@ template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatri
 // CSRMatrix <- CSRMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *&res, const CSRMatrix<VT> *lhs, const DenseMatrix<VT> *rhs,
-                      DCTX(ctx)) {
+template <typename VTRes, typename VTLhs, typename VTRhs>
+struct EwBinaryMat<CSRMatrix<VTRes>, CSRMatrix<VTLhs>, DenseMatrix<VTRhs>> {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VTRes> *&res, const CSRMatrix<VTLhs> *lhs,
+                      const DenseMatrix<VTRhs> *rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         // TODO: lhs broadcast
@@ -272,11 +273,11 @@ template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMat
         }
 
         if (res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
+            res = DataObjectFactory::create<CSRMatrix<VTRes>>(numRows, numCols, maxNnz, false);
 
         size_t *rowOffsetsRes = res->getRowOffsets();
 
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+        EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> func = getEwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs>(opCode);
 
         rowOffsetsRes[0] = 0;
 
@@ -286,8 +287,8 @@ template <typename VT> struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMat
                 size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
                 if (nnzRowLhs) {
                     // intersect within row
-                    const VT *valuesRowLhs = lhs->getValues(rowIdx);
-                    VT *valuesRowRes = res->getValues(rowIdx);
+                    const VTLhs *valuesRowLhs = lhs->getValues(rowIdx);
+                    VTRes *valuesRowRes = res->getValues(rowIdx);
                     const size_t *colIdxsRowLhs = lhs->getColIdxs(rowIdx);
                     size_t *colIdxsRowRes = res->getColIdxs(rowIdx);
                     auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
