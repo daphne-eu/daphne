@@ -431,35 +431,60 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         // since this operator is meant to be used for writing tests for,
         // besides others, those generic interfaces.
 
+        // Check if they are the same object.
         if (this == &rhs)
             return true;
 
         const size_t numRows = this->getNumRows();
         const size_t numCols = this->getNumCols();
 
+        // Check if the shape matches.
         if (numRows != rhs.getNumRows() || numCols != rhs.getNumCols())
             return false;
 
-        const ValueType *valuesBegLhs = this->getValues(0);
-        const ValueType *valuesEndLhs = this->getValues(numRows);
-        const ValueType *valuesBegRhs = rhs.getValues(0);
-        const ValueType *valuesEndRhs = rhs.getValues(numRows);
+        const size_t *rowOffsetsLhs = this->getRowOffsets();
+        const size_t *rowOffsetsRhs = rhs.getRowOffsets();
+        const size_t nnzLhs = rowOffsetsLhs[numRows] - rowOffsetsLhs[0];
+        const size_t nnzRhs = rowOffsetsRhs[numRows] - rowOffsetsRhs[0];
 
-        const size_t nnzLhs = valuesEndLhs - valuesBegLhs;
-        const size_t nnzRhs = valuesEndRhs - valuesBegRhs;
-
+        // Check if the total number of non-zeros matches.
         if (nnzLhs != nnzRhs)
             return false;
 
-        if (valuesBegLhs != valuesBegRhs)
-            if (memcmp(valuesBegLhs, valuesBegRhs, nnzLhs * sizeof(ValueType)))
+        // Check if the number of non-zeros matches for each row.
+        // Both this and rhs could be a view (row segment) of a larger matrix. The row offsets of a view start with a
+        // value greater than zero if and only if the original matrix has non-zeros in the rows before the ones covered
+        // by the view. Thus, we can only compare the row offsets directly, if the row offsets arrays of both matrices
+        // start with the same value. Otherwise, we subtract the difference of the offsets of row zero from all row
+        // offsets of the matrix with the greater row offset of row zero. Alternatively, we could calculate the number
+        // of non-zeros for each row as the delta of two subsequent row offsets and compare the number of non-zeros for
+        // all rows (but that would require more calculations and memory accesses).
+        if (rowOffsetsLhs[0] > rowOffsetsRhs[0]) {
+            size_t diff = rowOffsetsLhs[0] - rowOffsetsRhs[0];
+            for (size_t r = 1; r <= numRows; r++) // start at 1, because for 0 the check always succeeds due to diff
+                if (rowOffsetsLhs[r] - diff != rowOffsetsRhs[r])
+                    return false;
+        } else if (rowOffsetsLhs[0] < rowOffsetsRhs[0]) {
+            size_t diff = rowOffsetsRhs[0] - rowOffsetsLhs[0];
+            for (size_t r = 1; r <= numRows; r++) // start at 1, because for 0 the check always succeeds due to diff
+                if (rowOffsetsLhs[r] != rowOffsetsRhs[r] - diff)
+                    return false;
+        } else // rowOffsetsLhs[0] == rowOffsetsRhs[0]
+            if (memcmp(rowOffsetsLhs, rowOffsetsRhs, (numRows + 1) * sizeof(size_t)))
                 return false;
 
-        const size_t *colIdxsBegLhs = this->getColIdxs(0);
-        const size_t *colIdxsBegRhs = rhs.getColIdxs(0);
+        // Check if the non-zero values match.
+        const ValueType *valuesLhs = this->getValues(0);
+        const ValueType *valuesRhs = rhs.getValues(0);
+        if (valuesLhs != valuesRhs)
+            if (memcmp(valuesLhs, valuesRhs, nnzLhs * sizeof(ValueType)))
+                return false;
 
-        if (colIdxsBegLhs != colIdxsBegRhs)
-            if (memcmp(colIdxsBegLhs, colIdxsBegRhs, nnzLhs * sizeof(size_t)))
+        // Check if the column indices match.
+        const size_t *colIdxsLhs = this->getColIdxs(0);
+        const size_t *colIdxsRhs = rhs.getColIdxs(0);
+        if (colIdxsLhs != colIdxsRhs)
+            if (memcmp(colIdxsLhs, colIdxsRhs, nnzLhs * sizeof(size_t)))
                 return false;
 
         return true;

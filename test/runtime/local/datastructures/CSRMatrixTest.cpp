@@ -214,3 +214,154 @@ TEMPLATE_TEST_CASE("CSRMatrix::getPhysicalSizeByte()", TAG_DATASTRUCTURES, doubl
 
     DataObjectFactory::destroy(m);
 }
+
+TEMPLATE_TEST_CASE("CSRMatrix::operator==(), equal matrices", TAG_DATASTRUCTURES, double, int32_t) {
+    using VT = TestType;
+    using DT = CSRMatrix<VT>;
+
+    DT *lhs = nullptr;
+    DT *rhs = nullptr;
+
+    SECTION("same object") {
+        lhs = rhs = genGivenVals<DT>(2, {1, 0, //
+                                         0, 2});
+    }
+    SECTION("different object, lhs orig, rhs orig") {
+        lhs = genGivenVals<DT>(2, {1, 0, //
+                                   0, 2});
+        rhs = genGivenVals<DT>(2, {1, 0, //
+                                   0, 2});
+    }
+    SECTION("different object, lhs orig, rhs view") {
+        lhs = genGivenVals<DT>(2, {1, 0, //
+                                   0, 2});
+        const DT *rhsOrig = genGivenVals<DT>(4, {3, 0, //
+                                                 1, 0, // x
+                                                 0, 2, // x
+                                                 4, 5});
+        rhs = rhsOrig->sliceRow(1, 3);
+        DataObjectFactory::destroy(rhsOrig);
+    }
+    SECTION("different object, lhs view, rhs orig") {
+        const DT *lhsOrig = genGivenVals<DT>(4, {3, 0, //
+                                                 1, 0, // x
+                                                 0, 2, // x
+                                                 4, 5});
+        lhs = lhsOrig->sliceRow(1, 3);
+        DataObjectFactory::destroy(lhsOrig);
+        rhs = genGivenVals<DT>(2, {1, 0, //
+                                   0, 2});
+    }
+    SECTION("different object, lhs view, rhs view") {
+        const DT *lhsOrig = genGivenVals<DT>(4, {3, 0, //
+                                                 1, 0, // x
+                                                 0, 2, // x
+                                                 4, 5});
+        const DT *rhsOrig = genGivenVals<DT>(4, {6, 0,   //
+                                                 7, 8,   //
+                                                 1, 0,   // x
+                                                 0, 2}); // x
+        lhs = lhsOrig->sliceRow(1, 3);
+        rhs = rhsOrig->sliceRow(2, 4);
+        DataObjectFactory::destroy(lhsOrig, rhsOrig);
+    }
+
+    CHECK(*lhs == *rhs);
+
+    DataObjectFactory::destroy(lhs);
+    if (lhs != rhs)
+        DataObjectFactory::destroy(lhs);
+}
+
+TEMPLATE_TEST_CASE("CSRMatrix::operator==(), non-equal matrices", TAG_DATASTRUCTURES, double, int32_t) {
+    using VT = TestType;
+    using DT = CSRMatrix<VT>;
+
+    DT *lhs = nullptr;
+    DT *rhs = nullptr;
+
+    SECTION("different #rows, data of lhs is prefix rhs") {
+        lhs = genGivenVals<DT>(1, {1, 0});
+        rhs = genGivenVals<DT>(2, {1, 0, //
+                                   0, 2});
+    }
+    SECTION("different #cols, data of lhs is prefix of rhs") {
+        lhs = genGivenVals<DT>(1, {1, 0});
+        rhs = genGivenVals<DT>(1, {1, 0, 0, 2});
+    }
+    SECTION("same shape, same #nz, same positions, different values") {
+        lhs = genGivenVals<DT>(3, {1, 0, 2, //
+                                   0, 0, 3, //
+                                   4, 0, 0});
+        rhs = genGivenVals<DT>(3, {1, 0, 2, //
+                                   0, 0, 9, //
+                                   4, 0, 0});
+    }
+    SECTION("same shape, same #nz, different positions (within row), same values") {
+        lhs = genGivenVals<DT>(3, {1, 0, 2, //
+                                   0, 0, 3, //
+                                   4, 0, 0});
+        rhs = genGivenVals<DT>(3, {1, 0, 2, //
+                                   0, 3, 0, //
+                                   4, 0, 0});
+    }
+    SECTION("same shape, same #nz, different positions (across rows), same values, lhs orig, rhs orig") {
+        lhs = genGivenVals<DT>(4, {1, 0, 2, //
+                                   0, 0, 3, //
+                                   0, 0, 0, //
+                                   4, 0, 0});
+        rhs = genGivenVals<DT>(4, {1, 0, 2, //
+                                   0, 0, 0, //
+                                   0, 0, 3, //
+                                   4, 0, 0});
+    }
+    SECTION("same shape, same #nz, different positions (across rows), same values, lhs orig, rhs view") {
+        lhs = genGivenVals<DT>(4, {1, 0, 2, //
+                                   0, 0, 3, //
+                                   0, 0, 0, //
+                                   4, 0, 0});
+        const DT *rhsOrig = genGivenVals<DT>(6, {7, 8, 9,   //
+                                                 7, 8, 9,   //
+                                                 1, 0, 2,   // x
+                                                 0, 0, 0,   // x
+                                                 0, 0, 3,   // x
+                                                 4, 0, 0}); // x
+        rhs = rhsOrig->sliceRow(2, 6);
+        DataObjectFactory::destroy(rhsOrig);
+    }
+    SECTION("same shape, same #nz, different positions (across rows), same values, lhs view, rhs orig") {
+        const DT *lhsOrig = genGivenVals<DT>(6, {7, 8, 9, //
+                                                 1, 0, 2, // x
+                                                 0, 0, 3, // x
+                                                 0, 0, 0, // x
+                                                 4, 0, 0, // x
+                                                 7, 8, 9});
+        lhs = lhsOrig->sliceRow(1, 5);
+        DataObjectFactory::destroy(lhsOrig);
+        rhs = genGivenVals<DT>(4, {1, 0, 2, //
+                                   0, 0, 0, //
+                                   0, 0, 3, //
+                                   4, 0, 0});
+    }
+    SECTION("same shape, same #nz, different positions (across rows), same values, lhs view, rhs view") {
+        const DT *lhsOrig = genGivenVals<DT>(6, {7, 8, 9, //
+                                                 1, 0, 2, // x
+                                                 0, 0, 3, // x
+                                                 0, 0, 0, // x
+                                                 4, 0, 0, // x
+                                                 7, 8, 9});
+        const DT *rhsOrig = genGivenVals<DT>(6, {7, 8, 9,   //
+                                                 7, 8, 9,   //
+                                                 1, 0, 2,   // x
+                                                 0, 0, 0,   // x
+                                                 0, 0, 3,   // x
+                                                 4, 0, 0}); // x
+        lhs = lhsOrig->sliceRow(1, 5);
+        rhs = rhsOrig->sliceRow(2, 6);
+        DataObjectFactory::destroy(lhsOrig, rhsOrig);
+    }
+
+    CHECK_FALSE(*lhs == *rhs);
+
+    DataObjectFactory::destroy(lhs, rhs);
+}
