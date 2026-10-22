@@ -28,7 +28,7 @@
 // Intended for use with TEMPLATE_TEST_CASE in the test cases, but fits nicely
 // here where everything else value-type-related resides, as that helps to keep
 // changes to the list of supported data types local.
-#define ALL_VALUE_TYPES int8_t, int32_t, int64_t, uint8_t, uint32_t, uint64_t, float, double
+#define ALL_VALUE_TYPES int8_t, int32_t, int64_t, uint8_t, uint32_t, uint64_t, float, double, bool
 
 #define ALL_STRING_VALUE_TYPES std::string, FixedStr16
 
@@ -59,6 +59,7 @@ template <> const ValueTypeCode ValueTypeUtils::codeFor<uint32_t>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<uint64_t>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<float>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<double>;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<bool>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<std::string>;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr16>;
 
@@ -81,6 +82,7 @@ template <> const std::string ValueTypeUtils::irNameFor<uint32_t>;
 template <> const std::string ValueTypeUtils::irNameFor<uint64_t>;
 template <> const std::string ValueTypeUtils::irNameFor<float>;
 template <> const std::string ValueTypeUtils::irNameFor<double>;
+template <> const std::string ValueTypeUtils::irNameFor<bool>;
 
 template <> const int8_t ValueTypeUtils::defaultValue<int8_t>;
 template <> const int32_t ValueTypeUtils::defaultValue<int32_t>;
@@ -90,6 +92,7 @@ template <> const uint32_t ValueTypeUtils::defaultValue<uint32_t>;
 template <> const uint64_t ValueTypeUtils::defaultValue<uint64_t>;
 template <> const float ValueTypeUtils::defaultValue<float>;
 template <> const double ValueTypeUtils::defaultValue<double>;
+template <> const bool ValueTypeUtils::defaultValue<bool>;
 template <> const std::string ValueTypeUtils::defaultValue<std::string>;
 template <> const FixedStr16 ValueTypeUtils::defaultValue<FixedStr16>;
 template <> const char *ValueTypeUtils::defaultValue<const char *>;

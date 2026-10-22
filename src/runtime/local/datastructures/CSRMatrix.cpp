@@ -31,6 +31,7 @@ template class CSRMatrix<int8_t>;
 template class CSRMatrix<uint64_t>;
 template class CSRMatrix<uint32_t>;
 template class CSRMatrix<uint8_t>;
+template class CSRMatrix<bool>;
 #if defined(__APPLE__) && defined(__aarch64__)
 // On macOS ARM64, size_t is distinct from uint64_t.
 template class CSRMatrix<size_t>;

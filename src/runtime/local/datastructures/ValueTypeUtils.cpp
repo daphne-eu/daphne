@@ -42,6 +42,8 @@ size_t ValueTypeUtils::sizeOf(ValueTypeCode type) {
         return sizeof(float);
     case ValueTypeCode::F64:
         return sizeof(double);
+    case ValueTypeCode::I1:
+        return sizeof(bool);
     case ValueTypeCode::STR:
         return sizeof(std::string);
     case ValueTypeCode::FIXEDSTR16:
@@ -79,6 +81,9 @@ void ValueTypeUtils::printValue(std::ostream &os, ValueTypeCode type, const void
     case ValueTypeCode::F64:
         os << reinterpret_cast<const double *>(array)[pos];
         break;
+    case ValueTypeCode::I1:
+        os << reinterpret_cast<const bool *>(array)[pos];
+        break;
     case ValueTypeCode::STR:
         os << reinterpret_cast<const std::string *>(array)[pos];
         break;
@@ -95,6 +100,7 @@ template <> const ValueTypeCode ValueTypeUtils::codeFor<uint32_t> = ValueTypeCod
 template <> const ValueTypeCode ValueTypeUtils::codeFor<uint64_t> = ValueTypeCode::UI64;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<float> = ValueTypeCode::F32;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<double> = ValueTypeCode::F64;
+template <> const ValueTypeCode ValueTypeUtils::codeFor<bool> = ValueTypeCode::I1;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<std::string> = ValueTypeCode::STR;
 template <> const ValueTypeCode ValueTypeUtils::codeFor<FixedStr16> = ValueTypeCode::FIXEDSTR16;
 // On macOS ARM64, long/unsigned long are distinct from long long/unsigned long long
@@ -129,6 +135,7 @@ template <> const std::string ValueTypeUtils::irNameFor<uint32_t> = "ui32";
 template <> const std::string ValueTypeUtils::irNameFor<uint64_t> = "ui64";
 template <> const std::string ValueTypeUtils::irNameFor<float> = "f32";
 template <> const std::string ValueTypeUtils::irNameFor<double> = "f64";
+template <> const std::string ValueTypeUtils::irNameFor<bool> = "i1";
 #if defined(__APPLE__) && defined(__aarch64__)
 template <> const std::string ValueTypeUtils::irNameFor<long> = "si64";
 template <> const std::string ValueTypeUtils::irNameFor<unsigned long> = "ui64";
@@ -169,6 +176,8 @@ const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
         return cppNameFor<float>;
     case ValueTypeCode::F64:
         return cppNameFor<double>;
+    case ValueTypeCode::I1:
+        return cppNameFor<bool>;
     case ValueTypeCode::STR:
         return cppNameFor<std::string>;
     default:
@@ -194,6 +203,8 @@ const std::string ValueTypeUtils::irNameForCode(ValueTypeCode type) {
         return irNameFor<float>;
     case ValueTypeCode::F64:
         return irNameFor<double>;
+    case ValueTypeCode::I1:
+        return irNameFor<bool>;
     default:
         throw std::runtime_error("ValueTypeUtils::irNameForCode: unknown value type code");
     }
