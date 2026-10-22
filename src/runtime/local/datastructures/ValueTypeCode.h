@@ -27,18 +27,23 @@
  * the value type cannot be known at compile-time.
  */
 enum class ValueTypeCode : uint8_t {
+    // signed integers (intX_t)
     SI8,
     SI32,
-    SI64, // signed integers (intX_t)
+    SI64,
+    // unsigned integers (uintx_t)
     UI8,
     UI32,
-    UI64, // unsigned integers (uintx_t)
+    UI64,
+    // floating point (float, double)
     F32,
-    F64,        // floating point (float, double)
+    F64,
+
     I1,         // bool
     STR,        // std::string
     FIXEDSTR16, // fixed-size string (length 16)
-    INVALID     // only for JSON enum conversion
+
+    INVALID // only for JSON enum conversion
 };
 
 #endif // SRC_RUNTIME_LOCAL_DATASTRUCTURES_VALUETYPECODE_H
