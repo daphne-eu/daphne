@@ -37,7 +37,9 @@ TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_V
 
     CSRMatrix<ValueType> *m = DataObjectFactory::create<CSRMatrix<ValueType>>(numRows, numCols, numNonZeros, false);
 
-    ValueType *values = m->getValues();
+    ValueType *values = nullptr;
+    if constexpr (!std::is_same_v<ValueType, bool>)
+        values = m->getValues();
     size_t *colIdxs = m->getColIdxs();
     size_t *rowOffsets = m->getRowOffsets();
 
@@ -45,7 +47,8 @@ TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_V
     // not result in a valid CSR representation, but we only want to check if
     // there is enough space.
     for (size_t i = 0; i < numNonZeros; i++) {
-        values[i] = ValueType(1);
+        if constexpr (!std::is_same_v<ValueType, bool>)
+            values[i] = ValueType(1);
         colIdxs[i] = size_t(1);
     }
     for (size_t i = 0; i <= numRows; i++)

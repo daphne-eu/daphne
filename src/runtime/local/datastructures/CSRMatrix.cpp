@@ -22,6 +22,10 @@ template <typename ValueType> size_t CSRMatrix<ValueType>::serialize(std::vector
     return DaphneSerializer<CSRMatrix<ValueType>>::serialize(this, buf);
 }
 
+template <> size_t CSRMatrix<bool>::serialize(std::vector<char> &buf) const {
+    throw std::runtime_error("serialization has not been implemented for CSRMatrix<bool> yet");
+}
+
 // explicitly instantiate to satisfy linker
 template class CSRMatrix<double>;
 template class CSRMatrix<float>;

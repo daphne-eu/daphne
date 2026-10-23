@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <algorithm>
+#include <concepts>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -28,6 +29,40 @@
 
 #include <cstddef>
 #include <cstring>
+#include <type_traits>
+
+/**
+ * @brief A helper class to ensure that `CSRMatrix<ValueType>` (for general value types) has a `values` array, while
+ * `CSRMatrix<bool>` (boolean value type) does not have a `values` array.
+ *
+ * This class stands between `CSRMatrix` and `Matrix` in the inheritance hierarchy. It has two template specializations,
+ * one for `bool` and one for all non-`bool` value types.
+ */
+template <typename ValueType> class CSRMatrixStorage;
+
+/**
+ * @brief Template specialization of `CSRMatrixStorage` for all non-`bool` value types; ensures that the `values` array
+ * exists.
+ */
+template <typename ValueType>
+    requires(!std::same_as<ValueType, bool>)
+class CSRMatrixStorage<ValueType> : public Matrix<ValueType> {
+  protected:
+    CSRMatrixStorage(size_t numRows, size_t numCols) : Matrix<ValueType>(numRows, numCols) {};
+    std::shared_ptr<ValueType[]> values; // values array
+};
+
+/**
+ * @brief Template specialization of `CSRMatrixStorage` for the `bool` value type; ensures that the `values` array does
+ * not exist.
+ */
+template <typename ValueType>
+    requires(std::same_as<ValueType, bool>)
+class CSRMatrixStorage<ValueType> : public Matrix<ValueType> {
+  protected:
+    CSRMatrixStorage(size_t numRows, size_t numCols) : Matrix<ValueType>(numRows, numCols) {};
+    // no values array
+};
 
 /**
  * @brief A sparse matrix in Compressed Sparse Row (CSR) format.
@@ -41,12 +76,16 @@
  * to the first element after the valid elements in the `values` and `colIdxs`
  * arrays.
  *
+ * If the value type is `bool`, the non-zero values are not stored explicitly (since they would all be `true`) and the
+ * `values` array as well as certain member functions and constructors directly related to the `values` array do not
+ * exist.
+ *
  * Each instance of this class might represent a sub-matrix of another
  * `CSRMatrix`. Thus, to traverse the matrix by row, you can safely go via the
  * `rowOffsets`, but for traversing the matrix by non-zero value, you must
  * start at `values[rowOffsets[0]]`.
  */
-template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
+template <typename ValueType> class CSRMatrix : public CSRMatrixStorage<ValueType> {
     // `using`, so that we do not need to prefix each occurrence of these
     // fields from the super-classes.
     using Matrix<ValueType>::numRows;
@@ -67,7 +106,7 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      */
     size_t maxNumNonZeros;
 
-    std::shared_ptr<ValueType[]> values;
+    // Note that the values array is defined (or consciously not defined) in the superclass CSRMatrixStorage.
     std::shared_ptr<size_t[]> colIdxs;
     std::shared_ptr<size_t[]> rowOffsets;
 
@@ -90,12 +129,15 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
     CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero)
-        : Matrix<ValueType>(maxNumRows, numCols), numRowsAllocated(maxNumRows), isRowAllocatedBefore(false),
-          maxNumNonZeros(maxNumNonZeros), values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
-          colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
+        : CSRMatrixStorage<ValueType>(maxNumRows, numCols), numRowsAllocated(maxNumRows), isRowAllocatedBefore(false),
+          maxNumNonZeros(maxNumNonZeros), colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
           rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()), lastAppendedRowIdx(0) {
+        if constexpr (!std::is_same_v<ValueType, bool>)
+            this->values =
+                std::shared_ptr<ValueType[]>(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>());
         if (zero) {
-            memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
+            if constexpr (!std::is_same_v<ValueType, bool>)
+                memset(this->values.get(), 0, maxNumNonZeros * sizeof(ValueType));
             memset(colIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
             memset(rowOffsets.get(), 0, (numRows + 1) * sizeof(size_t));
         }
@@ -112,11 +154,14 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      */
     // TODO Support sharing the values array of a view into a CSRMatrix. This is a bit involved, since the matrix would
     // have a view for its values, but originals for its colIdxs and rowOffsets. So far, we don't support this case.
+    template <typename VT = ValueType>
+        requires(!std::same_as<VT, bool>)
     CSRMatrix(size_t numRows, size_t numCols, size_t numNonZeros, std::shared_ptr<ValueType[]> &values)
-        : Matrix<ValueType>(numRows, numCols), numRowsAllocated(numRows), isRowAllocatedBefore(false),
-          maxNumNonZeros(numNonZeros), values(values),
-          colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
-          rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()), lastAppendedRowIdx(0) {}
+        : CSRMatrixStorage<ValueType>(numRows, numCols), numRowsAllocated(numRows), isRowAllocatedBefore(false),
+          maxNumNonZeros(numNonZeros), colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
+          rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()), lastAppendedRowIdx(0) {
+        this->values = values;
+    }
 
     /**
      * @brief Creates a `CSRMatrix` around a sub-matrix of another `CSRMatrix`
@@ -129,7 +174,7 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
      * extract.
      */
     CSRMatrix(const CSRMatrix<ValueType> *src, size_t rowLowerIncl, size_t rowUpperExcl)
-        : Matrix<ValueType>(rowUpperExcl - rowLowerIncl, src->numCols),
+        : CSRMatrixStorage<ValueType>(rowUpperExcl - rowLowerIncl, src->numCols),
           numRowsAllocated(src->numRowsAllocated - rowLowerIncl), isRowAllocatedBefore(rowLowerIncl > 0),
           lastAppendedRowIdx(0) {
         if (!src)
@@ -142,16 +187,20 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
             throw std::runtime_error("CSRMatrix: rowLowerIncl must be lower than rowUpperExcl");
 
         maxNumNonZeros = src->maxNumNonZeros;
-        values = src->values;
+        if constexpr (!std::is_same_v<ValueType, bool>)
+            this->values = src->values;
         colIdxs = src->colIdxs;
         rowOffsets = std::shared_ptr<size_t[]>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
 
     CSRMatrix(ValueType *v, size_t *cidx, size_t *ro, size_t nRows, size_t nCols, size_t maxNNZ,
               std::function<void(ValueType *)> valDeleter, std::function<void(size_t *)> idxDeleter)
-        : Matrix<ValueType>(nRows, nCols), numRowsAllocated(nRows), isRowAllocatedBefore(false), maxNumNonZeros(maxNNZ),
-          values(v, valDeleter), colIdxs(cidx, idxDeleter), rowOffsets(ro, idxDeleter),
-          lastAppendedRowIdx(nRows ? nRows - 1 : 0) {}
+        : CSRMatrixStorage<ValueType>(nRows, nCols), numRowsAllocated(nRows), isRowAllocatedBefore(false),
+          maxNumNonZeros(maxNNZ), colIdxs(cidx, idxDeleter), rowOffsets(ro, idxDeleter),
+          lastAppendedRowIdx(nRows ? nRows - 1 : 0) {
+        if constexpr (!std::is_same_v<ValueType, bool>)
+            this->values = std::shared_ptr<ValueType[]>(v, valDeleter);
+    }
 
     virtual ~CSRMatrix() {
         // nothing to do
@@ -194,19 +243,35 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         // colIdxs arrays.
     }
 
-    ValueType *getValues() { return values.get(); }
+    template <typename VT = ValueType>
+        requires(!std::same_as<VT, bool>)
+    ValueType *getValues() {
+        return this->values.get();
+    }
 
-    const ValueType *getValues() const { return values.get(); }
+    template <typename VT = ValueType>
+        requires(!std::same_as<VT, bool>)
+    const ValueType *getValues() const {
+        return this->values.get();
+    }
 
-    std::shared_ptr<ValueType[]> getValuesSharedPtr() const { return values; }
+    template <typename VT = ValueType>
+        requires(!std::same_as<VT, bool>)
+    std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
+        return this->values;
+    }
 
+    template <typename VT = ValueType>
+        requires(!std::same_as<VT, bool>)
     ValueType *getValues(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
         if (rowIdx > numRows)
             throw std::runtime_error("CSRMatrix (getValues): rowIdx is out of bounds");
-        return values.get() + rowOffsets.get()[rowIdx];
+        return this->values.get() + rowOffsets.get()[rowIdx];
     }
 
+    template <typename VT = ValueType>
+        requires(!std::same_as<VT, bool>)
     const ValueType *getValues(size_t rowIdx) const {
         return const_cast<CSRMatrix<ValueType> *>(this)->getValues(rowIdx);
     }
@@ -246,12 +311,19 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         const size_t *rowColIdxsEnd = getColIdxs(rowIdx + 1);
         const size_t *ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
 
-        if (ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx)
+        if (ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx) {
             // No entry for the given coordinates present.
-            return ValueType(0);
-        else
+            if constexpr (std::is_same_v<ValueType, bool>)
+                return false;
+            else
+                return ValueType(0);
+        } else {
             // Entry for the given coordinates present.
-            return getValues(rowIdx)[ptrExpected - rowColIdxsBeg];
+            if constexpr (std::is_same_v<ValueType, bool>)
+                return true;
+            else
+                return getValues(rowIdx)[ptrExpected - rowColIdxsBeg];
+        }
     }
 
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
@@ -268,43 +340,76 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         const size_t posExpected = ptrExpected - rowColIdxsBeg;
 
         const size_t posEnd = colIdxs.get() + rowOffsets.get()[numRowsAllocated] - rowColIdxsBeg;
-        ValueType *rowValuesBeg = getValues(rowIdx);
 
-        if (ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx) {
-            // No entry for the given coordinates present.
-            if (value == ValueType(0))
-                return; // do nothing
-            else {
-                // Create gap.
-                // TODO We might want to reallocate here to ensure that enough
-                // space is allocated.
-                if (posEnd)
-                    for (size_t pos = posEnd; pos > posExpected; pos--) {
-                        rowValuesBeg[pos] = rowValuesBeg[pos - 1];
-                        rowColIdxsBeg[pos] = rowColIdxsBeg[pos - 1];
-                    }
-                // Insert given value and column index into the gap.
-                rowValuesBeg[posExpected] = value;
-                rowColIdxsBeg[posExpected] = colIdx;
-                // Update rowOffsets.
-                for (size_t r = rowIdx + 1; r <= numRowsAllocated; r++)
-                    rowOffsets.get()[r]++;
+        if constexpr (std::is_same_v<ValueType, bool>) {
+            if (ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx) {
+                // No entry for the given coordinates present.
+                if (value == ValueType(0))
+                    return; // do nothing
+                else {
+                    // Create gap.
+                    // TODO We might want to reallocate here to ensure that enough
+                    // space is allocated.
+                    if (posEnd)
+                        for (size_t pos = posEnd; pos > posExpected; pos--)
+                            rowColIdxsBeg[pos] = rowColIdxsBeg[pos - 1];
+                    // Insert given value and column index into the gap.
+                    rowColIdxsBeg[posExpected] = colIdx;
+                    // Update rowOffsets.
+                    for (size_t r = rowIdx + 1; r <= numRowsAllocated; r++)
+                        rowOffsets.get()[r]++;
+                }
+            } else {
+                // Entry for the given coordinates present.
+                if (value == ValueType(0)) {
+                    // Close gap.
+                    for (size_t pos = posExpected; pos < posEnd; pos++)
+                        rowColIdxsBeg[pos] = rowColIdxsBeg[pos + 1];
+                    // Update rowOffsets.
+                    // TODO We might want to shrink the arrays here.
+                    for (size_t r = rowIdx + 1; r <= numRowsAllocated; r++)
+                        rowOffsets.get()[r]--;
+                }
             }
         } else {
-            // Entry for the given coordinates present.
-            if (value == ValueType(0)) {
-                // Close gap.
-                for (size_t pos = posExpected; pos < posEnd; pos++) {
-                    rowValuesBeg[pos] = rowValuesBeg[pos + 1];
-                    rowColIdxsBeg[pos] = rowColIdxsBeg[pos + 1];
+            ValueType *rowValuesBeg = getValues(rowIdx);
+
+            if (ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx) {
+                // No entry for the given coordinates present.
+                if (value == ValueType(0))
+                    return; // do nothing
+                else {
+                    // Create gap.
+                    // TODO We might want to reallocate here to ensure that enough
+                    // space is allocated.
+                    if (posEnd)
+                        for (size_t pos = posEnd; pos > posExpected; pos--) {
+                            rowValuesBeg[pos] = rowValuesBeg[pos - 1];
+                            rowColIdxsBeg[pos] = rowColIdxsBeg[pos - 1];
+                        }
+                    // Insert given value and column index into the gap.
+                    rowValuesBeg[posExpected] = value;
+                    rowColIdxsBeg[posExpected] = colIdx;
+                    // Update rowOffsets.
+                    for (size_t r = rowIdx + 1; r <= numRowsAllocated; r++)
+                        rowOffsets.get()[r]++;
                 }
-                // Update rowOffsets.
-                // TODO We might want to shrink the arrays here.
-                for (size_t r = rowIdx + 1; r <= numRowsAllocated; r++)
-                    rowOffsets.get()[r]--;
-            } else
-                // Simply overwrite the existing value.
-                rowValuesBeg[posExpected] = value;
+            } else {
+                // Entry for the given coordinates present.
+                if (value == ValueType(0)) {
+                    // Close gap.
+                    for (size_t pos = posExpected; pos < posEnd; pos++) {
+                        rowValuesBeg[pos] = rowValuesBeg[pos + 1];
+                        rowColIdxsBeg[pos] = rowColIdxsBeg[pos + 1];
+                    }
+                    // Update rowOffsets.
+                    // TODO We might want to shrink the arrays here.
+                    for (size_t r = rowIdx + 1; r <= numRowsAllocated; r++)
+                        rowOffsets.get()[r]--;
+                } else
+                    // Simply overwrite the existing value.
+                    rowValuesBeg[posExpected] = value;
+            }
         }
     }
 
@@ -335,7 +440,8 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         const size_t nextPos = rowOffsets.get()[lastAppendedRowIdx + 1];
         fillNextPosUntil(nextPos, rowIdx);
 
-        values.get()[nextPos] = value;
+        if constexpr (!std::is_same_v<ValueType, bool>)
+            this->values.get()[nextPos] = value;
         colIdxs.get()[nextPos] = colIdx;
         rowOffsets.get()[rowIdx + 1]++;
     }
@@ -368,9 +474,14 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
             memset(oneRow, 0, numCols * sizeof(ValueType));
             const size_t rowNumNonZeros = getNumNonZeros(r);
             const size_t *rowColIdxs = getColIdxs(r);
-            const ValueType *rowValues = getValues(r);
-            for (size_t i = 0; i < rowNumNonZeros; i++)
-                oneRow[rowColIdxs[i]] = rowValues[i];
+            if constexpr (std::is_same_v<ValueType, bool>) {
+                for (size_t i = 0; i < rowNumNonZeros; i++)
+                    oneRow[rowColIdxs[i]] = true;
+            } else {
+                const ValueType *rowValues = getValues(r);
+                for (size_t i = 0; i < rowNumNonZeros; i++)
+                    oneRow[rowColIdxs[i]] = rowValues[i];
+            }
             for (size_t c = 0; c < numCols; c++) {
                 printValue(os, oneRow[c]);
                 if (c < numCols - 1)
@@ -394,12 +505,14 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
         os << "CSRMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
            << std::endl;
         os << "maxNumNonZeros: \t" << maxNumNonZeros << std::endl;
-        os << "values: \t";
-        for (size_t i = 0; i < maxNumNonZeros; i++) {
-            printValue(os, values.get()[i]);
-            os << ", ";
+        if constexpr (!std::is_same_v<ValueType, bool>) {
+            os << "values: \t";
+            for (size_t i = 0; i < maxNumNonZeros; i++) {
+                printValue(os, this->values.get()[i]);
+                os << ", ";
+            }
+            os << std::endl;
         }
-        os << std::endl;
         os << "colIdxs: \t";
         for (size_t i = 0; i < maxNumNonZeros; i++)
             os << colIdxs.get()[i] << ", ";
@@ -474,11 +587,13 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
                 return false;
 
         // Check if the non-zero values match.
-        const ValueType *valuesLhs = this->getValues(0);
-        const ValueType *valuesRhs = rhs.getValues(0);
-        if (valuesLhs != valuesRhs)
-            if (memcmp(valuesLhs, valuesRhs, nnzLhs * sizeof(ValueType)))
-                return false;
+        if constexpr (!std::is_same_v<ValueType, bool>) {
+            const ValueType *valuesLhs = this->getValues(0);
+            const ValueType *valuesRhs = rhs.getValues(0);
+            if (valuesLhs != valuesRhs)
+                if (memcmp(valuesLhs, valuesRhs, nnzLhs * sizeof(ValueType)))
+                    return false;
+        }
 
         // Check if the column indices match.
         const size_t *colIdxsLhs = this->getColIdxs(0);
@@ -493,8 +608,12 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
     size_t serialize(std::vector<char> &buf) const override;
 
     size_t getPhysicalSizeByte() const override {
-        return getNumNonZeros() * (sizeof(ValueType) + sizeof(size_t)) // the size of the values and colIdxs arrays
-               + (numRows + 1) * sizeof(size_t);                       // the size of the rowOffsets array
+        if constexpr (std::is_same_v<ValueType, bool>)
+            return getNumNonZeros() * sizeof(size_t) // the size of the colIdxs array
+                   + (numRows + 1) * sizeof(size_t); // the size of the rowOffsets array
+        else
+            return getNumNonZeros() * (sizeof(ValueType) + sizeof(size_t)) // the size of the values and colIdxs arrays
+                   + (numRows + 1) * sizeof(size_t);                       // the size of the rowOffsets array
     }
 
     /**
@@ -528,17 +647,19 @@ template <typename ValueType> class CSRMatrix : public Matrix<ValueType> {
 
         // Check the values and colIdxs arrays.
         for (size_t r = 0; r < numRows; r++) {
-            const ValueType *valuesRow = getValues(r);
-            const size_t *colIdxsRow = getColIdxs(r);
             const size_t nnzRow = getNumNonZeros(r);
 
-            // Check the values in the current row.
-            for (size_t i = 0; i < nnzRow; i++)
-                if (valuesRow[i] == 0)
-                    throw std::runtime_error("there must be no explicitly stored zeros, violated at position " +
-                                             std::to_string(i) + " in row " + std::to_string(r));
+            if constexpr (!std::is_same_v<ValueType, bool>) {
+                // Check the values in the current row.
+                const ValueType *valuesRow = getValues(r);
+                for (size_t i = 0; i < nnzRow; i++)
+                    if (valuesRow[i] == 0)
+                        throw std::runtime_error("there must be no explicitly stored zeros, violated at position " +
+                                                 std::to_string(i) + " in row " + std::to_string(r));
+            }
 
             // Check the colIdxs in the current row.
+            const size_t *colIdxsRow = getColIdxs(r);
             for (size_t i = 0; i < nnzRow; i++) {
                 if (colIdxsRow[i] > numCols)
                     throw std::runtime_error("the column indexes must be in-bounds, violated at position " +
