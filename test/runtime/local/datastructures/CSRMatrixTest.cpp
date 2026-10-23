@@ -270,7 +270,7 @@ TEMPLATE_TEST_CASE("CSRMatrix::operator==(), equal matrices", TAG_DATASTRUCTURES
 
     DataObjectFactory::destroy(lhs);
     if (lhs != rhs)
-        DataObjectFactory::destroy(lhs);
+        DataObjectFactory::destroy(rhs);
 }
 
 TEMPLATE_TEST_CASE("CSRMatrix::operator==(), non-equal matrices", TAG_DATASTRUCTURES, double, int32_t) {
