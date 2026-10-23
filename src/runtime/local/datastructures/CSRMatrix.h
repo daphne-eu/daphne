@@ -48,7 +48,7 @@ template <typename ValueType>
     requires(!std::same_as<ValueType, bool>)
 class CSRMatrixStorage<ValueType> : public Matrix<ValueType> {
   protected:
-    CSRMatrixStorage(size_t numRows, size_t numCols) : Matrix<ValueType>(numRows, numCols) {};
+    CSRMatrixStorage(size_t numRows, size_t numCols) : Matrix<ValueType>(numRows, numCols){};
     std::shared_ptr<ValueType[]> values; // values array
 };
 
@@ -60,7 +60,7 @@ template <typename ValueType>
     requires(std::same_as<ValueType, bool>)
 class CSRMatrixStorage<ValueType> : public Matrix<ValueType> {
   protected:
-    CSRMatrixStorage(size_t numRows, size_t numCols) : Matrix<ValueType>(numRows, numCols) {};
+    CSRMatrixStorage(size_t numRows, size_t numCols) : Matrix<ValueType>(numRows, numCols){};
     // no values array
 };
 
